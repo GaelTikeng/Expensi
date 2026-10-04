@@ -25,7 +25,11 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["CAMERA", "POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM"]
+      "permissions": [
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -53,7 +57,8 @@
         {
           "photosPermission": "Choose a receipt photo to attach it as proof of an expense."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

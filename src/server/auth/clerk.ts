@@ -5,7 +5,7 @@ import type { User } from '../db/schema';
 import { env } from '../env';
 import { createRepositories, UsersRepository, type Repositories } from '../repositories';
 
-const clerk = createClerkClient({ secretKey: env.CLERK_SECRET_KEY });
+export const clerk = createClerkClient({ secretKey: env.CLERK_SECRET_KEY });
 
 export interface AuthedContext {
   user: User;

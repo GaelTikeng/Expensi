@@ -133,34 +133,40 @@ expense-app/
 ├── .env.example                       every variable, client and server
 ├── .github/workflows/ci.yml           install, typecheck, lint, test
 ├── app/                               expo-router
-│   ├── _layout.tsx                    ClerkProvider + Stack
-│   ├── index.tsx                      placeholder home (replaced in E1/E2)
+│   ├── _layout.tsx                    ClerkProvider + Stack.Protected route guards
+│   ├── (auth)/sign-in.tsx             email-code sign-in-or-up + Google SSO
+│   ├── (tabs)/                        signed-in shell: index (home), settings
 │   └── api/                           Expo API Routes (server-only)
 │       ├── health+api.ts              liveness, no server imports
-│       └── me+api.ts                  auth smoke test
+│       ├── me+api.ts                  GET profile, PATCH prefs, DELETE account
+│       ├── currencies+api.ts          reference currencies
+│       └── webhooks/clerk+api.ts      Clerk user.* events (verifyWebhook)
 ├── src/
 │   ├── server/                        never imported by client code
 │   │   ├── env.ts                     zod-validated server env
 │   │   ├── db/schema.ts, client.ts, seed.ts, migrations/
-│   │   ├── repositories/              base (userId-scoped), users, expenses, index
-│   │   ├── auth/clerk.ts              withAuth() wrapper + json()
+│   │   ├── repositories/              base (userId-scoped), users, expenses, reference, index
+│   │   ├── services/account.ts        deleteAccountData(): S3 purge + cascade delete
+│   │   ├── auth/clerk.ts              withAuth() wrapper, json(), clerk client
 │   │   ├── ai/client.ts               OpenAI SDK → TensorX, MODELS, logUsage()
 │   │   └── storage/s3.ts              presignPut/Get, headObject, deletePrefix
 │   ├── ai/extraction-contract.ts      client-safe tool schema, prompt, classifyLine()
-│   └── lib/                           api.ts (authed fetch), money.ts
+│   ├── features/
+│   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
+│   │   └── settings/                  useMe (profile + currencies), OptionPicker
+│   └── lib/                           api.ts (authed fetch), money.ts, timezones.ts
 ├── docs/NEON_NOTES.md, S3_SETUP.md
 └── assets/                            icons from the Expo template (replace later)
 ```
 
-Planned, not yet created: `app/(auth)/`, `app/(tabs)/`, `app/import/`,
-`src/features/`.
+Planned, not yet created: `app/import/`, further tabs (expenses, plan, recaps).
 
 ---
 
 ## 5. Conventions
 
 1. Secrets live only in server env (`DATABASE_URL`, `DIRECT_URL`, `TENSORX_API_KEY`,
-   `CLERK_SECRET_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`,
+   `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`,
    `S3_REGION`). Client gets only `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` and
    `EXPO_PUBLIC_API_URL`.
 2. All DB access through repositories with mandatory `userId` (D3).
@@ -211,11 +217,11 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ### E1 — Auth (Clerk)
 - [x] F1.1 `@clerk/clerk-expo` provider + secure token cache — `app/_layout.tsx`
-- [ ] F1.2 Sign-in / sign-up screens (email + OTP, Google)
+- [x] F1.2 Combined sign-in-or-up screen (email + 6-digit code, Google SSO) — `app/(auth)/sign-in.tsx`, `src/features/auth/*`. Needs Clerk dashboard: email code enabled, Google OAuth configured, redirect `expenseapp://sso-callback`
 - [x] F1.3 API middleware `withAuth()` — `src/server/auth/clerk.ts`; smoke route `app/api/me+api.ts`
-- [ ] F1.4 Settings: currency, timezone, sign out
-- [ ] F1.5 Clerk `user.deleted` webhook → cascade delete user data
-- [ ] F1.6 In-app "delete my account" (store requirement)
+- [x] F1.4 Settings: currency, timezone (curated list `src/lib/timezones.ts`), sign out — `app/(tabs)/settings.tsx`, `src/features/settings/*`, `PATCH /api/me`, `GET /api/currencies`
+- [x] F1.5 Clerk webhook (`user.created/updated/deleted`) — `app/api/webhooks/clerk+api.ts`, `src/server/services/account.ts`. Needs `CLERK_WEBHOOK_SIGNING_SECRET` and the endpoint registered in Clerk
+- [x] F1.6 In-app delete account — `DELETE /api/me` purges S3 prefix + DB rows, then deletes the Clerk user
 
 ### E2 — Manual expenses
 - [ ] F2.1 `POST /api/expenses` idempotent on client UUID
@@ -236,7 +242,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [ ] F2b.6 Expense detail: thumbnail strip, full-screen viewer for images, PDF viewer
 - [ ] F2b.7 Upload progress + retry; offline-safe (upload resumes when the app returns)
 - [ ] F2b.8 Planned expense "mark as done" accepts an attachment (receipt) in the same step
-- [ ] F2b.9 Account deletion purges `users/{userId}/` prefix in S3 (ties to F1.5)
+- [x] F2b.9 Account deletion purges `users/{userId}/` prefix in S3 — `src/server/services/account.ts` (done with E1)
 - [ ] F2b.10 Expense list filter: "with proof" / "without proof"
 
 ### E3 — File ingestion (Excel / CSV / PDF) with AI
@@ -309,12 +315,22 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - Client code never imports from `src/server/`. ESLint enforces it
   (`no-restricted-imports` in `eslint.config.js`); do not disable the rule, add an API route.
 - Model IDs only in `MODELS`. Verify TensorX ids via `GET /v1/models`.
+- Client data fetching is plain hooks over `apiFetch` for now (see `useMe`). Introduce
+  a query library only when a list screen needs caching, and register it in §2.
+- Pure client logic that gets unit-tested must not import `@clerk/clerk-expo` or
+  `react-native`; vitest runs in Node (see `src/features/auth/errors.ts`).
 - When a feature ships: flip checkbox, name files, Changelog line, same commit.
 
 ---
 
 ## 8. Changelog
 
+- 2026-10-04 — **E1 auth complete.** Route guards with `Stack.Protected`; combined
+  email-code sign-in-or-up plus Google SSO; tabs shell (home, settings);
+  settings with currency/timezone pickers, sign out, delete account;
+  `PATCH`/`DELETE /api/me`, `GET /api/currencies`; Clerk webhook handler;
+  shared account-deletion service (also closes F2b.9). 23 tests. Manual: enable
+  email code + Google in the Clerk dashboard, register the webhook endpoint.
 - 2026-10-04 — **E0 foundation built.** Expo SDK 57 project with pnpm; schema v2
   and first migration (generated, reviewed, not applied); zod env; repositories;
   Clerk `withAuth()`; OpenAI→TensorX client; S3 presign module; ESLint

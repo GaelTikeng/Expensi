@@ -12,6 +12,8 @@ const schema = z.object({
   DIRECT_URL: z.string().url().optional(),
 
   CLERK_SECRET_KEY: z.string().min(1),
+  /** Read by @clerk/backend verifyWebhook. Optional until the webhook is configured. */
+  CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1).optional(),
 
   TENSORX_API_KEY: z.string().min(1),
   TENSORX_BASE_URL: z.string().url().default('https://api.tensorx.ai/v1'),

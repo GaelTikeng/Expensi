@@ -38,4 +38,16 @@ export class UsersRepository {
       .returning();
     return row;
   }
+
+  async updateProfile(
+    userId: string,
+    patch: Partial<Pick<User, 'defaultCurrency' | 'timezone' | 'expoPushToken' | 'displayName'>>,
+  ): Promise<User | undefined> {
+    const [row] = await this.db
+      .update(users)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return row;
+  }
 }
