@@ -33,6 +33,8 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="expense/new" options={{ title: 'New expense', presentation: 'modal' }} />
         <Stack.Screen name="expense/[id]" options={{ title: 'Expense' }} />
+        <Stack.Screen name="import/index" options={{ title: 'Imports' }} />
+        <Stack.Screen name="import/[id]" options={{ title: 'Review import' }} />
       </Stack.Protected>
       <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

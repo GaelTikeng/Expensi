@@ -148,6 +148,7 @@ expense-app/
 │   │   ├── db/schema.ts, client.ts, seed.ts, migrations/
 │   │   ├── repositories/              base, users, expenses, categories, attachments, recaps, reference
 │   │   ├── services/account.ts        deleteAccountData(): S3 purge + cascade delete
+│   │   ├── services/imports/          parse (SheetJS, pdf-parse), extract (model call), process, commit, dto
 │   │   ├── auth/clerk.ts              withAuth() wrapper, json(), clerk client
 │   │   ├── ai/client.ts               OpenAI SDK → TensorX, MODELS, logUsage()
 │   │   └── storage/s3.ts              presignPut/Get, headObject, deletePrefix
@@ -155,9 +156,11 @@ expense-app/
 │   ├── features/
 │   │   ├── attachments/               pick, upload (stage+presign+PUT+confirm), queue, tiles, viewer
 │   │   ├── expenses/                  api, hooks, ExpenseForm, AmountInput, DateField, ExpenseRow
+│   │   ├── imports/                   api, upload, review-utils, ImportItemRow, ItemEditModal
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
 │   │   └── settings/                  useMe (profile + currencies), OptionPicker
 │   └── lib/                           api.ts (authed fetch), money.ts, timezones.ts
+├── scripts/tensorx-check.mjs          F3.3 capability probe
 ├── docs/NEON_NOTES.md, S3_SETUP.md
 └── assets/                            icons from the Expo template (replace later)
 ```
@@ -251,17 +254,17 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 ### E3 — File ingestion (Excel / CSV / PDF) with AI
 - [x] F3.1 Review-gating logic `classifyLine()` and `reconcileAgainstTotal()` — `src/ai/extraction-contract.ts` (port from v1, still valid)
 - [-] F3.2 TensorX client — moved to F0.14
-- [ ] F3.3 **Verify** TensorX capabilities: JSON mode / tool calling, image input, max file size; record findings in section 2 table
-- [ ] F3.4 File picker (`expo-document-picker`) for `.xlsx .xls .csv .pdf`, upload to S3 via presigned PUT (D12), then `POST /api/imports` with the `storage_key`
-- [ ] F3.5 Excel/CSV path: parse with SheetJS server-side → AI maps columns to `{amount, date, description, payee, category}` and normalises locale formats → `import_items`
-- [ ] F3.6 Text-PDF path: `pdf-parse` → AI line extraction → `import_items`
-- [ ] F3.7 Scanned-PDF path: page images → multimodal TensorX model with the v1 extraction prompt → `import_items`
-- [ ] F3.8 `GET /api/imports/:id` status polling
-- [ ] F3.9 Review screen: one row per staged item, severity from `classifyLine()`, inline edit, bulk tick/untick, duplicate detection against existing expenses
-- [ ] F3.10 Total reconciliation banner when the document states a total
-- [ ] F3.11 `POST /api/imports/:id/commit` promotes accepted items to `expenses` atomically (`db.batch`), source `import`
-- [ ] F3.12 Import history screen; re-open a committed import read-only
-- [ ] F3.13 Retry policy, attempt cap, failure reasons shown to the user
+- [~] F3.3 **Verify** TensorX capabilities — probe script ready: `node --env-file=.env scripts/tensorx-check.mjs` (models, forced tool call, image part, json_schema). **Blocked: `TENSORX_API_KEY` is empty in `.env`.** Record results here and in §2 when run
+- [x] F3.4 `app/import/index.tsx` + `src/features/imports/upload.ts`: picker → `POST /api/imports/presign` → PUT → `POST /api/imports` (idempotent on client id)
+- [x] F3.5 Excel/CSV: SheetJS picks the largest sheet, emits TSV (≤500 rows) → model with `TABULAR_PROMPT_ADDENDUM` + user's category names → `import_items` — `src/server/services/imports/{parse,extract,process}.ts`
+- [x] F3.6 Text PDF: `pdf-parse` → same extraction call. Note: `pdf-parse` is Node-only; if EAS Hosting's runtime rejects it, move the import pipeline to a Node service (D1 escape hatch)
+- [~] F3.7 Scanned PDF: detected when extracted text < 40 chars/page; sent as an OpenAI `file` content part (base64). Works only if TensorX accepts file parts (F3.3); otherwise fails with a clear reason. Page rasterisation not implemented
+- [x] F3.8 `GET /api/imports/[id]` (status, items, duplicate flags, reconciliation) and `POST /api/imports/[id]/process` (synchronous pipeline, idempotent, 409 while in flight)
+- [x] F3.9 `app/import/[id].tsx`: rows via `reviewItems()` (classifyLine + duplicate demotion), tick/untick/bulk, `ItemEditModal` → `PATCH /api/imports/[id]/items/[itemId]`; duplicates = same amount + same day in the ledger (computed in `dto.ts`)
+- [x] F3.10 Reconciliation banner (matches / off by X) from `reconcileAgainstTotal()` server-side
+- [x] F3.11 `POST /api/imports/[id]/commit` — `services/imports/commit.ts` uses `db.batch`; validates kind/amount/date; marks recaps stale
+- [x] F3.12 History list in `app/import/index.tsx`; committed imports open read-only showing accepted rows
+- [x] F3.13 3 attempts, stale `processing` rows retryable after 2 min, friendly failure reasons, retry button with remaining count
 
 ### E4 — Recaps: daily, weekly, monthly
 - [ ] F4.1 SQL rollups: total, count, by category, by payee, vs budget, vs previous period — for day / week / month
@@ -328,6 +331,11 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-04 — **E3 file ingestion built** (F3.3 and F3.7 pending the TensorX
+  key). Import presign/create/process/commit/items routes, `ImportsRepository`,
+  parse → extract → stage pipeline with zod-validated model output, duplicate
+  detection, reconciliation, history and review screens with inline edit.
+  45 tests.
 - 2026-10-04 — **E2b proof attachments complete** (except F2b.8, which lands
   with E5). Presign/confirm/url/delete routes, `AttachmentsRepository`,
   expense list `hasAttachment` filter and `attachmentCount`. Client: pickers,

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
+import { Pressable } from 'react-native';
 
 import { useUploadQueueFlush } from '@/src/features/attachments/useUploadQueueFlush';
 
@@ -22,6 +23,11 @@ export default function TabsLayout() {
         options={{
           title: 'Expenses',
           tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" color={color} size={size} />,
+          headerRight: () => (
+            <Pressable onPress={() => router.push('/import')} hitSlop={12} style={{ marginRight: 16 }} accessibilityLabel="Import a file">
+              <Ionicons name="cloud-upload-outline" size={22} color="#1F5EFF" />
+            </Pressable>
+          ),
         }}
       />
       <Tabs.Screen

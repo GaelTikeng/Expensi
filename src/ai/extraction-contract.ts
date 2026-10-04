@@ -10,6 +10,8 @@
  * src/server. Model ids live in src/server/ai/client.ts.
  */
 
+import { z } from 'zod';
+
 /* ── the tool (OpenAI function-calling shape) ────────────────────────────── */
 /**
  * Forced via tool_choice: { type: 'function', function: { name: 'record_expense_lines' } }.
@@ -86,6 +88,7 @@ export const RECORD_EXPENSE_LINES_TOOL = {
               type: 'string',
               description: 'Cleaned-up label for what was purchased.',
             },
+            payee: { type: 'string', description: 'Who was paid, if written.' },
             category_guess: { type: 'string' },
             confidence: {
               type: 'number',
@@ -148,6 +151,30 @@ UNCERTAINTY
 Read the whole document first, then call record_expense_lines exactly once.
 `.trim();
 
+/* ── tabular addendum ────────────────────────────────────────────────────── */
+/**
+ * Appended to the system prompt when the source is a spreadsheet or CSV that
+ * has already been parsed into rows. The model maps columns, it does not OCR.
+ */
+export const TABULAR_PROMPT_ADDENDUM = `
+SOURCE FORMAT
+- You receive a table as tab-separated rows, first row(s) may be headers.
+- Decide which columns hold the date, the amount, the description/label, and
+  (optionally) the payee and category. Header names may be French or English
+  (Date, Montant, Libellé, Désignation, Bénéficiaire, Catégorie…).
+- Emit exactly one line per DATA row, in order; raw_text is the row joined
+  with " | ". Mark header rows 'header' and total rows 'total'.
+- Amounts may use spreadsheet number formatting; apply the same locale rules.
+- If a row has a debit and a credit column, only debits are expenses; a credit
+  row is 'header' with an ambiguity_note saying it is income.
+`.trim();
+
+/** Appended when the user's categories are known so guesses match them. */
+export function categoriesPromptAddendum(names: string[]): string {
+  if (names.length === 0) return '';
+  return `\nCATEGORIES\nFor category_guess, pick the closest of: ${names.join(', ')}. Leave it out if none fits.`;
+}
+
 /* ── typed output ────────────────────────────────────────────────────────── */
 export type LineKind =
   | 'expense'
@@ -164,6 +191,7 @@ export interface ExtractedLine {
   amount_minor?: number;
   occurred_on?: string;
   description?: string;
+  payee?: string;
   category_guess?: string;
   confidence?: number;
   ambiguity_note?: string;
@@ -175,6 +203,35 @@ export interface ExtractionResult {
   document_quality: 'good' | 'usable' | 'poor';
   lines: ExtractedLine[];
 }
+
+/**
+ * Runtime validation of what the model returned. Lenient where the model is
+ * sloppy (string numbers, nulls) so one odd field does not fail a whole file.
+ */
+export const extractionResultSchema = z.object({
+  detected_currency: z.string().trim().min(1).max(8).default('UNKNOWN'),
+  detected_language: z.string().trim().max(16).optional().nullable(),
+  document_quality: z.enum(['good', 'usable', 'poor']).catch('usable'),
+  lines: z
+    .array(
+      z.object({
+        line_index: z.coerce.number().int().min(0),
+        raw_text: z.string().default(''),
+        line_kind: z
+          .enum(['expense', 'total', 'subtotal', 'header', 'struck_through', 'illegible'])
+          .catch('illegible'),
+        amount_minor: z.coerce.number().int().optional().nullable(),
+        occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().catch(null),
+        description: z.string().max(500).optional().nullable(),
+        payee: z.string().max(200).optional().nullable(),
+        category_guess: z.string().max(120).optional().nullable(),
+        confidence: z.coerce.number().min(0).max(1).optional().nullable().catch(null),
+        ambiguity_note: z.string().max(1000).optional().nullable(),
+      }),
+    )
+    .default([]),
+});
+export type ValidatedExtraction = z.infer<typeof extractionResultSchema>;
 
 /* ── review gating ───────────────────────────────────────────────────────── */
 /** Below this, the amount field opens focused and empty-highlighted for retype. */

@@ -63,9 +63,9 @@ export async function discardStaged(file: Pick<StagedFile, 'uri'>) {
   await FileSystem.deleteAsync(file.uri, { idempotent: true }).catch(() => undefined);
 }
 
-async function putWithRetry(
+export async function putWithRetry(
   url: string,
-  file: StagedFile,
+  file: { uri: string; mimeType: string },
   onProgress?: (fraction: number) => void,
   attempts = 3,
 ): Promise<void> {

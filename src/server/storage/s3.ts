@@ -103,6 +103,20 @@ export async function headObject(key: string) {
   };
 }
 
+/** Downloads a whole object into memory (imports are capped at 10 MB). */
+export async function getObjectBuffer(key: string): Promise<Buffer> {
+  const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+  const bytes = await res.Body?.transformToByteArray();
+  if (!bytes) throw new Error(`Empty object: ${key}`);
+  return Buffer.from(bytes);
+}
+
+/** `users/{userId}/imports/{id}.{ext}` — kept apart from proof attachments. */
+export function buildImportKey(userId: string, id: string, mimeType: string) {
+  const ext = EXT_BY_MIME[mimeType] ?? 'bin';
+  return `users/${userId}/imports/${id}.${ext}`;
+}
+
 export async function deleteObject(key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
