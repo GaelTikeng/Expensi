@@ -12,6 +12,8 @@ const schema = z.object({
   DIRECT_URL: z.string().url().optional(),
 
   CLERK_SECRET_KEY: z.string().min(1),
+  /** Also needed server-side: authenticateRequest derives the Frontend API from it. */
+  EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1),
   /** Read by @clerk/backend verifyWebhook. Optional until the webhook is configured. */
   CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1).optional(),
 

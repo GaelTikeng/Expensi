@@ -6,7 +6,10 @@ import { env } from '../env';
 import { HttpError } from '../errors';
 import { CategoriesRepository, createRepositories, UsersRepository, type Repositories } from '../repositories';
 
-export const clerk = createClerkClient({ secretKey: env.CLERK_SECRET_KEY });
+export const clerk = createClerkClient({
+  secretKey: env.CLERK_SECRET_KEY,
+  publishableKey: env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
+});
 
 export interface AuthedContext {
   user: User;
@@ -40,15 +43,15 @@ export function json(body: unknown, init: ResponseInit = {}): Response {
  */
 export function withAuth(handler: AuthedHandler) {
   return async (request: Request, params: RouteParams = {}): Promise<Response> => {
-    const result = await clerk.authenticateRequest(request, { acceptsToken: 'session_token' });
-    if (!result.isAuthenticated) {
-      return json({ error: 'unauthenticated', reason: result.reason }, { status: 401 });
-    }
-    const auth = result.toAuth();
-    const clerkUserId = auth.userId;
-    if (!clerkUserId) return json({ error: 'unauthenticated' }, { status: 401 });
-
     try {
+      const result = await clerk.authenticateRequest(request, { acceptsToken: 'session_token' });
+      if (!result.isAuthenticated) {
+        return json({ error: 'unauthenticated', reason: result.reason }, { status: 401 });
+      }
+      const auth = result.toAuth();
+      const clerkUserId = auth.userId;
+      if (!clerkUserId) return json({ error: 'unauthenticated' }, { status: 401 });
+
       const usersRepo = new UsersRepository(db);
       let user = await usersRepo.findByClerkId(clerkUserId);
       if (!user) {
