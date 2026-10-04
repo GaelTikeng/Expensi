@@ -34,9 +34,9 @@ the design must not hard-code that. iOS + Android, public app.
 | Package manager | **pnpm** with `node-linker=hoisted` (`.npmrc`) | Metro needs a flat `node_modules` |
 | Server layer | **Expo API Routes** (`app/api/**/*+api.ts`), deployed with EAS Hosting | keeps secrets off-device without a second repo; see Decision D1 |
 | Auth | **Clerk** (`@clerk/clerk-expo`) | Clerk JWT verified server-side; `users.clerk_user_id` is the tenant key |
-| Database | **Neon Postgres** | `@neondatabase/serverless`, neon-http driver |
+| Database | **Neon Postgres** (PostgreSQL 18, `eu-central-1`, project live) | `@neondatabase/serverless`, neon-http driver; `DIRECT_URL` for migrations |
 | ORM | **Drizzle** (`pg-core`), server-side only | migrations with drizzle-kit |
-| AI | **OpenAI SDK** (`openai` npm) with `baseURL: https://api.tensorx.ai/v1` and `TENSORX_API_KEY` | same pattern as the dorti project; called only from API routes; models via `GET /v1/models` |
+| AI | **OpenAI SDK** (`openai` npm) with `baseURL: https://api.tensorx.ai/v1` and `TENSORX_API_KEY` | verified 2026-10-04: tool calling ✓, json_schema ✓, image input ✗ on `glm-5.3-flash`; called only from API routes |
 | File storage | **S3** (or S3-compatible) via `@aws-sdk/client-s3` + presigned URLs | proof attachments (photo, PDF) and import uploads; private bucket, never public URLs |
 | Push / reminders | `expo-notifications` local scheduling + Expo Push for server-triggered | see D4 |
 | File parsing | SheetJS (`xlsx`) for Excel/CSV, `pdf-parse` for text PDFs, multimodal TensorX model for scanned PDFs | |
@@ -224,8 +224,8 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [~] F0.3 Expo API Routes enabled (`web.output: "server"` in `app.json`) — **EAS Hosting project still to create** (`eas init`, needs account login)
 - [x] F0.4 Server code in `src/server/`; `timestamptz` bug fixed via `timestamp(..., { withTimezone: true })` helper
 - [x] F0.5 Schema v2 — `src/server/db/schema.ts` (11 tables, 8 enums, all relations)
-- [~] F0.6 First migration generated and reviewed (`0000_curious_whiplash.sql`, CREATE only) — **not yet applied**: needs a Neon project and `DIRECT_URL`; run `CREATE EXTENSION IF NOT EXISTS pgcrypto;` then `pnpm db:migrate`
-- [~] F0.7 Seed script `src/server/db/seed.ts` (XAF, XOF, EUR, USD, GBP, NGN) — run `pnpm db:seed` after F0.6
+- [x] F0.6 First migration applied to Neon (PostgreSQL 18, `eu-central-1`) on 2026-10-04: 11 tables, 8 enums. Prep script `scripts/db-init.mjs` (pgcrypto) then `pnpm db:migrate` against `DIRECT_URL`
+- [x] F0.7 Currencies seeded (XAF, XOF, EUR, USD, GBP, NGN) via `pnpm db:seed`
 - [x] F0.8 Repository layer — `src/server/repositories/` (`UserScopedRepository`, `UsersRepository`, `ExpensesRepository`, `createRepositories()`)
 - [x] F0.9 `pnpm typecheck` / `lint` / `test`, ESLint client→server import ban, GitHub Actions CI
 - [x] F0.10 Tests — `src/ai/extraction-contract.test.ts` (12), `src/lib/money.test.ts` (6)
@@ -267,11 +267,11 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 ### E3 — File ingestion (Excel / CSV / PDF) with AI
 - [x] F3.1 Review-gating logic `classifyLine()` and `reconcileAgainstTotal()` — `src/ai/extraction-contract.ts` (port from v1, still valid)
 - [-] F3.2 TensorX client — moved to F0.14
-- [~] F3.3 **Verify** TensorX capabilities — probe script ready: `node --env-file=.env scripts/tensorx-check.mjs` (models, forced tool call, image part, json_schema). **Blocked: `TENSORX_API_KEY` is empty in `.env`.** Record results here and in §2 when run
+- [x] F3.3 TensorX verified 2026-10-04 with `scripts/tensorx-check.mjs`: 15 models; `z-ai/glm-5.3-flash` and `z-ai/glm-5.3` both listed; **forced tool calling ✓**, **`response_format: json_schema` ✓**, **image input ✗** (200 but empty content on glm-5.3-flash). Text/spreadsheet extraction and narratives are unblocked. Vision (F3.7 scanned PDFs, F8.1 camera) needs a different model: try `qwen/qwen3.8-flash-next` or `deepseek/deepseek-v4.1-flash` via `TENSORX_MODEL_EXTRACT` and re-run the probe
 - [x] F3.4 `app/import/index.tsx` + `src/features/imports/upload.ts`: picker → `POST /api/imports/presign` → PUT → `POST /api/imports` (idempotent on client id)
 - [x] F3.5 Excel/CSV: SheetJS picks the largest sheet, emits TSV (≤500 rows) → model with `TABULAR_PROMPT_ADDENDUM` + user's category names → `import_items` — `src/server/services/imports/{parse,extract,process}.ts`
 - [x] F3.6 Text PDF: `pdf-parse` → same extraction call. Note: `pdf-parse` is Node-only; if EAS Hosting's runtime rejects it, move the import pipeline to a Node service (D1 escape hatch)
-- [~] F3.7 Scanned PDF: detected when extracted text < 40 chars/page; sent as an OpenAI `file` content part (base64). Works only if TensorX accepts file parts (F3.3); otherwise fails with a clear reason. Page rasterisation not implemented
+- [~] F3.7 Scanned PDF: detected when extracted text < 40 chars/page; sent as an OpenAI `file` content part (base64). **F3.3 showed the default extract model has no working image input**, so this path currently fails with the friendly reason. Options: a vision-capable TensorX model (see F3.3) and/or server-side page rasterisation
 - [x] F3.8 `GET /api/imports/[id]` (status, items, duplicate flags, reconciliation) and `POST /api/imports/[id]/process` (synchronous pipeline, idempotent, 409 while in flight)
 - [x] F3.9 `app/import/[id].tsx`: rows via `reviewItems()` (classifyLine + duplicate demotion), tick/untick/bulk, `ItemEditModal` → `PATCH /api/imports/[id]/items/[itemId]`; duplicates = same amount + same day in the ledger (computed in `dto.ts`)
 - [x] F3.10 Reconciliation banner (matches / off by X) from `reconcileAgainstTotal()` server-side
@@ -310,7 +310,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [~] F7.1 Privacy policy draft `docs/PRIVACY_POLICY.md` (AI processing, S3 region, deletion) + in-app summary `app/privacy.tsx` linked from Settings. **Still to do: legal review and hosting at a public URL for the store listings**
 - [x] F7.2 Permission strings in `app.json`: camera + photo library (`infoPlist`, plugin props), Android `CAMERA`, `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`; notifications use the runtime rationale flow (F5.4); document picker needs none
 - [~] F7.3 `eas.json` with development / preview / production profiles; runbook `docs/DEPLOY.md` (env vars, export + `eas deploy`, build, submit). **Still to do: `eas init`, first deploy, set `EXPO_PUBLIC_API_URL`**
-- [~] F7.4 Guidance in `docs/DEPLOY.md` §1 and `docs/NEON_NOTES.md`; `.env.example` points at `eu-central-1`. **Manual when creating the Neon project and choosing the hosting region**
+- [~] F7.4 Neon project is in `eu-central-1` ✓. **Choose the same region when deploying the API routes** (`docs/DEPLOY.md` §1)
 - [~] F7.5 Client: `@sentry/react-native` + Expo plugin, `src/lib/sentry.ts` (`initSentry`, `setSentryUser`, `reportError`), enabled only when `EXPO_PUBLIC_SENTRY_DSN` is set; user id attached after sign-in. **API routes still log to console only** (`withAuth` catch-all); add a server DSN later
 - [x] F7.7 Maintenance: `POST /api/maintenance/sweep` (header `x-maintenance-secret`, enabled by `MAINTENANCE_SECRET`) deletes never-confirmed attachments > 24 h — `src/server/services/maintenance.ts`; cron recipe in `docs/DEPLOY.md` §3. Closes the F2b.7 orphan-sweep note
 - [x] F7.6 `src/server/ai/quota.ts` (`assertQuota` → 429, `quotaStatus`), limits via `AI_QUOTA_EXTRACT_PER_MONTH` / `AI_QUOTA_NARRATIVE_PER_MONTH`; enforced before import processing, narrative skipped when exhausted; `GET /api/usage` shown in Settings
@@ -345,6 +345,11 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-04 — **Neon and TensorX connected.** Migration applied and
+  currencies seeded on the live database; TensorX probe run (tool calling and
+  JSON schema confirmed, image input not working on the default extract
+  model). Env loader now treats empty values as unset and the S3 group is
+  optional until the bucket exists (503 `storage_not_configured` on use).
 - 2026-10-04 — **E7 ops built** (manual steps remain). `eas.json`, deploy
   runbook, privacy policy draft + in-app screen, AI quotas with `GET
   /api/usage`, maintenance sweep endpoint, client Sentry (DSN-gated).

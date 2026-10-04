@@ -21,10 +21,14 @@ const schema = z.object({
   TENSORX_MODEL_EXTRACT: z.string().default('z-ai/glm-5.3-flash'),
   TENSORX_MODEL_NARRATIVE: z.string().default('z-ai/glm-5.3'),
 
-  AWS_ACCESS_KEY_ID: z.string().min(1),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1),
-  S3_BUCKET: z.string().min(1),
-  S3_REGION: z.string().min(1),
+  /**
+   * S3 group. Optional at boot so the API, migrations and seeds run before the
+   * bucket exists; storage/s3.ts throws a clear error on first use when unset.
+   */
+  AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  S3_BUCKET: z.string().min(1).optional(),
+  S3_REGION: z.string().min(1).optional(),
   /** For S3-compatible providers (MinIO, R2). Leave unset for AWS. */
   S3_ENDPOINT: z.string().url().optional(),
 
@@ -38,7 +42,9 @@ const schema = z.object({
 export type Env = z.infer<typeof schema>;
 
 function load(): Env {
-  const parsed = schema.safeParse(process.env);
+  // `.env` files often carry `KEY=` placeholders; treat empty as unset.
+  const raw = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== ''));
+  const parsed = schema.safeParse(raw);
   if (!parsed.success) {
     const missing = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`);
     throw new Error(`Invalid server environment:\n${missing.join('\n')}`);
