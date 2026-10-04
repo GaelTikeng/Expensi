@@ -1,6 +1,7 @@
 import type { Import, User } from '../../db/schema';
 import { HttpError } from '../../errors';
 import { logUsage } from '../../ai/client';
+import { assertQuota } from '../../ai/quota';
 import type { Repositories } from '../../repositories';
 import { getObjectBuffer } from '../../storage/s3';
 import { isValidISODate } from '@/src/lib/dates';
@@ -24,6 +25,8 @@ export async function processImport(repos: Repositories, user: User, imp: Import
   if (imp.attemptCount >= MAX_ATTEMPTS) {
     throw new HttpError(409, 'import_attempts_exhausted', 'This file failed too many times. Upload it again.');
   }
+
+  await assertQuota(user.id, 'extract'); // 429 before any work or state change
 
   const attempt = imp.attemptCount + 1;
   await repos.imports.update(imp.id, { status: 'processing', attemptCount: attempt, failureReason: null });

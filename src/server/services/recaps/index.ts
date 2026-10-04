@@ -3,6 +3,7 @@ import type { Recap, User } from '../../db/schema';
 import type { Repositories } from '../../repositories';
 import { periodStart, type ISODate, type RecapPeriod } from '@/src/lib/dates';
 import type { RecapDto, RecapStats } from '@/src/lib/schemas/recap';
+import { quotaStatus } from '../../ai/quota';
 import { generateNarrative } from './narrative';
 import { computeRecapStats } from './stats';
 
@@ -45,6 +46,8 @@ export async function getOrBuildRecap(
   let model: string | null | undefined;
   if (narrativeNeeded) {
     try {
+      const quota = await quotaStatus(user.id, 'narrative');
+      if (quota.remaining <= 0) throw new Error(`narrative quota exhausted (${quota.used}/${quota.limit})`);
       const n = await generateNarrative(user, stats);
       narrativeMd = n?.text ?? null;
       model = n?.model ?? null;

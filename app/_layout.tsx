@@ -1,8 +1,13 @@
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { useEffect } from 'react';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+
+import { initSentry, setSentryUser } from '@/src/lib/sentry';
+
+initSentry();
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -17,7 +22,11 @@ if (!publishableKey) {
  * flashing the sign-in screen at a user who is actually signed in.
  */
 function RootNavigator() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, userId } = useAuth();
+
+  useEffect(() => {
+    setSentryUser(userId ?? null);
+  }, [userId]);
 
   if (!isLoaded) {
     return (
@@ -40,6 +49,7 @@ function RootNavigator() {
         <Stack.Screen name="planned/month" options={{ title: 'Month' }} />
         <Stack.Screen name="recurring/new" options={{ title: 'New fixed charge', presentation: 'modal' }} />
         <Stack.Screen name="recurring/[id]" options={{ title: 'Fixed charge' }} />
+        <Stack.Screen name="privacy" options={{ title: 'Privacy' }} />
       </Stack.Protected>
       <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

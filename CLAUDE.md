@@ -40,6 +40,7 @@ the design must not hard-code that. iOS + Android, public app.
 | File storage | **S3** (or S3-compatible) via `@aws-sdk/client-s3` + presigned URLs | proof attachments (photo, PDF) and import uploads; private bucket, never public URLs |
 | Push / reminders | `expo-notifications` local scheduling + Expo Push for server-triggered | see D4 |
 | File parsing | SheetJS (`xlsx`) for Excel/CSV, `pdf-parse` for text PDFs, multimodal TensorX model for scanned PDFs | |
+| Observability | `@sentry/react-native` (client, DSN-gated); server routes log via `console` | server Sentry pending |
 | UI primitives | `@react-native-community/datetimepicker`, `react-native-gesture-handler` + `react-native-reanimated` (swipe rows), `@expo/vector-icons` | no UI kit yet; plain StyleSheet |
 
 ```
@@ -155,6 +156,8 @@ expense-app/
 │   │   ├── services/imports/          parse (SheetJS, pdf-parse), extract (model call), process, commit, dto
 │   │   ├── services/recaps/           stats (SQL), narrative (model), index (cache)
 │   │   ├── services/planned/dto.ts    planned + recurring DTOs
+│   │   ├── services/maintenance.ts    sweepStaleUploads() (cross-user, cron only)
+│   │   ├── ai/quota.ts                monthly AI limits (429)
 │   │   ├── auth/clerk.ts              withAuth() wrapper, json(), clerk client
 │   │   ├── ai/client.ts               OpenAI SDK → TensorX, MODELS, logUsage()
 │   │   └── storage/s3.ts              presignPut/Get, headObject, deletePrefix
@@ -169,8 +172,9 @@ expense-app/
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
 │   │   └── settings/                  useMe (profile + currencies), OptionPicker
 │   └── lib/                           api, money, dates (+periods), uuid, prefs, timezones, schemas/
+├── eas.json                           build profiles
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
-├── docs/NEON_NOTES.md, S3_SETUP.md
+├── docs/                              NEON_NOTES, S3_SETUP, DEPLOY, PRIVACY_POLICY
 └── assets/                            icons from the Expo template (replace later)
 ```
 
@@ -181,9 +185,9 @@ All v2 screens exist; see §6 for what each still lacks.
 ## 5. Conventions
 
 1. Secrets live only in server env (`DATABASE_URL`, `DIRECT_URL`, `TENSORX_API_KEY`,
-   `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET`,
-   `S3_REGION`). Client gets only `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` and
-   `EXPO_PUBLIC_API_URL`.
+   `CLERK_SECRET_KEY`, `CLERK_WEBHOOK_SIGNING_SECRET`, `AWS_*`, `S3_*`, `AI_QUOTA_*`,
+   `MAINTENANCE_SECRET`). Client gets only `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`,
+   `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_SENTRY_DSN`.
 2. All DB access through repositories with mandatory `userId` (D3).
 3. Money: `bigint` minor units + currency code. Resolve exponent from `currencies`
    before formatting (D7).
@@ -303,12 +307,13 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F6.5 Recaps show fixed vs variable (expenses linked to a `recurring_charge_id`) — done with E4; populated once E6 lands
 
 ### E7 — Store compliance and ops
-- [ ] F7.1 Privacy policy; disclose that imported files are processed by a third-party AI provider (TensorX, EU-hosted) and that attachments are stored in S3 (name the region)
-- [ ] F7.2 Permission strings: notifications, file access
-- [ ] F7.3 EAS build profiles (development, preview, production) and EAS Hosting deploy
-- [ ] F7.4 Neon region close to users; API routes deployed in the same region
-- [ ] F7.5 Error reporting (Sentry) for app and API routes
-- [ ] F7.6 Quota per user per month on AI operations, backed by `ai_usage`
+- [~] F7.1 Privacy policy draft `docs/PRIVACY_POLICY.md` (AI processing, S3 region, deletion) + in-app summary `app/privacy.tsx` linked from Settings. **Still to do: legal review and hosting at a public URL for the store listings**
+- [x] F7.2 Permission strings in `app.json`: camera + photo library (`infoPlist`, plugin props), Android `CAMERA`, `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`; notifications use the runtime rationale flow (F5.4); document picker needs none
+- [~] F7.3 `eas.json` with development / preview / production profiles; runbook `docs/DEPLOY.md` (env vars, export + `eas deploy`, build, submit). **Still to do: `eas init`, first deploy, set `EXPO_PUBLIC_API_URL`**
+- [~] F7.4 Guidance in `docs/DEPLOY.md` §1 and `docs/NEON_NOTES.md`; `.env.example` points at `eu-central-1`. **Manual when creating the Neon project and choosing the hosting region**
+- [~] F7.5 Client: `@sentry/react-native` + Expo plugin, `src/lib/sentry.ts` (`initSentry`, `setSentryUser`, `reportError`), enabled only when `EXPO_PUBLIC_SENTRY_DSN` is set; user id attached after sign-in. **API routes still log to console only** (`withAuth` catch-all); add a server DSN later
+- [x] F7.7 Maintenance: `POST /api/maintenance/sweep` (header `x-maintenance-secret`, enabled by `MAINTENANCE_SECRET`) deletes never-confirmed attachments > 24 h — `src/server/services/maintenance.ts`; cron recipe in `docs/DEPLOY.md` §3. Closes the F2b.7 orphan-sweep note
+- [x] F7.6 `src/server/ai/quota.ts` (`assertQuota` → 429, `quotaStatus`), limits via `AI_QUOTA_EXTRACT_PER_MONTH` / `AI_QUOTA_NARRATIVE_PER_MONTH`; enforced before import processing, narrative skipped when exhausted; `GET /api/usage` shown in Settings
 
 ### E8 — Later / exploratory (not committed)
 - [ ] F8.1 Camera capture of handwritten lists (v1 extraction prompt is ready for it)
@@ -340,6 +345,11 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-04 — **E7 ops built** (manual steps remain). `eas.json`, deploy
+  runbook, privacy policy draft + in-app screen, AI quotas with `GET
+  /api/usage`, maintenance sweep endpoint, client Sentry (DSN-gated).
+  Remaining manual: `eas init` + deploy, host the policy, Neon project in
+  `eu-central-1`, Clerk dashboard config, S3 bucket, TensorX key (F3.3).
 - 2026-10-04 — **E5 planned expenses + E6 fixed charges complete.** Timezone
   helpers with tests; planned and recurring repositories and routes; one-batch
   completion that creates the expense and links receipts; local T-24h/T-1h

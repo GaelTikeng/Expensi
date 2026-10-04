@@ -27,6 +27,12 @@ const schema = z.object({
   S3_REGION: z.string().min(1),
   /** For S3-compatible providers (MinIO, R2). Leave unset for AWS. */
   S3_ENDPOINT: z.string().url().optional(),
+
+  /** F7.6 monthly AI call limits per user. */
+  AI_QUOTA_EXTRACT_PER_MONTH: z.coerce.number().int().min(0).default(50),
+  AI_QUOTA_NARRATIVE_PER_MONTH: z.coerce.number().int().min(0).default(120),
+  /** Enables POST /api/maintenance/sweep when set. */
+  MAINTENANCE_SECRET: z.string().min(16).optional(),
 });
 
 export type Env = z.infer<typeof schema>;

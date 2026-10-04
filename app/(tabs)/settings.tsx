@@ -1,5 +1,6 @@
 import { useAuth, useUser } from '@clerk/clerk-expo';
-import { useState } from 'react';
+import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,17 +15,31 @@ import {
 import { useRecapReminders } from '@/src/features/notifications/useRecapReminders';
 import { OptionPicker } from '@/src/features/settings/OptionPicker';
 import { useMe } from '@/src/features/settings/useMe';
+import { apiFetch } from '@/src/lib/api';
 import { TIMEZONES } from '@/src/lib/timezones';
 
 /**
  * F1.4 + F1.6: profile preferences, sign out, delete account.
  */
 export default function SettingsScreen() {
-  const { signOut } = useAuth();
+  const { signOut, getToken } = useAuth();
   const { user } = useUser();
   const me = useMe();
   const reminders = useRecapReminders();
   const [deleting, setDeleting] = useState(false);
+  const [usage, setUsage] = useState<{ extract: { used: number; limit: number }; narrative: { used: number; limit: number } } | null>(null);
+  const usageKey = useMemo(() => getToken, [getToken]);
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<typeof usage>('/api/usage', usageKey)
+      .then((u) => {
+        if (!cancelled) setUsage(u);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [usageKey]);
 
   const confirmDelete = () => {
     Alert.alert(
@@ -102,6 +117,20 @@ export default function SettingsScreen() {
           </View>
           <Switch value={reminders.prefs?.monthlyRecapReminder ?? false} onValueChange={(v) => void reminders.setMonthly(v)} disabled={!reminders.prefs} />
         </View>
+      </View>
+
+      <Text style={styles.section}>AI usage this month</Text>
+      <View style={styles.card}>
+        <Row label="File imports" value={usage ? `${usage.extract.used} / ${usage.extract.limit}` : '…'} />
+        <View style={styles.separator} />
+        <Row label="Recap summaries" value={usage ? `${usage.narrative.used} / ${usage.narrative.limit}` : '…'} />
+      </View>
+
+      <Text style={styles.section}>About</Text>
+      <View style={styles.card}>
+        <Pressable style={styles.action} onPress={() => router.push('/privacy')}>
+          <Text style={styles.actionText}>Privacy</Text>
+        </Pressable>
       </View>
 
       <Text style={styles.section}>Session</Text>
