@@ -37,9 +37,12 @@ export const ExpenseRow = memo(function ExpenseRow({
           <Ionicons name={(category?.icon as never) ?? 'ellipsis-horizontal-outline'} size={18} color="#fff" />
         </View>
         <View style={styles.body}>
-          <Text style={styles.title} numberOfLines={1}>
-            {expense.description}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={1}>
+              {expense.description}
+            </Text>
+            {expense.attachmentCount > 0 ? <Ionicons name="attach-outline" size={14} color="#1F5EFF" /> : null}
+          </View>
           <Text style={styles.meta} numberOfLines={1}>
             {relativeDayLabel(expense.occurredOn)}
             {expense.payee ? ` · ${expense.payee}` : ''}
@@ -59,7 +62,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: '#fff' },
   icon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
-  title: { fontSize: 15, fontWeight: '500' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  title: { fontSize: 15, fontWeight: '500', flexShrink: 1 },
   meta: { fontSize: 12, color: '#777' },
   amountWrap: { alignItems: 'flex-end' },
   amount: { fontSize: 15, fontWeight: '600' },

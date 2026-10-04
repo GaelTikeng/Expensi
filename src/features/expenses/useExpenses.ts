@@ -10,7 +10,9 @@ const PAGE = 50;
  * Paginated, searchable expense list. Mutations update the local list
  * optimistically and roll back on failure.
  */
-export function useExpenses(filter: Pick<ExpenseListQuery, 'q' | 'categoryId' | 'from' | 'to'> = {}) {
+export type ExpensesFilter = Partial<Pick<ExpenseListQuery, 'q' | 'categoryId' | 'from' | 'to' | 'hasAttachment'>>;
+
+export function useExpenses(filter: ExpensesFilter = {}) {
   const { getToken } = useAuth();
   const api = useMemo(() => expensesApi(getToken), [getToken]);
 

@@ -15,9 +15,13 @@ import type { ExpenseDto } from '@/src/lib/schemas/expense';
 export default function ExpensesScreen() {
   const [searchText, setSearchText] = useState('');
   const [query, setQuery] = useState<string | undefined>(undefined);
+  const [proof, setProof] = useState<'all' | 'with' | 'without'>('all');
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { items, loading, loadingMore, hasMore, error, refresh, loadMore, remove } = useExpenses({ q: query });
+  const { items, loading, loadingMore, hasMore, error, refresh, loadMore, remove } = useExpenses({
+    q: query,
+    hasAttachment: proof === 'all' ? undefined : proof === 'with',
+  });
   const { byId: categoryById } = useCategories();
   const { currencies } = useMe();
   const lookup = useMemo(() => makeCurrencyLookup(currencies), [currencies]);
@@ -72,6 +76,16 @@ export default function ExpensesScreen() {
           autoCorrect={false}
           clearButtonMode="while-editing"
         />
+      </View>
+
+      <View style={styles.chips}>
+        {(['all', 'with', 'without'] as const).map((k) => (
+          <Pressable key={k} style={[styles.chip, proof === k && styles.chipActive]} onPress={() => setProof(k)}>
+            <Text style={[styles.chipText, proof === k && styles.chipTextActive]}>
+              {k === 'all' ? 'All' : k === 'with' ? 'With proof' : 'Without proof'}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {loading ? (
@@ -137,6 +151,11 @@ const styles = StyleSheet.create({
     borderColor: '#E3E6EB',
   },
   search: { flex: 1, paddingVertical: 10, fontSize: 15 },
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingBottom: 8 },
+  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: '#D7DAE0', backgroundColor: '#fff' },
+  chipActive: { backgroundColor: '#1F5EFF', borderColor: '#1F5EFF' },
+  chipText: { fontSize: 13, color: '#333' },
+  chipTextActive: { color: '#fff' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 6 },
   sectionHeader: {
     flexDirection: 'row',

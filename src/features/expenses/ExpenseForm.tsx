@@ -26,6 +26,7 @@ export function ExpenseForm({
   submitLabel,
   submitting,
   onSubmit,
+  extra,
 }: {
   initial?: Partial<ExpenseFormValues>;
   categories: CategoryDto[];
@@ -34,6 +35,8 @@ export function ExpenseForm({
   submitLabel: string;
   submitting: boolean;
   onSubmit: (values: ExpenseInput) => Promise<void> | void;
+  /** Rendered between the last field and the submit button (e.g. proof picker). */
+  extra?: React.ReactNode;
 }) {
   const [amountMinor, setAmountMinor] = useState<number | null>(initial?.amountMinor ?? null);
   const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency);
@@ -132,6 +135,8 @@ export function ExpenseForm({
       <Field label="Notes" error={errors.notes}>
         <TextInput style={[styles.input, styles.multiline]} value={notes} onChangeText={setNotes} multiline placeholder="Optional" />
       </Field>
+
+      {extra}
 
       <Pressable style={[styles.button, submitting && styles.buttonDisabled]} disabled={submitting} onPress={submit}>
         {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{submitLabel}</Text>}

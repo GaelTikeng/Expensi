@@ -4,6 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AttachmentsSection } from '@/src/features/attachments/AttachmentsSection';
 import { expensesApi } from '@/src/features/expenses/api';
 import { ExpenseForm } from '@/src/features/expenses/ExpenseForm';
 import { useCategories } from '@/src/features/expenses/useCategories';
@@ -94,6 +95,7 @@ export default function ExpenseDetailScreen() {
         defaultCurrency={profile.defaultCurrency}
         submitLabel="Save changes"
         submitting={submitting}
+        extra={<AttachmentsSection expenseId={expense.id} />}
         onSubmit={async (values) => {
           setSubmitting(true);
           try {

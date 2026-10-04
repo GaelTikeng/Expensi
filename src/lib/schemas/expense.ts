@@ -41,6 +41,11 @@ export const expenseListQuerySchema = z.object({
   source: z.enum(EXPENSE_SOURCES).optional(),
   /** Free-text search over description and payee. */
   q: z.string().trim().min(1).max(100).optional(),
+  /** true = only expenses with at least one proof file; false = only without. */
+  hasAttachment: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -61,6 +66,8 @@ export interface ExpenseDto {
   isEstimated: boolean;
   importItemId: string | null;
   recurringChargeId: string | null;
+  /** Confirmed proof files linked to this expense. */
+  attachmentCount: number;
   createdAt: string;
   updatedAt: string;
 }

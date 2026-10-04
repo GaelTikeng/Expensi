@@ -146,13 +146,15 @@ expense-app/
 │   ├── server/                        never imported by client code
 │   │   ├── env.ts                     zod-validated server env
 │   │   ├── db/schema.ts, client.ts, seed.ts, migrations/
-│   │   ├── repositories/              base (userId-scoped), users, expenses, reference, index
+│   │   ├── repositories/              base, users, expenses, categories, attachments, recaps, reference
 │   │   ├── services/account.ts        deleteAccountData(): S3 purge + cascade delete
 │   │   ├── auth/clerk.ts              withAuth() wrapper, json(), clerk client
 │   │   ├── ai/client.ts               OpenAI SDK → TensorX, MODELS, logUsage()
 │   │   └── storage/s3.ts              presignPut/Get, headObject, deletePrefix
 │   ├── ai/extraction-contract.ts      client-safe tool schema, prompt, classifyLine()
 │   ├── features/
+│   │   ├── attachments/               pick, upload (stage+presign+PUT+confirm), queue, tiles, viewer
+│   │   ├── expenses/                  api, hooks, ExpenseForm, AmountInput, DateField, ExpenseRow
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
 │   │   └── settings/                  useMe (profile + currencies), OptionPicker
 │   └── lib/                           api.ts (authed fetch), money.ts, timezones.ts
@@ -235,16 +237,16 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F2.8 `RecapsRepository.markStaleFor()` called on create/update/delete for day, week and month recaps
 
 ### E2b — Proof attachments (S3)
-- [ ] F2b.1 `POST /api/attachments/presign` → `{ key, uploadUrl, expiresAt }`; validates MIME + size
-- [ ] F2b.2 `POST /api/attachments` confirm: HEAD the object, record `attachments` row, link to `expense_id`
-- [ ] F2b.3 `GET /api/attachments/:id/url` → presigned GET, ≤15 min
-- [ ] F2b.4 `DELETE /api/attachments/:id` soft delete + S3 object delete
-- [ ] F2b.5 Add-expense and edit forms: attach from camera (`expo-camera` / `expo-image-picker`) or file picker; HEIC/JPEG compressed on-device before upload
-- [ ] F2b.6 Expense detail: thumbnail strip, full-screen viewer for images, PDF viewer
-- [ ] F2b.7 Upload progress + retry; offline-safe (upload resumes when the app returns)
+- [x] F2b.1 `POST /api/attachments/presign` — pending row + presigned PUT; idempotent on client id, 409 after confirm
+- [x] F2b.2 `POST /api/attachments` confirm — HEADs the object, rejects size/type mismatch (and deletes the object), sets `uploaded_at`, links `expense_id`
+- [x] F2b.3 `GET /api/attachments/[id]/url` (15 min) and `GET /api/attachments?expenseId=` returning items with view URLs
+- [x] F2b.4 `DELETE /api/attachments/[id]` soft delete + best-effort object delete
+- [x] F2b.5 Pickers (camera, library, PDF) — `src/features/attachments/pick.ts`; images resized to 1600px JPEG 0.8 and staged in app storage — `upload.ts`; `LocalFilesPicker` in create, `AttachmentsSection` in detail
+- [x] F2b.6 Thumbnail strip (`FileTile`), full-screen image modal, PDFs open in the in-app browser — `AttachmentViewer.tsx`
+- [x] F2b.7 Progress callbacks via legacy `createUploadTask`, 3 PUT retries with backoff, persisted retry queue (`queue.ts`) flushed on launch/foreground (`useUploadQueueFlush`). Server-side orphan sweep for never-confirmed rows still TODO (uses `listStalePending`)
 - [ ] F2b.8 Planned expense "mark as done" accepts an attachment (receipt) in the same step
 - [x] F2b.9 Account deletion purges `users/{userId}/` prefix in S3 — `src/server/services/account.ts` (done with E1)
-- [ ] F2b.10 Expense list filter: "with proof" / "without proof"
+- [x] F2b.10 Expenses tab chips All / With proof / Without proof (`hasAttachment` query) and paperclip on rows (`attachmentCount`)
 
 ### E3 — File ingestion (Excel / CSV / PDF) with AI
 - [x] F3.1 Review-gating logic `classifyLine()` and `reconcileAgainstTotal()` — `src/ai/extraction-contract.ts` (port from v1, still valid)
@@ -326,6 +328,11 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-04 — **E2b proof attachments complete** (except F2b.8, which lands
+  with E5). Presign/confirm/url/delete routes, `AttachmentsRepository`,
+  expense list `hasAttachment` filter and `attachmentCount`. Client: pickers,
+  on-device compression, staged files, progress, retry, persisted offline
+  queue, thumbnail strip, image viewer, PDF via in-app browser.
 - 2026-10-04 — **E2 manual expenses complete.** Shared zod schemas
   (`src/lib/schemas/*`) used by form and API; expenses and categories routes
   with `withAuth` now forwarding route params and mapping `HttpError`;

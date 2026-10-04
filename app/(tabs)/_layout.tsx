@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
+import { useUploadQueueFlush } from '@/src/features/attachments/useUploadQueueFlush';
+
 /**
  * Signed-in shell. E5 adds Plan, E4 adds Recaps.
  */
 export default function TabsLayout() {
+  useUploadQueueFlush();
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor: '#1F5EFF' }}>
       <Tabs.Screen
