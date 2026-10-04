@@ -92,3 +92,90 @@ export function parseDDMMYYYY(text: string, now = new Date()): ISODate | null {
   const iso = `${year}-${pad(month)}-${pad(day)}`;
   return isValidISODate(iso) ? iso : null;
 }
+
+/* ── recap periods ────────────────────────────────────────────────────────── */
+
+export type RecapPeriod = 'day' | 'week' | 'month';
+
+export function endOfMonth(iso: ISODate): ISODate {
+  const d = parseISODate(startOfMonth(iso));
+  d.setMonth(d.getMonth() + 1);
+  d.setDate(0);
+  return toISODate(d);
+}
+
+/** Normalises any date inside a period to that period's canonical start. */
+export function periodStart(period: RecapPeriod, iso: ISODate): ISODate {
+  switch (period) {
+    case 'day':
+      return iso;
+    case 'week':
+      return startOfWeek(iso);
+    case 'month':
+      return startOfMonth(iso);
+  }
+}
+
+/** Inclusive date range covered by a period starting at `start`. */
+export function periodRange(period: RecapPeriod, start: ISODate): { start: ISODate; end: ISODate } {
+  const s = periodStart(period, start);
+  switch (period) {
+    case 'day':
+      return { start: s, end: s };
+    case 'week':
+      return { start: s, end: addDays(s, 6) };
+    case 'month':
+      return { start: s, end: endOfMonth(s) };
+  }
+}
+
+export function previousPeriodStart(period: RecapPeriod, start: ISODate): ISODate {
+  const s = periodStart(period, start);
+  switch (period) {
+    case 'day':
+      return addDays(s, -1);
+    case 'week':
+      return addDays(s, -7);
+    case 'month': {
+      const d = parseISODate(s);
+      d.setMonth(d.getMonth() - 1);
+      return toISODate(d);
+    }
+  }
+}
+
+export function nextPeriodStart(period: RecapPeriod, start: ISODate): ISODate {
+  const s = periodStart(period, start);
+  switch (period) {
+    case 'day':
+      return addDays(s, 1);
+    case 'week':
+      return addDays(s, 7);
+    case 'month': {
+      const d = parseISODate(s);
+      d.setMonth(d.getMonth() + 1);
+      return toISODate(d);
+    }
+  }
+}
+
+/** "Today", "This week", "October 2026", "Week of 28 Sep", … */
+export function periodLabel(period: RecapPeriod, start: ISODate, now = new Date(), locale = 'en-GB'): string {
+  const s = periodStart(period, start);
+  const today = toISODate(now);
+  if (period === 'day') return relativeDayLabel(s, now, locale);
+  if (period === 'week') {
+    if (s === startOfWeek(today)) return 'This week';
+    if (s === addDays(startOfWeek(today), -7)) return 'Last week';
+    return `Week of ${formatDayLabel(s, locale).replace(/^\w+\s/, '')}`;
+  }
+  if (s === startOfMonth(today)) return 'This month';
+  return formatMonthLabel(s, locale);
+}
+
+/** Every day in the range, for charts. */
+export function eachDay(start: ISODate, end: ISODate): ISODate[] {
+  const out: ISODate[] = [];
+  for (let d = start; d <= end; d = addDays(d, 1)) out.push(d);
+  return out;
+}

@@ -3,12 +3,14 @@ import { router, Tabs } from 'expo-router';
 import { Pressable } from 'react-native';
 
 import { useUploadQueueFlush } from '@/src/features/attachments/useUploadQueueFlush';
+import { useNotificationSetup } from '@/src/features/notifications/useNotificationSetup';
 
 /**
- * Signed-in shell. E5 adds Plan, E4 adds Recaps.
+ * Signed-in shell. E5 adds Plan.
  */
 export default function TabsLayout() {
   useUploadQueueFlush();
+  useNotificationSetup();
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor: '#1F5EFF' }}>
       <Tabs.Screen
@@ -28,6 +30,13 @@ export default function TabsLayout() {
               <Ionicons name="cloud-upload-outline" size={22} color="#1F5EFF" />
             </Pressable>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="recaps"
+        options={{
+          title: 'Recaps',
+          tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen

@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addDays,
+  eachDay,
   formatDDMMYYYY,
+  nextPeriodStart,
+  periodLabel,
+  periodRange,
+  previousPeriodStart,
   isValidISODate,
   monthKey,
   parseDDMMYYYY,
@@ -66,5 +71,30 @@ describe('relativeDayLabel', () => {
     expect(relativeDayLabel('2026-10-04', now)).toBe('Today');
     expect(relativeDayLabel('2026-10-03', now)).toBe('Yesterday');
     expect(relativeDayLabel('2026-10-01', now)).toMatch(/Oct/);
+  });
+});
+
+describe('recap periods', () => {
+  it('normalises starts and computes inclusive ranges', () => {
+    expect(periodRange('day', '2026-10-04')).toEqual({ start: '2026-10-04', end: '2026-10-04' });
+    expect(periodRange('week', '2026-10-04')).toEqual({ start: '2026-09-28', end: '2026-10-04' });
+    expect(periodRange('month', '2026-10-15')).toEqual({ start: '2026-10-01', end: '2026-10-31' });
+    expect(periodRange('month', '2026-02-10')).toEqual({ start: '2026-02-01', end: '2026-02-28' });
+  });
+  it('steps backwards and forwards', () => {
+    expect(previousPeriodStart('month', '2026-01-15')).toBe('2025-12-01');
+    expect(nextPeriodStart('month', '2026-12-01')).toBe('2027-01-01');
+    expect(previousPeriodStart('week', '2026-10-04')).toBe('2026-09-21');
+    expect(nextPeriodStart('day', '2026-10-31')).toBe('2026-11-01');
+  });
+  it('labels relative periods', () => {
+    const now = new Date(2026, 9, 4);
+    expect(periodLabel('week', '2026-10-04', now)).toBe('This week');
+    expect(periodLabel('week', '2026-09-21', now)).toBe('Last week');
+    expect(periodLabel('month', '2026-10-01', now)).toBe('This month');
+    expect(periodLabel('month', '2026-09-01', now)).toBe('September 2026');
+  });
+  it('enumerates days', () => {
+    expect(eachDay('2026-09-28', '2026-10-01')).toEqual(['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01']);
   });
 });

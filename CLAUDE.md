@@ -136,7 +136,9 @@ expense-app/
 ├── app/                               expo-router
 │   ├── _layout.tsx                    ClerkProvider + Stack.Protected route guards
 │   ├── (auth)/sign-in.tsx             email-code sign-in-or-up + Google SSO
-│   ├── (tabs)/                        signed-in shell: index (home), settings
+│   ├── (tabs)/                        home dashboard, expenses, recaps, settings
+│   ├── expense/new.tsx, [id].tsx      create modal, detail/edit
+│   ├── import/index.tsx, [id].tsx     history + upload, review
 │   └── api/                           Expo API Routes (server-only)
 │       ├── health+api.ts              liveness, no server imports
 │       ├── me+api.ts                  GET profile, PATCH prefs, DELETE account
@@ -149,6 +151,7 @@ expense-app/
 │   │   ├── repositories/              base, users, expenses, categories, attachments, recaps, reference
 │   │   ├── services/account.ts        deleteAccountData(): S3 purge + cascade delete
 │   │   ├── services/imports/          parse (SheetJS, pdf-parse), extract (model call), process, commit, dto
+│   │   ├── services/recaps/           stats (SQL), narrative (model), index (cache)
 │   │   ├── auth/clerk.ts              withAuth() wrapper, json(), clerk client
 │   │   ├── ai/client.ts               OpenAI SDK → TensorX, MODELS, logUsage()
 │   │   └── storage/s3.ts              presignPut/Get, headObject, deletePrefix
@@ -157,9 +160,11 @@ expense-app/
 │   │   ├── attachments/               pick, upload (stage+presign+PUT+confirm), queue, tiles, viewer
 │   │   ├── expenses/                  api, hooks, ExpenseForm, AmountInput, DateField, ExpenseRow
 │   │   ├── imports/                   api, upload, review-utils, ImportItemRow, ItemEditModal
+│   │   ├── recaps/                    api, useRecap, charts (View-based)
+│   │   ├── notifications/             permissions, schedule (recaps + planned), setup hook, prefs toggles
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
 │   │   └── settings/                  useMe (profile + currencies), OptionPicker
-│   └── lib/                           api.ts (authed fetch), money.ts, timezones.ts
+│   └── lib/                           api, money, dates (+periods), uuid, prefs, timezones, schemas/
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
 ├── docs/NEON_NOTES.md, S3_SETUP.md
 └── assets/                            icons from the Expo template (replace later)
@@ -267,19 +272,19 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F3.13 3 attempts, stale `processing` rows retryable after 2 min, friendly failure reasons, retry button with remaining count
 
 ### E4 — Recaps: daily, weekly, monthly
-- [ ] F4.1 SQL rollups: total, count, by category, by payee, vs budget, vs previous period — for day / week / month
-- [ ] F4.2 `GET /api/recaps?period=&start=` computes on demand and caches in `recaps`
-- [ ] F4.3 AI narrative (TensorX) over the stats only; stored in `narrative_md`
-- [ ] F4.4 Recap screen: period switcher, headline figures, category breakdown chart, narrative
-- [ ] F4.5 Home dashboard: today, this week, this month at a glance
-- [ ] F4.6 Weekly and monthly recap push notification (opt-in)
-- [ ] F4.7 Stale recap regeneration when underlying expenses change
+- [x] F4.1 `src/server/services/recaps/stats.ts`: total/count/estimated/with-proof, vs previous period, by category (+budget % for months), top payees, by day, largest 3, fixed vs variable, other currencies
+- [x] F4.2 `GET /api/recaps?period=&start=&narrative=` — `services/recaps/index.ts` serves the cache when fresh, recomputes when missing/stale, upserts
+- [x] F4.3 `services/recaps/narrative.ts` — narrative model over trimmed stats JSON, 3–5 sentences, stored in `narrative_md`; failure never fails the recap
+- [x] F4.4 Recaps tab `app/(tabs)/recaps.tsx`: Day/Week/Month segment, prev/next, headline + delta, by-day columns, narrative card (loaded after stats), category bars with budget %, fixed vs variable, top payees, largest — `src/features/recaps/*`
+- [x] F4.5 Home `app/(tabs)/index.tsx` via `GET /api/recaps/overview`: three tiles with deltas, biggest category, quick actions
+- [x] F4.6 Opt-in **local** reminders (Monday / 1st at 09:00) scheduled on-device — `src/features/notifications/*`, toggles in Settings, prefs in `src/lib/prefs.ts`. Android monthly re-armed on app open. Server push not needed for this
+- [x] F4.7 `is_stale` rows recomputed on next read; stale narrative cleared when stats change
 
 ### E5 — Planned expenses and reminders
 - [ ] F5.1 `planned_expenses` CRUD API
 - [ ] F5.2 Create form: title, amount, date + time, place, reason/notes, category, optional recurrence link
 - [ ] F5.3 Local reminders via `expo-notifications`: T-24h and T-1h; rescheduled on edit, cancelled on delete/done
-- [ ] F5.4 Notification permission request flow with rationale screen
+- [x] F5.4 Permission flow with rationale alert, Settings deep link when denied, Android channel — `src/features/notifications/permissions.ts` (built with E4)
 - [ ] F5.5 Plan screen: upcoming list grouped by day, overdue section
 - [ ] F5.6 "Mark as done" → creates the real `expense` (source `planned`), links `completed_expense_id`, status `done`; "Skip" sets `skipped`
 - [ ] F5.7 Monthly and yearly planning view: calendar / list of planned items with totals per month
@@ -291,7 +296,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [ ] F6.2 Form: name, amount, day of month, category, start / end, active toggle
 - [ ] F6.3 Materialisation: at month start (or on first app open in the month) create `planned_expenses` rows for each active charge, so reminders and "mark done" reuse E5
 - [ ] F6.4 Fixed-charges screen with monthly total and paid / unpaid status for the current month
-- [ ] F6.5 Recaps include "fixed vs variable" split
+- [x] F6.5 Recaps show fixed vs variable (expenses linked to a `recurring_charge_id`) — done with E4; populated once E6 lands
 
 ### E7 — Store compliance and ops
 - [ ] F7.1 Privacy policy; disclose that imported files are processed by a third-party AI provider (TensorX, EU-hosted) and that attachments are stored in S3 (name the region)
@@ -331,6 +336,10 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-04 — **E4 recaps complete.** Period helpers, SQL stats service,
+  TensorX narrative, cached `GET /api/recaps` + `/overview`, recaps tab with
+  View-based charts, home dashboard, opt-in local weekly/monthly reminders
+  with a shared notifications module (also closes F5.4, F6.5). 49 tests.
 - 2026-10-04 — **E3 file ingestion built** (F3.3 and F3.7 pending the TensorX
   key). Import presign/create/process/commit/items routes, `ImportsRepository`,
   parse → extract → stage pipeline with zod-validated model output, duplicate

@@ -6,10 +6,12 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
 
+import { useRecapReminders } from '@/src/features/notifications/useRecapReminders';
 import { OptionPicker } from '@/src/features/settings/OptionPicker';
 import { useMe } from '@/src/features/settings/useMe';
 import { TIMEZONES } from '@/src/lib/timezones';
@@ -21,6 +23,7 @@ export default function SettingsScreen() {
   const { signOut } = useAuth();
   const { user } = useUser();
   const me = useMe();
+  const reminders = useRecapReminders();
   const [deleting, setDeleting] = useState(false);
 
   const confirmDelete = () => {
@@ -82,6 +85,25 @@ export default function SettingsScreen() {
       </View>
       {me.error ? <Text style={styles.error}>{me.error}</Text> : null}
 
+      <Text style={styles.section}>Reminders</Text>
+      <View style={styles.card}>
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowLabel}>Weekly recap</Text>
+            <Text style={styles.rowHelp}>Every Monday morning</Text>
+          </View>
+          <Switch value={reminders.prefs?.weeklyRecapReminder ?? false} onValueChange={(v) => void reminders.setWeekly(v)} disabled={!reminders.prefs} />
+        </View>
+        <View style={styles.separator} />
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowLabel}>Monthly recap</Text>
+            <Text style={styles.rowHelp}>On the 1st of each month</Text>
+          </View>
+          <Switch value={reminders.prefs?.monthlyRecapReminder ?? false} onValueChange={(v) => void reminders.setMonthly(v)} disabled={!reminders.prefs} />
+        </View>
+      </View>
+
       <Text style={styles.section}>Session</Text>
       <View style={styles.card}>
         <Pressable style={styles.action} onPress={() => signOut()}>
@@ -118,6 +140,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden' },
   row: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, gap: 12 },
   rowLabel: { fontSize: 15 },
+  rowHelp: { fontSize: 12, color: '#777' },
   rowValue: { fontSize: 15, color: '#666', flexShrink: 1 },
   separator: { height: 1, backgroundColor: '#EEF0F3', marginLeft: 14 },
   action: { padding: 14 },
