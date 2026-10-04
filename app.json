@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Expense Tracker",
+    "slug": "expense-app",
+    "version": "0.1.0",
+    "scheme": "expenseapp",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ltd.nyota.expenseapp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Take a photo of a receipt to attach it as proof of an expense.",
+        "NSPhotoLibraryUsageDescription": "Choose a receipt photo to attach it as proof of an expense."
+      }
+    },
+    "android": {
+      "package": "ltd.nyota.expenseapp",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["CAMERA", "POST_NOTIFICATIONS", "SCHEDULE_EXACT_ALARM"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "server",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#E6F4FE"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Take a photo of a receipt to attach it as proof of an expense."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a receipt photo to attach it as proof of an expense."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
