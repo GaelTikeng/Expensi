@@ -179,3 +179,54 @@ export function eachDay(start: ISODate, end: ISODate): ISODate[] {
   for (let d = start; d <= end; d = addDays(d, 1)) out.push(d);
   return out;
 }
+
+/* ── timezones ────────────────────────────────────────────────────────────── */
+
+/** Offset (ms) of `timeZone` from UTC at the given instant. Positive east of UTC. */
+export function tzOffsetMs(date: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date);
+  const get = (t: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+  return asUtc - Math.floor(date.getTime() / 1000) * 1000;
+}
+
+/**
+ * The instant at which a wall-clock time occurs in a zone. Used to turn
+ * "the 5th at 09:00 in Africa/Douala" into a `timestamptz` for reminders.
+ */
+export function zonedTimeToUtc(dateISO: ISODate, hhmm: string, timeZone: string): Date {
+  const [h, m] = hhmm.split(':').map(Number);
+  const [y, mo, d] = dateISO.split('-').map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h || 0, m || 0);
+  const offset = tzOffsetMs(new Date(guess), timeZone);
+  let result = guess - offset;
+  const offset2 = tzOffsetMs(new Date(result), timeZone);
+  if (offset2 !== offset) result = guess - offset2;
+  return new Date(result);
+}
+
+/** Calendar date of an instant as seen in a zone. */
+export function isoDateInZone(date: Date, timeZone: string): ISODate {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  const get = (t: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === t)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+export function daysInMonth(iso: ISODate): number {
+  return Number(endOfMonth(iso).slice(8));
+}
+
+/** The 31st in a 30-day month becomes the 30th. */
+export function clampDayOfMonth(monthStart: ISODate, day: number): ISODate {
+  const d = Math.min(Math.max(1, day), daysInMonth(monthStart));
+  return `${monthStart.slice(0, 7)}-${pad(d)}`;
+}

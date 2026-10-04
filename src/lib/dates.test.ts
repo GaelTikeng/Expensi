@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addDays,
+  clampDayOfMonth,
+  daysInMonth,
   eachDay,
+  isoDateInZone,
+  zonedTimeToUtc,
   formatDDMMYYYY,
   nextPeriodStart,
   periodLabel,
@@ -96,5 +100,25 @@ describe('recap periods', () => {
   });
   it('enumerates days', () => {
     expect(eachDay('2026-09-28', '2026-10-01')).toEqual(['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01']);
+  });
+});
+
+describe('timezones', () => {
+  it('converts wall-clock time in a fixed-offset zone', () => {
+    expect(zonedTimeToUtc('2026-10-04', '09:00', 'Africa/Douala').toISOString()).toBe('2026-10-04T08:00:00.000Z');
+  });
+  it('handles DST zones', () => {
+    expect(zonedTimeToUtc('2026-07-01', '09:00', 'Europe/Paris').toISOString()).toBe('2026-07-01T07:00:00.000Z');
+    expect(zonedTimeToUtc('2026-01-01', '09:00', 'Europe/Paris').toISOString()).toBe('2026-01-01T08:00:00.000Z');
+  });
+  it('reads the calendar date in a zone', () => {
+    expect(isoDateInZone(new Date('2026-10-04T23:30:00Z'), 'Africa/Douala')).toBe('2026-10-05');
+    expect(isoDateInZone(new Date('2026-10-04T23:30:00Z'), 'UTC')).toBe('2026-10-04');
+  });
+  it('clamps the day of month', () => {
+    expect(clampDayOfMonth('2026-02-01', 31)).toBe('2026-02-28');
+    expect(clampDayOfMonth('2026-04-01', 31)).toBe('2026-04-30');
+    expect(clampDayOfMonth('2026-10-01', 5)).toBe('2026-10-05');
+    expect(daysInMonth('2024-02-10')).toBe(29);
   });
 });

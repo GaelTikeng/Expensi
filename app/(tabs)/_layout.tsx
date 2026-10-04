@@ -6,7 +6,7 @@ import { useUploadQueueFlush } from '@/src/features/attachments/useUploadQueueFl
 import { useNotificationSetup } from '@/src/features/notifications/useNotificationSetup';
 
 /**
- * Signed-in shell. E5 adds Plan.
+ * Signed-in shell.
  */
 export default function TabsLayout() {
   useUploadQueueFlush();
@@ -30,6 +30,13 @@ export default function TabsLayout() {
               <Ionicons name="cloud-upload-outline" size={22} color="#1F5EFF" />
             </Pressable>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="plan"
+        options={{
+          title: 'Plan',
+          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen

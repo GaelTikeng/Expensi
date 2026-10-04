@@ -35,6 +35,11 @@ function RootNavigator() {
         <Stack.Screen name="expense/[id]" options={{ title: 'Expense' }} />
         <Stack.Screen name="import/index" options={{ title: 'Imports' }} />
         <Stack.Screen name="import/[id]" options={{ title: 'Review import' }} />
+        <Stack.Screen name="planned/new" options={{ title: 'Plan an expense', presentation: 'modal' }} />
+        <Stack.Screen name="planned/[id]" options={{ title: 'Planned expense' }} />
+        <Stack.Screen name="planned/month" options={{ title: 'Month' }} />
+        <Stack.Screen name="recurring/new" options={{ title: 'New fixed charge', presentation: 'modal' }} />
+        <Stack.Screen name="recurring/[id]" options={{ title: 'Fixed charge' }} />
       </Stack.Protected>
       <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

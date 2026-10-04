@@ -3,7 +3,9 @@ import { AttachmentsRepository } from './attachments';
 import { CategoriesRepository } from './categories';
 import { ExpensesRepository } from './expenses';
 import { ImportsRepository } from './imports';
+import { PlannedRepository } from './planned';
 import { RecapsRepository } from './recaps';
+import { RecurringRepository } from './recurring';
 
 export { UsersRepository } from './users';
 export { ReferenceRepository } from './reference';
@@ -12,6 +14,8 @@ export { CategoriesRepository } from './categories';
 export { RecapsRepository } from './recaps';
 export { AttachmentsRepository } from './attachments';
 export { ImportsRepository } from './imports';
+export { PlannedRepository } from './planned';
+export { RecurringRepository } from './recurring';
 export { UserScopedRepository } from './base';
 
 /**
@@ -25,6 +29,8 @@ export function createRepositories(db: Db, userId: string) {
     recaps: new RecapsRepository(db, userId),
     attachments: new AttachmentsRepository(db, userId),
     imports: new ImportsRepository(db, userId),
+    planned: new PlannedRepository(db, userId),
+    recurring: new RecurringRepository(db, userId),
   };
 }
 

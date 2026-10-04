@@ -136,9 +136,11 @@ expense-app/
 ├── app/                               expo-router
 │   ├── _layout.tsx                    ClerkProvider + Stack.Protected route guards
 │   ├── (auth)/sign-in.tsx             email-code sign-in-or-up + Google SSO
-│   ├── (tabs)/                        home dashboard, expenses, recaps, settings
+│   ├── (tabs)/                        home, expenses, plan, recaps, settings
 │   ├── expense/new.tsx, [id].tsx      create modal, detail/edit
 │   ├── import/index.tsx, [id].tsx     history + upload, review
+│   ├── planned/new, [id], month       plan create / detail / month list
+│   ├── recurring/new, [id]            fixed charge create / edit
 │   └── api/                           Expo API Routes (server-only)
 │       ├── health+api.ts              liveness, no server imports
 │       ├── me+api.ts                  GET profile, PATCH prefs, DELETE account
@@ -148,10 +150,11 @@ expense-app/
 │   ├── server/                        never imported by client code
 │   │   ├── env.ts                     zod-validated server env
 │   │   ├── db/schema.ts, client.ts, seed.ts, migrations/
-│   │   ├── repositories/              base, users, expenses, categories, attachments, recaps, reference
+│   │   ├── repositories/              base, users, expenses, categories, attachments, imports, planned, recurring, recaps, reference
 │   │   ├── services/account.ts        deleteAccountData(): S3 purge + cascade delete
 │   │   ├── services/imports/          parse (SheetJS, pdf-parse), extract (model call), process, commit, dto
 │   │   ├── services/recaps/           stats (SQL), narrative (model), index (cache)
+│   │   ├── services/planned/dto.ts    planned + recurring DTOs
 │   │   ├── auth/clerk.ts              withAuth() wrapper, json(), clerk client
 │   │   ├── ai/client.ts               OpenAI SDK → TensorX, MODELS, logUsage()
 │   │   └── storage/s3.ts              presignPut/Get, headObject, deletePrefix
@@ -161,6 +164,7 @@ expense-app/
 │   │   ├── expenses/                  api, hooks, ExpenseForm, AmountInput, DateField, ExpenseRow
 │   │   ├── imports/                   api, upload, review-utils, ImportItemRow, ItemEditModal
 │   │   ├── recaps/                    api, useRecap, charts (View-based)
+│   │   ├── planned/                   api, usePlanned, reminders, PlannedForm, RecurringForm, CompleteSheet, PlanningView, FixedChargesView
 │   │   ├── notifications/             permissions, schedule (recaps + planned), setup hook, prefs toggles
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
 │   │   └── settings/                  useMe (profile + currencies), OptionPicker
@@ -170,7 +174,7 @@ expense-app/
 └── assets/                            icons from the Expo template (replace later)
 ```
 
-Planned, not yet created: `app/import/`, further tabs (expenses, plan, recaps).
+All v2 screens exist; see §6 for what each still lacks.
 
 ---
 
@@ -252,7 +256,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F2b.5 Pickers (camera, library, PDF) — `src/features/attachments/pick.ts`; images resized to 1600px JPEG 0.8 and staged in app storage — `upload.ts`; `LocalFilesPicker` in create, `AttachmentsSection` in detail
 - [x] F2b.6 Thumbnail strip (`FileTile`), full-screen image modal, PDFs open in the in-app browser — `AttachmentViewer.tsx`
 - [x] F2b.7 Progress callbacks via legacy `createUploadTask`, 3 PUT retries with backoff, persisted retry queue (`queue.ts`) flushed on launch/foreground (`useUploadQueueFlush`). Server-side orphan sweep for never-confirmed rows still TODO (uses `listStalePending`)
-- [ ] F2b.8 Planned expense "mark as done" accepts an attachment (receipt) in the same step
+- [x] F2b.8 `CompleteSheet` includes `LocalFilesPicker`; receipts upload against the new expense after completion (`completeFlow.ts`), parked offline if needed
 - [x] F2b.9 Account deletion purges `users/{userId}/` prefix in S3 — `src/server/services/account.ts` (done with E1)
 - [x] F2b.10 Expenses tab chips All / With proof / Without proof (`hasAttachment` query) and paperclip on rows (`attachmentCount`)
 
@@ -281,21 +285,21 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F4.7 `is_stale` rows recomputed on next read; stale narrative cleared when stats change
 
 ### E5 — Planned expenses and reminders
-- [ ] F5.1 `planned_expenses` CRUD API
-- [ ] F5.2 Create form: title, amount, date + time, place, reason/notes, category, optional recurrence link
-- [ ] F5.3 Local reminders via `expo-notifications`: T-24h and T-1h; rescheduled on edit, cancelled on delete/done
+- [x] F5.1 `GET/POST /api/planned`, `GET/PATCH/DELETE /api/planned/[id]`, `POST /api/planned/[id]/complete`, `GET /api/planned/summary` — `PlannedRepository`
+- [x] F5.2 `PlannedForm` (what, amount, currency, when + time, where, to whom, why, category, notes) — `app/planned/new.tsx`
+- [x] F5.3 Local T-24h / T-1h reminders — `src/features/planned/reminders.ts` + `notifications/schedule.ts`; armed on create/edit/unskip, cancelled on done/skip/delete; `syncReminders()` on Plan load (capped at 30 upcoming plans for the iOS 64-notification limit)
 - [x] F5.4 Permission flow with rationale alert, Settings deep link when denied, Android channel — `src/features/notifications/permissions.ts` (built with E4)
-- [ ] F5.5 Plan screen: upcoming list grouped by day, overdue section
-- [ ] F5.6 "Mark as done" → creates the real `expense` (source `planned`), links `completed_expense_id`, status `done`; "Skip" sets `skipped`
-- [ ] F5.7 Monthly and yearly planning view: calendar / list of planned items with totals per month
-- [ ] F5.8 Tapping a reminder opens the planned item with a one-tap "Mark as paid"
+- [x] F5.5 Plan tab `app/(tabs)/plan.tsx` — Upcoming with Overdue section, ✓ quick-complete, FAB
+- [x] F5.6 `CompleteSheet` (actual amount, paid date, receipt) → `complete` route runs one `db.batch`: insert expense (`source` planned/recurring), flip status, link attachments; Skip / put back via PATCH status
+- [x] F5.7 Planning view (`PlanningView`): year switcher, 12 months with planned/done/skipped totals → `app/planned/month.tsx` list
+- [x] F5.8 Notification payload `url` → `/planned/[id]`; detail screen leads with a green **Mark as paid** button
 - [ ] F5.9 Server-side push fallback for multi-device (later)
 
 ### E6 — Fixed monthly charges
-- [ ] F6.1 `recurring_charges` CRUD API
-- [ ] F6.2 Form: name, amount, day of month, category, start / end, active toggle
-- [ ] F6.3 Materialisation: at month start (or on first app open in the month) create `planned_expenses` rows for each active charge, so reminders and "mark done" reuse E5
-- [ ] F6.4 Fixed-charges screen with monthly total and paid / unpaid status for the current month
+- [x] F6.1 `GET/POST /api/recurring`, `PATCH/DELETE /api/recurring/[id]`, `POST /api/recurring/materialize` — `RecurringRepository`
+- [x] F6.2 `RecurringForm` (name, amount, currency, day of month, reminder time, start/end, category, payee, notes, active) — `app/recurring/new.tsx`, `[id].tsx`
+- [x] F6.3 `materialize()` creates this + next month's plans per active charge (`zonedTimeToUtc` in the user's timezone, day clamped to month length), idempotent via unique (charge, period); called on Plan load and after charge create/edit; deleting a charge removes its unpaid plans
+- [x] F6.4 `FixedChargesView`: monthly total, paid count, per-charge due/paid/skipped badge; hold to open this month's plan
 - [x] F6.5 Recaps show fixed vs variable (expenses linked to a `recurring_charge_id`) — done with E4; populated once E6 lands
 
 ### E7 — Store compliance and ops
@@ -336,6 +340,12 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-04 — **E5 planned expenses + E6 fixed charges complete.** Timezone
+  helpers with tests; planned and recurring repositories and routes; one-batch
+  completion that creates the expense and links receipts; local T-24h/T-1h
+  reminders synced on load; Plan tab (Upcoming / Planning / Fixed charges);
+  create, detail, month and fixed-charge screens; monthly materialisation of
+  fixed charges. Closes F2b.8. 53 tests.
 - 2026-10-04 — **E4 recaps complete.** Period helpers, SQL stats service,
   TensorX narrative, cached `GET /api/recaps` + `/overview`, recaps tab with
   View-based charts, home dashboard, opt-in local weekly/monthly reminders
