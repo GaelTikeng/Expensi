@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
 /**
- * Signed-in shell. E2 adds Expenses, E5 adds Plan, E4 adds Recaps.
+ * Signed-in shell. E5 adds Plan, E4 adds Recaps.
  */
 export default function TabsLayout() {
   return (
@@ -12,6 +12,13 @@ export default function TabsLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="expenses"
+        options={{
+          title: 'Expenses',
+          tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" color={color} size={size} />,
         }}
       />
       <Tabs.Screen

@@ -40,6 +40,7 @@ the design must not hard-code that. iOS + Android, public app.
 | File storage | **S3** (or S3-compatible) via `@aws-sdk/client-s3` + presigned URLs | proof attachments (photo, PDF) and import uploads; private bucket, never public URLs |
 | Push / reminders | `expo-notifications` local scheduling + Expo Push for server-triggered | see D4 |
 | File parsing | SheetJS (`xlsx`) for Excel/CSV, `pdf-parse` for text PDFs, multimodal TensorX model for scanned PDFs | |
+| UI primitives | `@react-native-community/datetimepicker`, `react-native-gesture-handler` + `react-native-reanimated` (swipe rows), `@expo/vector-icons` | no UI kit yet; plain StyleSheet |
 
 ```
 Expo app ──Clerk JWT──> Expo API routes ──> Neon Postgres
@@ -224,14 +225,14 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F1.6 In-app delete account — `DELETE /api/me` purges S3 prefix + DB rows, then deletes the Clerk user
 
 ### E2 — Manual expenses
-- [ ] F2.1 `POST /api/expenses` idempotent on client UUID
-- [ ] F2.2 `GET /api/expenses` paginated, filter by date range / category / source
-- [ ] F2.3 `PATCH` / soft `DELETE /api/expenses/:id`
-- [ ] F2.4 Categories CRUD with per-user uniqueness and optional budget; default category set seeded on first login
-- [ ] F2.5 Add-expense form: amount (locale-aware input), date, description, payee, category, notes, `paid_on`
-- [ ] F2.6 Expense list grouped by day/month, search, swipe to delete
-- [ ] F2.7 Expense detail / edit; link to `import_items` source row when present
-- [ ] F2.8 Editing a past expense marks affected `recaps.is_stale`
+- [x] F2.1 `POST /api/expenses` idempotent on client UUID v7 (`src/lib/uuid.ts`) — 201 on create, 200 on replay
+- [x] F2.2 `GET /api/expenses` offset-paginated (`nextOffset`), filters from/to/categoryId/source, `q` search over description+payee
+- [x] F2.3 `GET`/`PATCH`/`DELETE /api/expenses/[id]` — `app/api/expenses/[id]+api.ts`
+- [x] F2.4 Categories CRUD (`app/api/categories*`), one-level nesting enforced, soft-delete detaches expenses, 14 defaults seeded on first authenticated request (`src/server/data/default-categories.ts`)
+- [x] F2.5 Add-expense form — `src/features/expenses/ExpenseForm.tsx` (AmountInput, DateField with native picker, currency/category pickers, paid_on toggle, estimated switch); `app/expense/new.tsx` modal
+- [x] F2.6 Expenses tab — `app/(tabs)/expenses.tsx`: month sections with per-currency totals, debounced search, swipe-to-delete (ReanimatedSwipeable), infinite scroll, FAB
+- [x] F2.7 Detail/edit/delete — `app/expense/[id].tsx`; shows an "imported" banner when `importItemId` is set (deep link to the import lands with E3)
+- [x] F2.8 `RecapsRepository.markStaleFor()` called on create/update/delete for day, week and month recaps
 
 ### E2b — Proof attachments (S3)
 - [ ] F2b.1 `POST /api/attachments/presign` → `{ key, uploadUrl, expiresAt }`; validates MIME + size
@@ -325,6 +326,12 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-04 — **E2 manual expenses complete.** Shared zod schemas
+  (`src/lib/schemas/*`) used by form and API; expenses and categories routes
+  with `withAuth` now forwarding route params and mapping `HttpError`;
+  categories repository with default seeding; recap stale-marking; expenses
+  tab with search, month totals, swipe-delete; create/edit screens; UUID v7
+  and date helpers with tests (40 total).
 - 2026-10-04 — **E1 auth complete.** Route guards with `Stack.Protected`; combined
   email-code sign-in-or-up plus Google SSO; tabs shell (home, settings);
   settings with currency/timezone pickers, sign out, delete account;

@@ -1,36 +1,39 @@
-import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, ilike, isNull, lte, or } from 'drizzle-orm';
 
 import { expenses, type Expense, type NewExpense } from '../db/schema';
+import type { ExpenseListQuery } from '@/src/lib/schemas/expense';
 import { UserScopedRepository } from './base';
-
-export interface ListExpensesFilter {
-  /** Inclusive, YYYY-MM-DD. */
-  from?: string;
-  /** Inclusive, YYYY-MM-DD. */
-  to?: string;
-  categoryId?: string;
-  limit?: number;
-  offset?: number;
-}
 
 export class ExpensesRepository extends UserScopedRepository {
   private scope() {
     return and(eq(expenses.userId, this.userId), isNull(expenses.deletedAt));
   }
 
-  async list(filter: ListExpensesFilter = {}): Promise<Expense[]> {
+  /**
+   * Newest first. Fetches `limit + 1` rows so the caller can tell whether a
+   * next page exists without a COUNT.
+   */
+  async list(q: ExpenseListQuery): Promise<{ items: Expense[]; nextOffset: number | null }> {
     const conditions = [this.scope()];
-    if (filter.from) conditions.push(gte(expenses.occurredOn, filter.from));
-    if (filter.to) conditions.push(lte(expenses.occurredOn, filter.to));
-    if (filter.categoryId) conditions.push(eq(expenses.categoryId, filter.categoryId));
+    if (q.from) conditions.push(gte(expenses.occurredOn, q.from));
+    if (q.to) conditions.push(lte(expenses.occurredOn, q.to));
+    if (q.categoryId) conditions.push(eq(expenses.categoryId, q.categoryId));
+    if (q.source) conditions.push(eq(expenses.source, q.source));
+    if (q.q) {
+      const pattern = `%${q.q.replace(/[%_]/g, '\\$&')}%`;
+      conditions.push(or(ilike(expenses.description, pattern), ilike(expenses.payee, pattern))!);
+    }
 
-    return this.db
+    const rows = await this.db
       .select()
       .from(expenses)
       .where(and(...conditions))
       .orderBy(desc(expenses.occurredOn), desc(expenses.createdAt))
-      .limit(filter.limit ?? 50)
-      .offset(filter.offset ?? 0);
+      .limit(q.limit + 1)
+      .offset(q.offset);
+
+    const hasMore = rows.length > q.limit;
+    return { items: hasMore ? rows.slice(0, q.limit) : rows, nextOffset: hasMore ? q.offset + q.limit : null };
   }
 
   async findById(id: string): Promise<Expense | undefined> {
@@ -46,16 +49,16 @@ export class ExpensesRepository extends UserScopedRepository {
    * Idempotent on the client-generated id: replaying the same POST returns the
    * existing row instead of raising a unique violation.
    */
-  async create(input: Omit<NewExpense, 'userId'>): Promise<Expense> {
+  async create(input: Omit<NewExpense, 'userId'>): Promise<{ row: Expense; created: boolean }> {
     const [row] = await this.db
       .insert(expenses)
       .values({ ...input, userId: this.userId })
       .onConflictDoNothing({ target: expenses.id })
       .returning();
-    if (row) return row;
+    if (row) return { row, created: true };
     const existing = await this.findById(input.id);
     if (!existing) throw new Error('Expense id conflict with another user');
-    return existing;
+    return { row: existing, created: false };
   }
 
   async update(
@@ -70,12 +73,12 @@ export class ExpensesRepository extends UserScopedRepository {
     return row;
   }
 
-  async softDelete(id: string): Promise<boolean> {
-    const rows = await this.db
+  async softDelete(id: string): Promise<Expense | undefined> {
+    const [row] = await this.db
       .update(expenses)
       .set({ deletedAt: new Date(), updatedAt: new Date() })
       .where(and(this.scope(), eq(expenses.id, id)))
-      .returning({ id: expenses.id });
-    return rows.length > 0;
+      .returning();
+    return row;
   }
 }

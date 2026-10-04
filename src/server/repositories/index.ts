@@ -1,8 +1,13 @@
 import type { Db } from '../db/client';
+import { CategoriesRepository } from './categories';
 import { ExpensesRepository } from './expenses';
+import { RecapsRepository } from './recaps';
 
 export { UsersRepository } from './users';
+export { ReferenceRepository } from './reference';
 export { ExpensesRepository } from './expenses';
+export { CategoriesRepository } from './categories';
+export { RecapsRepository } from './recaps';
 export { UserScopedRepository } from './base';
 
 /**
@@ -12,6 +17,8 @@ export { UserScopedRepository } from './base';
 export function createRepositories(db: Db, userId: string) {
   return {
     expenses: new ExpensesRepository(db, userId),
+    categories: new CategoriesRepository(db, userId),
+    recaps: new RecapsRepository(db, userId),
   };
 }
 
