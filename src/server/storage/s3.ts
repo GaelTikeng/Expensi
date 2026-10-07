@@ -19,6 +19,11 @@ import { HttpError } from '../errors';
  */
 let client: S3Client | null = null;
 
+/** True when every S3 variable is set. Without it no file can have been stored. */
+export function isStorageConfigured(): boolean {
+  return Boolean(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY && env.S3_BUCKET && env.S3_REGION);
+}
+
 /** Lazily built so the server boots without S3 configured (F0.12 pending). */
 function s3(): S3Client {
   if (client) return client;

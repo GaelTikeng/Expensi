@@ -18,6 +18,8 @@ You are given precomputed figures as JSON. Rules:
 - Write in English.
 `.trim();
 
+export const NARRATIVE_MAX_TOKENS = 2000;
+
 export interface NarrativeOutcome {
   text: string;
   model: string;
@@ -30,7 +32,10 @@ export async function generateNarrative(user: User, stats: RecapStats): Promise<
   const completion = await ai.chat.completions.create({
     model: MODELS.narrative,
     temperature: 0.4,
-    max_tokens: 400,
+    // TensorX models reason before answering and reasoning tokens count
+    // against max_tokens. A real recap prompt needs ~700 reasoning + ~100
+    // text tokens; 400 left nothing for the answer (measured 2026-10-04).
+    max_tokens: NARRATIVE_MAX_TOKENS,
     messages: [
       { role: 'system', content: SYSTEM },
       {
@@ -47,8 +52,16 @@ export async function generateNarrative(user: User, stats: RecapStats): Promise<
     outputTokens: completion.usage?.completion_tokens ?? null,
   });
 
-  const text = completion.choices[0]?.message?.content?.trim();
-  if (!text) return null;
+  const choice = completion.choices[0];
+  const text = choice?.message?.content?.trim();
+  if (!text) {
+    // Throw rather than return null so the caller keeps no empty narrative
+    // and the next request tries again.
+    if (choice?.finish_reason === 'length') {
+      throw new Error(`narrative cut off: token budget (${NARRATIVE_MAX_TOKENS}) spent before any text`);
+    }
+    return null;
+  }
   return { text, model: completion.model ?? MODELS.narrative };
 }
 

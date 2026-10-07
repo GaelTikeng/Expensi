@@ -21,6 +21,8 @@ export interface ExtractionOutcome {
 
 type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
+export const EXTRACT_MAX_TOKENS = 8192;
+
 function userMessage(source: ParsedSource, filename: string | null): Msg {
   const name = filename ? ` (file: ${filename})` : '';
   switch (source.kind) {
@@ -78,15 +80,23 @@ export async function runExtraction(
   const completion = await ai.chat.completions.create({
     model: MODELS.extract,
     temperature: 0,
-    max_tokens: 8192,
+    // Includes the model's reasoning tokens, not just the tool arguments.
+    max_tokens: EXTRACT_MAX_TOKENS,
     messages: [{ role: 'system', content: system }, userMessage(source, opts.filename)],
     tools: [RECORD_EXPENSE_LINES_TOOL as unknown as OpenAI.Chat.Completions.ChatCompletionTool],
     tool_choice: { type: 'function', function: { name: RECORD_EXPENSE_LINES_TOOL.function.name } },
   });
   const latencyMs = Date.now() - started;
 
-  const message = completion.choices[0]?.message;
+  const choice = completion.choices[0];
+  const message = choice?.message;
   if (!message) throw new Error('Model returned no choices');
+  // A cut-off reply leaves truncated tool arguments that would fail JSON
+  // parsing with an obscure error. Fail clearly instead; process.ts maps
+  // this message to "split the file" for the user.
+  if (choice.finish_reason === 'length') {
+    throw new Error(`Model output hit the maximum tokens (${EXTRACT_MAX_TOKENS}) before finishing; the document is too long for one pass`);
+  }
   const parsed = extractionResultSchema.safeParse(extractJson(message));
   if (!parsed.success) {
     throw new Error(`Model output failed validation: ${parsed.error.issues[0]?.message ?? 'unknown'}`);

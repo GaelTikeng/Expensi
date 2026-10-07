@@ -5,6 +5,10 @@
  *
  * Prints: available model ids, whether forced tool-calling works on the
  * extraction model, and whether it accepts an image content part.
+ *
+ * Budgets are generous on purpose: these models reason first and reasoning
+ * tokens count against max_tokens. A 32-token budget once produced an empty
+ * answer that looked like "no vision support" but was only a cut-off.
  */
 const base = (process.env.TENSORX_BASE_URL ?? 'https://api.tensorx.ai/v1').replace(/\/$/, '');
 const key = process.env.TENSORX_API_KEY;
@@ -52,7 +56,7 @@ try {
   };
   const { status, json } = await post({
     model: extract,
-    max_tokens: 64,
+    max_tokens: 1024,
     messages: [{ role: 'user', content: 'The number is 42. Call the tool.' }],
     tools: [tool],
     tool_choice: { type: 'function', function: { name: 'record' } },
@@ -72,7 +76,7 @@ try {
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
   const { status, json } = await post({
     model: extract,
-    max_tokens: 32,
+    max_tokens: 1024,
     messages: [
       {
         role: 'user',
@@ -87,6 +91,8 @@ try {
     status,
     ok: status === 200 && Boolean(json?.choices?.[0]?.message?.content),
     answer: json?.choices?.[0]?.message?.content ?? null,
+    finishReason: json?.choices?.[0]?.finish_reason ?? null,
+    reasoningTokens: json?.usage?.completion_tokens_details?.reasoning_tokens ?? null,
     error: json?.error ?? json?.raw ?? null,
   };
 }
@@ -95,7 +101,7 @@ try {
 {
   const { status, json } = await post({
     model: extract,
-    max_tokens: 64,
+    max_tokens: 1024,
     messages: [{ role: 'user', content: 'Return the number 7 as {"n": 7}.' }],
     response_format: {
       type: 'json_schema',
