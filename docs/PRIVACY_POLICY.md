@@ -1,9 +1,9 @@
-# Privacy Policy — Expense Tracker
+# Privacy Policy — xpens-ia
 
 _Draft for legal review. Last updated: 2026-10-04._
 
 ## Who we are
-Expense Tracker is published by Nyota Ltd. Contact: privacy@nyota.ltd.
+xpens-ia is published by Nyota Ltd. Contact: privacy@nyota.ltd.
 
 ## What we collect
 - **Account**: your email address and name, handled by our sign-in provider

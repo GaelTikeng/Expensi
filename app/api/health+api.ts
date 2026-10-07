@@ -4,5 +4,5 @@
  * wrong" distinguishable from "the route isn't deployed".
  */
 export function GET() {
-  return Response.json({ ok: true, service: 'expense-app', time: new Date().toISOString() });
+  return Response.json({ ok: true, service: 'xpens-ia', time: new Date().toISOString() });
 }

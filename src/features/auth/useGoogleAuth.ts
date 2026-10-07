@@ -6,7 +6,7 @@ import { clerkErrorMessage } from './errors';
 
 /**
  * Google via Clerk SSO. The OAuth round-trip happens in a system browser and
- * returns to the app through the `expenseapp://` scheme declared in app.json.
+ * returns to the app through the `xpensia://` scheme declared in app.json.
  */
 export function useGoogleAuth() {
   const { startSSOFlow } = useSSO();

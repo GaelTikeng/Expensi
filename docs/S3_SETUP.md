@@ -6,7 +6,7 @@ by the API routes (`src/server/storage/s3.ts`).
 
 ## 1. Bucket
 
-- Name: `expense-app-files` (or set `S3_BUCKET`), region `eu-central-1` to sit
+- Name: `xpens-ia-files` (or set `S3_BUCKET`), region `eu-central-1` to sit
   next to Neon.
 - **Block all public access: on.** Objects are only ever reached via presigned URLs.
 - Versioning: off (soft delete lives in the database).
@@ -52,12 +52,12 @@ Programmatic access only. Attach this inline policy, scoped to the one bucket:
     {
       "Effect": "Allow",
       "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:HeadObject"],
-      "Resource": "arn:aws:s3:::expense-app-files/users/*"
+      "Resource": "arn:aws:s3:::xpens-ia-files/users/*"
     },
     {
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::expense-app-files",
+      "Resource": "arn:aws:s3:::xpens-ia-files",
       "Condition": { "StringLike": { "s3:prefix": ["users/*"] } }
     }
   ]

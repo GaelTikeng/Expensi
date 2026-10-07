@@ -1,23 +1,23 @@
 {
   "expo": {
-    "name": "Expense Tracker",
-    "slug": "expense-app",
+    "name": "xpens-ia",
+    "slug": "xpens-ia",
     "version": "0.1.0",
-    "scheme": "expenseapp",
+    "scheme": "xpensia",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "ltd.nyota.expenseapp",
+      "bundleIdentifier": "ltd.nyota.xpensia",
       "infoPlist": {
         "NSCameraUsageDescription": "Take a photo of a receipt to attach it as proof of an expense.",
         "NSPhotoLibraryUsageDescription": "Choose a receipt photo to attach it as proof of an expense."
       }
     },
     "android": {
-      "package": "ltd.nyota.expenseapp",
+      "package": "ltd.nyota.xpensia",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

@@ -1,4 +1,4 @@
-# Expense Tracker
+# xpens-ia
 
 Mobile, AI-integrated expense tracker. Record expenses by hand, import Excel /
 CSV / PDF statements and validate what the AI extracted, attach receipts as

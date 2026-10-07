@@ -36,7 +36,7 @@ export default function SignInScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.card}>
-        <Text style={styles.title}>Expense Tracker</Text>
+        <Text style={styles.title}>xpens-ia</Text>
         <Text style={styles.subtitle}>
           {email.step === 'email'
             ? 'Sign in or create an account with your email.'
