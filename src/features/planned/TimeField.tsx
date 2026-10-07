@@ -1,6 +1,9 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, View } from 'react-native';
+
+import { Button } from '@/src/components/ui/button';
+import { Text } from '@/src/components/ui/text';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -17,25 +20,18 @@ export function TimeField({ label, value, onChange }: { label: string; value: st
   };
 
   return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
+    <View className="min-h-9 flex-row items-center justify-between">
+      <Text className="text-[15px]">{label}</Text>
       {Platform.OS === 'ios' ? (
         <DateTimePicker mode="time" display="compact" value={asDate} onChange={handle} />
       ) : (
         <>
-          <Pressable style={styles.button} onPress={() => setShow(true)}>
-            <Text style={styles.value}>{value}</Text>
-          </Pressable>
+          <Button variant="secondary" size="sm" onPress={() => setShow(true)}>
+            <Text>{value}</Text>
+          </Button>
           {show ? <DateTimePicker mode="time" display="default" is24Hour value={asDate} onChange={handle} /> : null}
         </>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 36 },
-  label: { fontSize: 15 },
-  button: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#EEF0F3', borderRadius: 8 },
-  value: { fontSize: 15 },
-});

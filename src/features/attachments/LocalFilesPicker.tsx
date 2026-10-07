@@ -1,4 +1,6 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+
+import { Text } from '@/src/components/ui/text';
 
 import { AddTile, FileTile } from './FileTile';
 import { chooseSource, type LocalFile } from './pick';
@@ -9,9 +11,9 @@ import { chooseSource, type LocalFile } from './pick';
  */
 export function LocalFilesPicker({ files, onChange }: { files: LocalFile[]; onChange: (files: LocalFile[]) => void }) {
   return (
-    <View style={styles.wrap}>
-      <Text style={styles.title}>Proof (optional)</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+    <View className="bg-card border-border gap-2 rounded-lg border p-3">
+      <Text className="text-[15px] font-semibold">Proof (optional)</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2.5">
         <AddTile onPress={() => chooseSource((picked) => onChange([...files, ...picked]))} />
         {files.map((f, i) => (
           <FileTile
@@ -23,14 +25,7 @@ export function LocalFilesPicker({ files, onChange }: { files: LocalFile[]; onCh
           />
         ))}
       </ScrollView>
-      {files.length > 0 ? <Text style={styles.hint}>Uploaded after you save · hold to remove</Text> : null}
+      {files.length > 0 ? <Text className="text-muted-foreground text-[11px]">Uploaded after you save · hold to remove</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { backgroundColor: '#fff', borderRadius: 12, padding: 12, gap: 8 },
-  title: { fontSize: 15, fontWeight: '600' },
-  strip: { gap: 10 },
-  hint: { fontSize: 11, color: '#999' },
-});

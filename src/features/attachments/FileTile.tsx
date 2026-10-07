@@ -1,5 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CloudOff, FileText, Plus } from 'lucide-react-native';
+import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+
+import { Icon } from '@/src/components/ui/icon';
+import { Text } from '@/src/components/ui/text';
 
 export const TILE = 84;
 
@@ -28,27 +31,27 @@ export function FileTile({
   onLongPress?: () => void;
 }) {
   return (
-    <Pressable style={styles.tile} onPress={onPress} onLongPress={onLongPress} delayLongPress={350}>
+    <Pressable className="bg-muted size-[84px] overflow-hidden rounded-md" onPress={onPress} onLongPress={onLongPress} delayLongPress={350}>
       {kind === 'photo' && uri ? (
-        <Image source={{ uri }} style={styles.image} />
+        <Image source={{ uri }} className="size-full" />
       ) : (
-        <View style={styles.pdf}>
-          <Ionicons name="document-text-outline" size={28} color="#C0392B" />
-          <Text style={styles.pdfLabel} numberOfLines={2}>
+        <View className="flex-1 items-center justify-center gap-1 p-1.5">
+          <Icon as={FileText} className="text-destructive size-7" />
+          <Text className="text-muted-foreground text-center text-[10px]" numberOfLines={2}>
             {label ?? 'PDF'}
           </Text>
         </View>
       )}
       {progress !== undefined ? (
-        <View style={styles.overlay}>
+        <View className="absolute inset-0 items-center justify-center gap-1 bg-black/45">
           <ActivityIndicator color="#fff" />
-          <Text style={styles.overlayText}>{Math.round(progress * 100)}%</Text>
+          <Text className="text-[11px] text-white">{Math.round(progress * 100)}%</Text>
         </View>
       ) : null}
       {queued ? (
-        <View style={[styles.overlay, styles.queued]}>
-          <Ionicons name="cloud-offline-outline" size={20} color="#fff" />
-          <Text style={styles.overlayText}>Waiting</Text>
+        <View className="absolute inset-0 items-center justify-center gap-1 bg-black/55">
+          <Icon as={CloudOff} className="size-5 text-white" />
+          <Text className="text-[11px] text-white">Waiting</Text>
         </View>
       ) : null}
     </Pressable>
@@ -57,21 +60,13 @@ export function FileTile({
 
 export function AddTile({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable style={[styles.tile, styles.add]} onPress={onPress} accessibilityLabel="Add proof">
-      <Ionicons name="add" size={28} color="#1F5EFF" />
-      <Text style={styles.addText}>Add</Text>
+    <Pressable
+      className="border-primary bg-accent size-[84px] items-center justify-center rounded-md border border-dashed active:opacity-80"
+      onPress={onPress}
+      accessibilityLabel="Add proof"
+    >
+      <Icon as={Plus} className="text-primary size-7" />
+      <Text className="text-primary text-[11px]">Add</Text>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  tile: { width: TILE, height: TILE, borderRadius: 10, overflow: 'hidden', backgroundColor: '#EEF0F3' },
-  image: { width: '100%', height: '100%' },
-  pdf: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 6, gap: 4 },
-  pdfLabel: { fontSize: 10, color: '#555', textAlign: 'center' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', gap: 4 },
-  queued: { backgroundColor: 'rgba(80,80,80,0.6)' },
-  overlayText: { color: '#fff', fontSize: 11 },
-  add: { borderWidth: 1, borderStyle: 'dashed', borderColor: '#1F5EFF', backgroundColor: '#F4F7FF', alignItems: 'center', justifyContent: 'center' },
-  addText: { color: '#1F5EFF', fontSize: 11 },
-});

@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { RecapPeriod } from '@/src/lib/dates';

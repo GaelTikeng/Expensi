@@ -1,4 +1,4 @@
-# CLAUDE.md — Expense Tracker
+# CLAUDE.md — xpens-ia
 
 Single source of truth for **what this project is, how it is built, and which
 features exist, are in progress, or are planned**. Claude Code reads it every
@@ -15,6 +15,11 @@ camera-first) is retired; see section 9 for what carried over.
 ---
 
 ## 1. Product
+
+**Name: xpens-ia.** Identifiers: Expo slug and package name `xpens-ia`, deep-link
+scheme `xpensia`, iOS bundle id and Android package `ltd.nyota.xpensia` (Android
+forbids hyphens). The repo folder is still `expense-app`; the GitHub repo is
+`GaelTikeng/Expensi`.
 
 A mobile, AI-integrated expense tracker. Users record what they spend, import
 spreadsheets or PDFs of expenses and validate what the AI extracted, see daily /
@@ -33,15 +38,16 @@ the design must not hard-code that. iOS + Android, public app.
 | Mobile app | **Expo SDK 57** (React Native 0.86, React 19.2, expo-router 57, custom dev client) | file-based routing under `app/`; TypeScript 6 |
 | Package manager | **pnpm** with `node-linker=hoisted` (`.npmrc`) | Metro needs a flat `node_modules` |
 | Server layer | **Expo API Routes** (`app/api/**/*+api.ts`), deployed with EAS Hosting | keeps secrets off-device without a second repo; see Decision D1 |
-| Auth | **Clerk** (`@clerk/clerk-expo`) | Clerk JWT verified server-side; `users.clerk_user_id` is the tenant key |
+| Auth | **Clerk** (`@clerk/expo` 4.x, Core 3) | web: Clerk `<SignIn />`; dev/store builds: native `AuthView`; Expo Go: our `CustomSignIn` on `@clerk/expo/legacy` hooks. Server verifies the session JWT; `users.clerk_user_id` is the tenant key |
 | Database | **Neon Postgres** (PostgreSQL 18, `eu-central-1`, project live) | `@neondatabase/serverless`, neon-http driver; `DIRECT_URL` for migrations |
 | ORM | **Drizzle** (`pg-core`), server-side only | migrations with drizzle-kit |
-| AI | **OpenAI SDK** (`openai` npm) with `baseURL: https://api.tensorx.ai/v1` and `TENSORX_API_KEY` | verified 2026-10-04: tool calling ✓, json_schema ✓, image input ✗ on `glm-5.3-flash`; called only from API routes |
+| AI | **OpenAI SDK** (`openai` npm) with `baseURL: https://api.tensorx.ai/v1` and `TENSORX_API_KEY` | verified 2026-10-04: tool calling ✓, json_schema ✓, image input ✓. Models reason first and **reasoning tokens count against `max_tokens`**: budget generously and treat `finish_reason: length` as failure |
 | File storage | **S3** (or S3-compatible) via `@aws-sdk/client-s3` + presigned URLs | proof attachments (photo, PDF) and import uploads; private bucket, never public URLs |
 | Push / reminders | `expo-notifications` local scheduling + Expo Push for server-triggered | see D4 |
 | File parsing | SheetJS (`xlsx`) for Excel/CSV, `pdf-parse` for text PDFs, multimodal TensorX model for scanned PDFs | |
 | Observability | `@sentry/react-native` (client, DSN-gated); server routes log via `console` | server Sentry pending |
-| UI primitives | `@react-native-community/datetimepicker`, `react-native-gesture-handler` + `react-native-reanimated` (swipe rows), `@expo/vector-icons` | no UI kit yet; plain StyleSheet |
+| UI / styling | **NativeWind 4.2** (Tailwind CSS **v3**) + **React Native Reusables** components copied into `src/components/ui/` (`@rn-primitives/*`, `class-variance-authority`, `tailwind-merge` v2, `lucide-react-native` + `react-native-svg`); `@react-native-community/datetimepicker`; `react-native-gesture-handler` + `react-native-reanimated` (swipe rows) | see D13. Category glyphs stay on `@expo/vector-icons` Ionicons (stored in DB) |
+| Native builds | **EAS Build**, project `@gaeltikeng/xpens-ia`; `expo-dev-client`; pnpm pinned to **9.15.2** in every `eas.json` profile | EAS defaults to pnpm 11, which ignores `package.json#pnpm`; see `docs/DEPLOY.md` |
 
 ```
 Expo app ──Clerk JWT──> Expo API routes ──> Neon Postgres
@@ -93,6 +99,16 @@ minted by the API.
   link. Reads use presigned GET URLs with a short TTL. Keys are
   `users/{userId}/{yyyy}/{mm}/{uuid}.{ext}` so a per-user purge is a prefix delete.
   Import uploads (E3) reuse the same bucket and flow.
+- **D13 — Styling is NativeWind + React Native Reusables; we own the components.**
+  Components come from the Reusables registry via
+  `npx @react-native-reusables/cli@latest add <name>` (NativeWind variant,
+  `components.json` aliases → `src/components/ui`) and are then ours to edit.
+  Colours are CSS variables in `global.css`, mirrored as literals in
+  `src/lib/theme.ts` for props that need raw values (ActivityIndicator, icons,
+  navigation chrome); keep the two in sync. No new `StyleSheet.create` in
+  migrated code. Shared layout helpers: `src/components/form-field.tsx`,
+  `src/components/group.tsx`. Light mode is pinned until every screen is
+  migrated (E9), then the app follows the system setting.
 
 ---
 
@@ -174,6 +190,8 @@ expense-app/
 │   └── lib/                           api, money, dates (+periods), uuid, prefs, timezones, schemas/
 ├── eas.json                           build profiles
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
+├── scripts/e2e-api.mjs                end-to-end API test (pnpm test:e2e)
+├── scripts/db-init.mjs                one-time pgcrypto setup
 ├── docs/                              NEON_NOTES, S3_SETUP, DEPLOY, PRIVACY_POLICY
 └── assets/                            icons from the Expo template (replace later)
 ```
@@ -235,8 +253,8 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F0.14 `src/server/ai/client.ts`: OpenAI SDK → TensorX, `MODELS` (env-overridable), `logUsage()`, `listModels()`
 
 ### E1 — Auth (Clerk)
-- [x] F1.1 `@clerk/clerk-expo` provider + secure token cache — `app/_layout.tsx`
-- [x] F1.2 Combined sign-in-or-up screen (email + 6-digit code, Google SSO) — `app/(auth)/sign-in.tsx`, `src/features/auth/*`. Needs Clerk dashboard: email code enabled, Google OAuth configured, redirect `expenseapp://sso-callback`
+- [x] F1.1 Clerk provider + secure token cache — `app/_layout.tsx`. Migrated from `@clerk/clerk-expo` to `@clerk/expo` 4.x on 2026-10-04
+- [x] F1.2 Sign-in-or-up — `app/(auth)/sign-in.tsx` → `src/features/auth/ClerkAuthScreen{,.web}.tsx`: Clerk `<SignIn withSignUp />` on web, native `AuthView` in dev/store builds, `CustomSignIn` (email code + Google) in Expo Go. **Open issue:** the Clerk instance requires a password at sign-up but only allows email-code sign-in, so `CustomSignIn` cannot finish a new sign-up; turn the password requirement off in the Clerk dashboard (or collect a password there). Google redirect for native: `xpensia://sso-callback`
 - [x] F1.3 API middleware `withAuth()` — `src/server/auth/clerk.ts`; smoke route `app/api/me+api.ts`
 - [x] F1.4 Settings: currency, timezone (curated list `src/lib/timezones.ts`), sign out — `app/(tabs)/settings.tsx`, `src/features/settings/*`, `PATCH /api/me`, `GET /api/currencies`
 - [x] F1.5 Clerk webhook (`user.created/updated/deleted`) — `app/api/webhooks/clerk+api.ts`, `src/server/services/account.ts`. Needs `CLERK_WEBHOOK_SIGNING_SECRET` and the endpoint registered in Clerk
@@ -267,11 +285,11 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 ### E3 — File ingestion (Excel / CSV / PDF) with AI
 - [x] F3.1 Review-gating logic `classifyLine()` and `reconcileAgainstTotal()` — `src/ai/extraction-contract.ts` (port from v1, still valid)
 - [-] F3.2 TensorX client — moved to F0.14
-- [x] F3.3 TensorX verified 2026-10-04 with `scripts/tensorx-check.mjs`: 15 models; `z-ai/glm-5.3-flash` and `z-ai/glm-5.3` both listed; **forced tool calling ✓**, **`response_format: json_schema` ✓**, **image input ✗** (200 but empty content on glm-5.3-flash). Text/spreadsheet extraction and narratives are unblocked. Vision (F3.7 scanned PDFs, F8.1 camera) needs a different model: try `qwen/qwen3.8-flash-next` or `deepseek/deepseek-v4.1-flash` via `TENSORX_MODEL_EXTRACT` and re-run the probe
+- [x] F3.3 TensorX verified 2026-10-04 with `scripts/tensorx-check.mjs`: 15 models; `z-ai/glm-5.3-flash` (extract) and `z-ai/glm-5.3` (narrative) listed; forced tool calling ✓, `response_format: json_schema` ✓, **image input ✓** (`glm-5.3-flash` named the red test image). An earlier "no vision" result was a false negative: the 32-token budget was spent on reasoning. Probe budgets are now 1024
 - [x] F3.4 `app/import/index.tsx` + `src/features/imports/upload.ts`: picker → `POST /api/imports/presign` → PUT → `POST /api/imports` (idempotent on client id)
 - [x] F3.5 Excel/CSV: SheetJS picks the largest sheet, emits TSV (≤500 rows) → model with `TABULAR_PROMPT_ADDENDUM` + user's category names → `import_items` — `src/server/services/imports/{parse,extract,process}.ts`
 - [x] F3.6 Text PDF: `pdf-parse` → same extraction call. Note: `pdf-parse` is Node-only; if EAS Hosting's runtime rejects it, move the import pipeline to a Node service (D1 escape hatch)
-- [~] F3.7 Scanned PDF: detected when extracted text < 40 chars/page; sent as an OpenAI `file` content part (base64). **F3.3 showed the default extract model has no working image input**, so this path currently fails with the friendly reason. Options: a vision-capable TensorX model (see F3.3) and/or server-side page rasterisation
+- [~] F3.7 Scanned PDF: detected when extracted text < 40 chars/page; sent as an OpenAI `file` content part (base64). Image input is confirmed (F3.3) but **whether TensorX accepts PDF `file` parts is still untested**; if it does not, rasterise pages to images server-side. Needs a real scanned PDF to verify
 - [x] F3.8 `GET /api/imports/[id]` (status, items, duplicate flags, reconciliation) and `POST /api/imports/[id]/process` (synchronous pipeline, idempotent, 409 while in flight)
 - [x] F3.9 `app/import/[id].tsx`: rows via `reviewItems()` (classifyLine + duplicate demotion), tick/untick/bulk, `ItemEditModal` → `PATCH /api/imports/[id]/items/[itemId]`; duplicates = same amount + same day in the ledger (computed in `dto.ts`)
 - [x] F3.10 Reconciliation banner (matches / off by X) from `reconcileAgainstTotal()` server-side
@@ -309,7 +327,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 ### E7 — Store compliance and ops
 - [~] F7.1 Privacy policy draft `docs/PRIVACY_POLICY.md` (AI processing, S3 region, deletion) + in-app summary `app/privacy.tsx` linked from Settings. **Still to do: legal review and hosting at a public URL for the store listings**
 - [x] F7.2 Permission strings in `app.json`: camera + photo library (`infoPlist`, plugin props), Android `CAMERA`, `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`; notifications use the runtime rationale flow (F5.4); document picker needs none
-- [~] F7.3 `eas.json` with development / preview / production profiles; runbook `docs/DEPLOY.md` (env vars, export + `eas deploy`, build, submit). **Still to do: `eas init`, first deploy, set `EXPO_PUBLIC_API_URL`**
+- [~] F7.3 EAS linked (`@gaeltikeng/xpens-ia`, owner in `app.json`); Android development build working (pnpm pinned to 9.15.2, `expo-dev-client`); runbook `docs/DEPLOY.md`. **Still to do:** iOS dev build, API routes deploy (`eas deploy`), set `EXPO_PUBLIC_API_URL` for preview/production
 - [~] F7.4 Neon project is in `eu-central-1` ✓. **Choose the same region when deploying the API routes** (`docs/DEPLOY.md` §1)
 - [~] F7.5 Client: `@sentry/react-native` + Expo plugin, `src/lib/sentry.ts` (`initSentry`, `setSentryUser`, `reportError`), enabled only when `EXPO_PUBLIC_SENTRY_DSN` is set; user id attached after sign-in. **API routes still log to console only** (`withAuth` catch-all); add a server DSN later
 - [x] F7.7 Maintenance: `POST /api/maintenance/sweep` (header `x-maintenance-secret`, enabled by `MAINTENANCE_SECRET`) deletes never-confirmed attachments > 24 h — `src/server/services/maintenance.ts`; cron recipe in `docs/DEPLOY.md` §3. Closes the F2b.7 orphan-sweep note
@@ -321,6 +339,14 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [ ] F8.3 Offline outbox with expo-sqlite
 - [ ] F8.4 Shared / household ledgers
 - [ ] F8.5 Export to Excel / PDF
+
+### E9 — UI kit: NativeWind + React Native Reusables (D13)
+- [x] F9.1 Setup: `babel.config.js`, `metro.config.js` (`inlineRem: 16`), `tailwind.config.js`, `global.css` (light + dark palettes from the existing look), `nativewind-env.d.ts`, `components.json`, `src/lib/utils.ts` (`cn`), `src/lib/theme.ts` (`THEME`, `NAV_THEME`); root layout loads the CSS, wraps `ThemeProvider` and mounts `PortalHost`. Reusables `doctor`: all checks pass
+- [x] F9.2 Components in `src/components/ui/`: button, text, input, textarea, label, card, separator, switch, checkbox, badge, dialog, alert-dialog, select, toggle, toggle-group, skeleton, progress, icon, native-only-animated-view
+- [x] F9.3 Phase 1 migration: `OptionPicker`, `AmountInput`, `DateField`, `TimeField`, `ExpenseForm`, `ExpenseRow`, `FileTile`/`AddTile`, `LocalFilesPicker`, `AttachmentsSection`, `CustomSignIn`, `ClerkAuthScreen{,.web}`, Settings (grouped rows, usage progress bars, AlertDialog for delete account)
+- [ ] F9.4 Phase 2 migration: home, expenses tab (search + proof chips → ToggleGroup), plan tab and its views, recaps tab and charts, import screens and modals, planned / recurring forms and screens, expense new/detail screens, attachment viewer, upload overlay, privacy, tabs and stack chrome
+- [ ] F9.5 Dark mode: after F9.4, replace `colorScheme.set('light')` with system following and pick `NAV_THEME` from `useColorScheme()`
+- [ ] F9.6 Bundle size: Metro does not tree-shake `lucide-react-native` (bundle grew ~2.5k → ~4.5k modules); switch to per-icon imports or enable Expo tree shaking before a store release
 
 ---
 
@@ -337,14 +363,43 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - Model IDs only in `MODELS`. Verify TensorX ids via `GET /v1/models`.
 - Client data fetching is plain hooks over `apiFetch` for now (see `useMe`). Introduce
   a query library only when a list screen needs caching, and register it in §2.
-- Pure client logic that gets unit-tested must not import `@clerk/clerk-expo` or
+- Pure client logic that gets unit-tested must not import `@clerk/expo` or
   `react-native`; vitest runs in Node (see `src/features/auth/errors.ts`).
+- UI: build with `src/components/ui/*` and Tailwind classes (D13). Add a missing
+  primitive with the Reusables CLI instead of hand-rolling it. Import
+  notifications only through `src/features/notifications/module.ts`
+  (`expo-notifications` throws at import in Expo Go on Android, and its
+  scheduling and listener APIs throw on web; both are treated as unsupported).
 - When a feature ships: flip checkbox, name files, Changelog line, same commit.
 
 ---
 
 ## 8. Changelog
 
+- 2026-10-07 — **Notifications disabled on web.** The web build crashed after
+  sign-in calling `getLastNotificationResponseAsync`; `module.ts` now reports
+  web as unsupported (`notificationsUnavailableReason`), and Settings explains
+  that reminders are available in the mobile app.
+- 2026-10-05 — **E9 phase 1: NativeWind + React Native Reusables.** Setup,
+  19 owned components, shared `FormField` / `Group`, and the phase 1 screens
+  (form fields, expense form and row, attachment strips, sign-in, settings)
+  migrated off `StyleSheet`. Light mode pinned until phase 2. All three
+  platforms export; 53 tests pass.
+- 2026-10-04 — **Clerk migrated to `@clerk/expo`** (prebuilt UI on web and in
+  native builds, `CustomSignIn` fallback in Expo Go); **notifications made
+  Expo Go-safe** behind `src/features/notifications/module.ts`; **EAS linked**
+  and the first Android development build produced (pnpm pinned to 9.15.2,
+  install-script allowlist in `package.json#pnpm` for CI).
+- 2026-10-04 — **Renamed to xpens-ia** (display name, slug, package name, scheme
+  `xpensia`, bundle id / package `ltd.nyota.xpensia`, default bucket
+  `xpens-ia-files`). Clerk's Google redirect must allow `xpensia://sso-callback`.
+
+- 2026-10-04 — **End-to-end API test passes 17/17** against the live stack
+  (`pnpm test:e2e`, `scripts/e2e-api.mjs`; needs `pnpm start` running). Fixes
+  from its first run: recap narrative `max_tokens` 400 → 2000 because
+  reasoning consumed the whole budget; narrative and extraction now fail
+  clearly on `finish_reason: length`; account deletion skips the S3 purge when
+  storage is not configured. Corrected F3.3: image input works.
 - 2026-10-04 — **Neon and TensorX connected.** Migration applied and
   currencies seeded on the live database; TensorX probe run (tool calling and
   JSON schema confirmed, image input not working on the default extract

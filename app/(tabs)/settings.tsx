@@ -1,25 +1,37 @@
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/expo';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 
+import { Group, GroupRow } from '@/src/components/group';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/src/components/ui/alert-dialog';
+import { Progress } from '@/src/components/ui/progress';
+import { Switch } from '@/src/components/ui/switch';
+import { Text } from '@/src/components/ui/text';
 import { useRecapReminders } from '@/src/features/notifications/useRecapReminders';
 import { OptionPicker } from '@/src/features/settings/OptionPicker';
 import { useMe } from '@/src/features/settings/useMe';
 import { apiFetch } from '@/src/lib/api';
+import { THEME } from '@/src/lib/theme';
 import { TIMEZONES } from '@/src/lib/timezones';
 
+interface Usage {
+  extract: { used: number; limit: number };
+  narrative: { used: number; limit: number };
+}
+
 /**
- * F1.4 + F1.6: profile preferences, sign out, delete account.
+ * F1.4 + F1.6: profile preferences, reminders, AI usage, sign out, delete account.
  */
 export default function SettingsScreen() {
   const { signOut, getToken } = useAuth();
@@ -27,11 +39,12 @@ export default function SettingsScreen() {
   const me = useMe();
   const reminders = useRecapReminders();
   const [deleting, setDeleting] = useState(false);
-  const [usage, setUsage] = useState<{ extract: { used: number; limit: number }; narrative: { used: number; limit: number } } | null>(null);
-  const usageKey = useMemo(() => getToken, [getToken]);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<Usage | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    apiFetch<typeof usage>('/api/usage', usageKey)
+    apiFetch<Usage>('/api/usage', getToken)
       .then((u) => {
         if (!cancelled) setUsage(u);
       })
@@ -39,49 +52,37 @@ export default function SettingsScreen() {
     return () => {
       cancelled = true;
     };
-  }, [usageKey]);
+  }, [getToken]);
 
-  const confirmDelete = () => {
-    Alert.alert(
-      'Delete account?',
-      'This permanently removes your expenses, plans, imports and attachments. It cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await me.deleteAccount();
-              await signOut();
-            } catch (err) {
-              setDeleting(false);
-              Alert.alert('Could not delete account', err instanceof Error ? err.message : String(err));
-            }
-          },
-        },
-      ],
-    );
+  const deleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await me.deleteAccount();
+      await signOut();
+    } catch (err) {
+      setDeleting(false);
+      setDeleteError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   if (me.loading && !me.profile) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator />
+      <View className="bg-background flex-1 items-center justify-center">
+        <ActivityIndicator color={THEME.light.primary} />
       </View>
     );
   }
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.section}>Account</Text>
-      <View style={styles.card}>
-        <Row label="Email" value={user?.primaryEmailAddress?.emailAddress ?? me.profile?.email ?? '—'} />
-      </View>
+  const remindersOff = !reminders.prefs || !reminders.supported;
 
-      <Text style={styles.section}>Preferences</Text>
-      <View style={styles.card}>
+  return (
+    <ScrollView className="bg-background flex-1" contentContainerClassName="gap-2 p-4 pb-12">
+      <Group title="Account">
+        <GroupRow label="Email" value={user?.primaryEmailAddress?.emailAddress ?? me.profile?.email ?? '—'} />
+      </Group>
+
+      <Group title="Preferences" footer={me.error ? <Text className="text-destructive ml-1 text-[13px]">{me.error}</Text> : undefined}>
         <OptionPicker
           label="Currency"
           value={me.profile?.defaultCurrency ?? 'XAF'}
@@ -89,7 +90,6 @@ export default function SettingsScreen() {
           onChange={(code) => me.update({ defaultCurrency: code })}
           disabled={me.saving}
         />
-        <View style={styles.separator} />
         <OptionPicker
           label="Timezone"
           value={me.profile?.timezone ?? 'Africa/Douala'}
@@ -97,83 +97,90 @@ export default function SettingsScreen() {
           onChange={(tz) => me.update({ timezone: tz })}
           disabled={me.saving}
         />
-      </View>
-      {me.error ? <Text style={styles.error}>{me.error}</Text> : null}
+      </Group>
 
-      <Text style={styles.section}>Reminders</Text>
-      <View style={styles.card}>
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.rowLabel}>Weekly recap</Text>
-            <Text style={styles.rowHelp}>Every Monday morning</Text>
-          </View>
-          <Switch value={reminders.prefs?.weeklyRecapReminder ?? false} onValueChange={(v) => void reminders.setWeekly(v)} disabled={!reminders.prefs} />
-        </View>
-        <View style={styles.separator} />
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.rowLabel}>Monthly recap</Text>
-            <Text style={styles.rowHelp}>On the 1st of each month</Text>
-          </View>
-          <Switch value={reminders.prefs?.monthlyRecapReminder ?? false} onValueChange={(v) => void reminders.setMonthly(v)} disabled={!reminders.prefs} />
-        </View>
-      </View>
+      <Group
+        title="Reminders"
+        footer={
+          reminders.unavailableReason === 'web'
+            ? 'Reminders are available in the mobile app.'
+            : reminders.unavailableReason === 'expo-go-android'
+              ? 'Reminders need the full app build. Expo Go on Android does not include notifications.'
+              : undefined
+        }
+      >
+        <GroupRow
+          label="Weekly recap"
+          description="Every Monday morning"
+          disabled={remindersOff}
+          right={
+            <Switch
+              checked={reminders.prefs?.weeklyRecapReminder ?? false}
+              onCheckedChange={(v) => void reminders.setWeekly(v)}
+              disabled={remindersOff}
+            />
+          }
+        />
+        <GroupRow
+          label="Monthly recap"
+          description="On the 1st of each month"
+          disabled={remindersOff}
+          right={
+            <Switch
+              checked={reminders.prefs?.monthlyRecapReminder ?? false}
+              onCheckedChange={(v) => void reminders.setMonthly(v)}
+              disabled={remindersOff}
+            />
+          }
+        />
+      </Group>
 
-      <Text style={styles.section}>AI usage this month</Text>
-      <View style={styles.card}>
-        <Row label="File imports" value={usage ? `${usage.extract.used} / ${usage.extract.limit}` : '…'} />
-        <View style={styles.separator} />
-        <Row label="Recap summaries" value={usage ? `${usage.narrative.used} / ${usage.narrative.limit}` : '…'} />
-      </View>
+      <Group title="AI usage this month">
+        <UsageRow label="File imports" used={usage?.extract.used} limit={usage?.extract.limit} />
+        <UsageRow label="Recap summaries" used={usage?.narrative.used} limit={usage?.narrative.limit} />
+      </Group>
 
-      <Text style={styles.section}>About</Text>
-      <View style={styles.card}>
-        <Pressable style={styles.action} onPress={() => router.push('/privacy')}>
-          <Text style={styles.actionText}>Privacy</Text>
-        </Pressable>
-      </View>
+      <Group title="About">
+        <GroupRow label="Privacy" onPress={() => router.push('/privacy')} />
+      </Group>
 
-      <Text style={styles.section}>Session</Text>
-      <View style={styles.card}>
-        <Pressable style={styles.action} onPress={() => signOut()}>
-          <Text style={styles.actionText}>Sign out</Text>
-        </Pressable>
-        <View style={styles.separator} />
-        <Pressable style={styles.action} onPress={confirmDelete} disabled={deleting}>
-          {deleting ? (
-            <ActivityIndicator />
-          ) : (
-            <Text style={[styles.actionText, styles.danger]}>Delete account</Text>
-          )}
-        </Pressable>
-      </View>
+      <Group title="Session" footer={deleteError ? <Text className="text-destructive ml-1 text-[13px]">{deleteError}</Text> : undefined}>
+        <GroupRow label="Sign out" onPress={() => signOut()} />
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <GroupRow label={deleting ? 'Deleting…' : 'Delete account'} destructive disabled={deleting} onPress={() => undefined} />
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete account?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This permanently removes your expenses, plans, imports and attachments. It cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>
+                <Text>Cancel</Text>
+              </AlertDialogCancel>
+              <AlertDialogAction className="bg-destructive" onPress={() => void deleteAccount()}>
+                <Text className="text-destructive-foreground">Delete</Text>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </Group>
     </ScrollView>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function UsageRow({ label, used, limit }: { label: string; used?: number; limit?: number }) {
+  const pct = used != null && limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue} numberOfLines={1}>
-        {value}
-      </Text>
+    <View className="gap-2 px-4 py-3">
+      <View className="flex-row justify-between">
+        <Text className="text-[15px]">{label}</Text>
+        <Text className="text-muted-foreground text-[15px]">{used != null && limit != null ? `${used} / ${limit}` : '…'}</Text>
+      </View>
+      <Progress value={pct} className="h-1.5" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 16, gap: 8, backgroundColor: '#F6F7F9', flexGrow: 1 },
-  section: { fontSize: 12, textTransform: 'uppercase', color: '#777', marginTop: 12, marginLeft: 4 },
-  card: { backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, gap: 12 },
-  rowLabel: { fontSize: 15 },
-  rowHelp: { fontSize: 12, color: '#777' },
-  rowValue: { fontSize: 15, color: '#666', flexShrink: 1 },
-  separator: { height: 1, backgroundColor: '#EEF0F3', marginLeft: 14 },
-  action: { padding: 14 },
-  actionText: { fontSize: 15, color: '#1F5EFF' },
-  danger: { color: '#C0392B' },
-  error: { color: '#C0392B', fontSize: 13, marginLeft: 4 },
-});

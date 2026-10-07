@@ -1,5 +1,13 @@
+import { Check, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { Button } from '@/src/components/ui/button';
+import { Icon } from '@/src/components/ui/icon';
+import { Separator } from '@/src/components/ui/separator';
+import { Text } from '@/src/components/ui/text';
+import { cn } from '@/src/lib/utils';
 
 export interface Option {
   value: string;
@@ -7,8 +15,8 @@ export interface Option {
 }
 
 /**
- * A row that opens a full-screen list. Dependency-free on purpose; swap for a
- * bottom sheet when a UI kit is chosen.
+ * A row that opens a full-screen list. Kept as a full screen rather than the
+ * Select dropdown because some lists (timezones, currencies) are long.
  */
 export function OptionPicker({
   label,
@@ -28,64 +36,52 @@ export function OptionPicker({
 
   return (
     <>
-      <Pressable style={styles.row} onPress={() => setOpen(true)} disabled={disabled}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.value} numberOfLines={1}>
-          {current} ›
+      <Pressable
+        className={cn('min-h-12 flex-row items-center gap-3 px-4 py-3 active:bg-accent', disabled && 'opacity-50')}
+        onPress={() => setOpen(true)}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${current}`}
+      >
+        <Text className="flex-1 text-[15px]">{label}</Text>
+        <Text className="text-muted-foreground max-w-[60%] text-[15px]" numberOfLines={1}>
+          {current}
         </Text>
+        <Icon as={ChevronRight} className="text-muted-foreground size-4" />
       </Pressable>
 
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={styles.modal}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{label}</Text>
-            <Pressable onPress={() => setOpen(false)} hitSlop={12}>
-              <Text style={styles.close}>Done</Text>
-            </Pressable>
+        <SafeAreaView className="bg-background flex-1" edges={['top', 'bottom']}>
+          <View className="border-border flex-row items-center justify-between border-b px-4 pb-3 pt-2">
+            <Text variant="large">{label}</Text>
+            <Button variant="ghost" size="sm" onPress={() => setOpen(false)}>
+              <Text>Done</Text>
+            </Button>
           </View>
           <FlatList
             data={options}
             keyExtractor={(o) => o.value}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            renderItem={({ item }) => (
-              <Pressable
-                style={styles.item}
-                onPress={() => {
-                  onChange(item.value);
-                  setOpen(false);
-                }}
-              >
-                <Text style={[styles.itemText, item.value === value && styles.itemSelected]}>
-                  {item.label}
-                </Text>
-                {item.value === value ? <Text style={styles.itemSelected}>✓</Text> : null}
-              </Pressable>
-            )}
+            ItemSeparatorComponent={() => <Separator className="ml-4" />}
+            renderItem={({ item }) => {
+              const selected = item.value === value;
+              return (
+                <Pressable
+                  className="flex-row items-center justify-between px-4 py-4 active:bg-accent"
+                  onPress={() => {
+                    onChange(item.value);
+                    setOpen(false);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text className={cn('text-base', selected && 'text-primary font-semibold')}>{item.label}</Text>
+                  {selected ? <Icon as={Check} className="text-primary size-5" /> : null}
+                </Pressable>
+              );
+            }}
           />
-        </View>
+        </SafeAreaView>
       </Modal>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, gap: 12 },
-  label: { fontSize: 15 },
-  value: { fontSize: 15, color: '#666', flexShrink: 1 },
-  modal: { flex: 1, backgroundColor: '#fff', paddingTop: 56 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF0F3',
-  },
-  title: { fontSize: 18, fontWeight: '600' },
-  close: { fontSize: 16, color: '#1F5EFF' },
-  separator: { height: 1, backgroundColor: '#EEF0F3', marginLeft: 16 },
-  item: { flexDirection: 'row', justifyContent: 'space-between', padding: 16 },
-  itemText: { fontSize: 16 },
-  itemSelected: { color: '#1F5EFF', fontWeight: '600' },
-});

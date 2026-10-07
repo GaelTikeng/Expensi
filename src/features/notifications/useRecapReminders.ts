@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getPrefs, setPrefs, type DevicePrefs } from '@/src/lib/prefs';
+import { notificationsSupported, notificationsUnavailableReason } from './module';
 import { ensureNotificationPermission } from './permissions';
 import { cancelMonthlyRecap, cancelWeeklyRecap, scheduleMonthlyRecap, scheduleWeeklyRecap } from './schedule';
 
@@ -28,5 +29,5 @@ export function useRecapReminders() {
     else await cancelMonthlyRecap();
   }, []);
 
-  return { prefs, setWeekly, setMonthly };
+  return { prefs, setWeekly, setMonthly, supported: notificationsSupported, unavailableReason: notificationsUnavailableReason };
 }

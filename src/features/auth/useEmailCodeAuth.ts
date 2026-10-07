@@ -1,4 +1,4 @@
-import { useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { useSignIn, useSignUp } from '@clerk/expo/legacy';
 import { useCallback, useState } from 'react';
 
 import { CLERK_CODES, clerkErrorCode, clerkErrorMessage } from './errors';

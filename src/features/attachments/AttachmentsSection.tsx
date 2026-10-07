@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
+
+import { Text } from '@/src/components/ui/text';
 
 import type { AttachmentDto } from '@/src/lib/schemas/attachment';
 import { ImageViewerModal, openAttachment } from './AttachmentViewer';
@@ -28,17 +30,17 @@ export function AttachmentsSection({ expenseId }: { expenseId: string }) {
     ]);
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Proof</Text>
-        <Text style={styles.count}>
+    <View className="bg-card border-border gap-2 rounded-lg border p-3">
+      <View className="flex-row justify-between">
+        <Text className="text-[15px] font-semibold">Proof</Text>
+        <Text className="text-muted-foreground text-[13px]">
           {items.length} file{items.length === 1 ? '' : 's'}
         </Text>
       </View>
       {loading ? (
-        <ActivityIndicator style={{ margin: 12 }} />
+        <ActivityIndicator className="m-3" />
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2.5">
           <AddTile onPress={() => chooseSource((files) => void add(files))} />
           {uploading.map((u) => (
             <FileTile key={u.file.attachmentId} kind={u.file.kind} uri={u.file.uri} label={u.file.name} progress={u.progress} />
@@ -58,20 +60,10 @@ export function AttachmentsSection({ expenseId }: { expenseId: string }) {
           ))}
         </ScrollView>
       )}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Text style={styles.hint}>Tap to view · hold to remove</Text>
+      {error ? <Text className="text-destructive text-xs">{error}</Text> : null}
+      <Text className="text-muted-foreground text-[11px]">Tap to view · hold to remove</Text>
 
       <ImageViewerModal attachment={viewer?.attachment ?? null} url={viewer?.url ?? null} onClose={() => setViewer(null)} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { backgroundColor: '#fff', borderRadius: 12, padding: 12, gap: 8 },
-  header: { flexDirection: 'row', justifyContent: 'space-between' },
-  title: { fontSize: 15, fontWeight: '600' },
-  count: { fontSize: 13, color: '#777' },
-  strip: { gap: 10 },
-  hint: { fontSize: 11, color: '#999' },
-  error: { color: '#C0392B', fontSize: 12 },
-});

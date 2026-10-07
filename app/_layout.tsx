@@ -1,15 +1,27 @@
-import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
-import { useEffect } from 'react';
-import { tokenCache } from '@clerk/clerk-expo/token-cache';
-import { Stack } from 'expo-router';
+import '../global.css';
+
+import { ClerkProvider, useAuth } from '@clerk/expo';
+import { tokenCache } from '@clerk/expo/token-cache';
+import { PortalHost } from '@rn-primitives/portal';
+import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View } from 'react-native';
+import { colorScheme } from 'nativewind';
+import { useEffect } from 'react';
+import { ActivityIndicator, Platform, View } from 'react-native';
 
 import { initSentry, setSentryUser } from '@/src/lib/sentry';
+import { NAV_THEME, THEME } from '@/src/lib/theme';
 
 initSentry();
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+// Phase 1 of the NativeWind migration: most screens are still hand-styled in
+// light colours, so the app stays light until phase 2 converts them. Then this
+// becomes colorScheme.set('system') and NAV_THEME follows useColorScheme().
+// Web needs no call (class-based dark mode defaults to light) and the call
+// throws during server rendering, so it is native-only.
+if (Platform.OS !== 'web') colorScheme.set('light');
+
+const publishableKey: string = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 
 if (!publishableKey) {
   // Fail loudly in development; a missing key otherwise surfaces as a
@@ -30,8 +42,8 @@ function RootNavigator() {
 
   if (!isLoaded) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color={THEME.light.primary} />
       </View>
     );
   }
@@ -61,8 +73,12 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <RootNavigator />
-      <StatusBar style="auto" />
+      <ThemeProvider value={NAV_THEME.light}>
+        <RootNavigator />
+        <StatusBar style="dark" />
+        {/* Dialogs, selects and menus from src/components/ui render here. */}
+        <PortalHost />
+      </ThemeProvider>
     </ClerkProvider>
   );
 }

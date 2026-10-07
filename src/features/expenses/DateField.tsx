@@ -1,7 +1,9 @@
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
+import { Button } from '@/src/components/ui/button';
+import { Text } from '@/src/components/ui/text';
 import { addDays, parseISODate, relativeDayLabel, toISODate, todayISO, type ISODate } from '@/src/lib/dates';
 
 /**
@@ -22,6 +24,7 @@ export function DateField({
 }) {
   const [showAndroid, setShowAndroid] = useState(false);
   const today = todayISO();
+  const yesterday = addDays(today, -1);
 
   const handlePicker = (event: DateTimePickerEvent, date?: Date) => {
     setShowAndroid(false);
@@ -30,9 +33,9 @@ export function DateField({
   };
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.header}>
-        <Text style={styles.label}>{label}</Text>
+    <View className="gap-2">
+      <View className="min-h-9 flex-row items-center justify-between">
+        <Text className="text-[15px]">{label}</Text>
         {Platform.OS === 'ios' ? (
           <DateTimePicker
             mode="date"
@@ -42,15 +45,15 @@ export function DateField({
             maximumDate={parseISODate(addDays(today, 366))}
           />
         ) : (
-          <Pressable style={styles.valueButton} onPress={() => setShowAndroid(true)}>
-            <Text style={styles.valueText}>{value ? relativeDayLabel(value) : 'Pick a date'}</Text>
-          </Pressable>
+          <Button variant="secondary" size="sm" onPress={() => setShowAndroid(true)}>
+            <Text>{value ? relativeDayLabel(value) : 'Pick a date'}</Text>
+          </Button>
         )}
       </View>
 
-      <View style={styles.chips}>
+      <View className="flex-row gap-2">
         <Chip label="Today" active={value === today} onPress={() => onChange(today)} />
-        <Chip label="Yesterday" active={value === addDays(today, -1)} onPress={() => onChange(addDays(today, -1))} />
+        <Chip label="Yesterday" active={value === yesterday} onPress={() => onChange(yesterday)} />
         {nullable ? <Chip label="Clear" active={value === null} onPress={() => onChange(null)} /> : null}
       </View>
 
@@ -63,21 +66,14 @@ export function DateField({
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
-    <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </Pressable>
+    <Button
+      variant={active ? 'default' : 'outline'}
+      size="sm"
+      className="h-8 rounded-full px-3"
+      onPress={onPress}
+      accessibilityState={{ selected: active }}
+    >
+      <Text className="text-[13px]">{label}</Text>
+    </Button>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: 8 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 36 },
-  label: { fontSize: 15 },
-  valueButton: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#EEF0F3', borderRadius: 8 },
-  valueText: { fontSize: 15 },
-  chips: { flexDirection: 'row', gap: 8 },
-  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: '#D7DAE0' },
-  chipActive: { backgroundColor: '#1F5EFF', borderColor: '#1F5EFF' },
-  chipText: { fontSize: 13, color: '#333' },
-  chipTextActive: { color: '#fff' },
-});

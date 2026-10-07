@@ -1,5 +1,5 @@
 /**
- * Clerk error helpers. Deliberately free of `@clerk/clerk-expo` imports so this
+ * Clerk error helpers. Deliberately free of `@clerk/expo` imports so this
  * module stays unit-testable in Node: the check below is the same structural
  * test Clerk's own `isClerkAPIResponseError` performs.
  */

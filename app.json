@@ -26,9 +26,10 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "POST_NOTIFICATIONS",
-        "SCHEDULE_EXACT_ALARM"
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -66,10 +67,18 @@
           "organization": "",
           "project": ""
         }
-      ]
+      ],
+      "@clerk/expo"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2839bc59-53d3-4a95-8c2c-979a1320aa43"
+      }
+    },
+    "owner": "gaeltikeng"
   }
 }

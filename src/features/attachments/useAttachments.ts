@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { AttachmentDto } from '@/src/lib/schemas/attachment';

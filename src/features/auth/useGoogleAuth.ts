@@ -1,4 +1,4 @@
-import { useSSO } from '@clerk/clerk-expo';
+import { useSSO } from '@clerk/expo';
 import * as AuthSession from 'expo-auth-session';
 import { useCallback, useState } from 'react';
 

@@ -1,14 +1,16 @@
-import * as Notifications from 'expo-notifications';
 import { Alert, Linking, Platform } from 'react-native';
+
+import { getNotifications } from './module';
 
 export const ANDROID_CHANNEL = 'reminders';
 
 /** Idempotent; Android needs a channel before anything can be shown. */
 export async function ensureChannel() {
-  if (Platform.OS !== 'android') return;
-  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL, {
+  const N = getNotifications();
+  if (!N || Platform.OS !== 'android') return;
+  await N.setNotificationChannelAsync(ANDROID_CHANNEL, {
     name: 'Reminders',
-    importance: Notifications.AndroidImportance.HIGH,
+    importance: N.AndroidImportance.HIGH,
     description: 'Planned expenses and spending recaps',
   });
 }
@@ -25,10 +27,15 @@ function explain(reason: string): Promise<boolean> {
 /**
  * F5.4: rationale first, then the system prompt. If the user previously
  * denied, point them to Settings instead of a prompt that cannot appear.
+ *
+ * Returns false where notifications are unavailable (Expo Go on Android), so
+ * callers skip scheduling without an error.
  */
 export async function ensureNotificationPermission(reason: string): Promise<boolean> {
+  const N = getNotifications();
+  if (!N) return false;
   await ensureChannel();
-  const current = await Notifications.getPermissionsAsync();
+  const current = await N.getPermissionsAsync();
   if (current.granted) return true;
 
   if (!current.canAskAgain) {
@@ -40,6 +47,6 @@ export async function ensureNotificationPermission(reason: string): Promise<bool
   }
 
   if (!(await explain(reason))) return false;
-  const res = await Notifications.requestPermissionsAsync();
+  const res = await N.requestPermissionsAsync();
   return res.granted;
 }

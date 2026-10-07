@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
+
+import { FormField } from '@/src/components/form-field';
+import { Group, GroupRow } from '@/src/components/group';
+import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
+import { Switch } from '@/src/components/ui/switch';
+import { Text } from '@/src/components/ui/text';
+import { Textarea } from '@/src/components/ui/textarea';
+import { THEME } from '@/src/lib/theme';
 
 import { OptionPicker } from '@/src/features/settings/OptionPicker';
 import { todayISO } from '@/src/lib/dates';
@@ -80,100 +89,61 @@ export function ExpenseForm({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView className="bg-background flex-1" contentContainerClassName="gap-4 p-4 pb-12" keyboardShouldPersistTaps="handled">
       <AmountInput value={amountMinor} currency={currencyInfo} onChange={setAmountMinor} autoFocus={!initial?.id} error={errors.amountMinor} />
 
-      <View style={styles.card}>
+      <Group>
         <OptionPicker
           label="Currency"
           value={currency}
           options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))}
           onChange={setCurrency}
         />
-      </View>
+      </Group>
 
-      <Field label="Description" error={errors.description}>
-        <TextInput style={styles.input} value={description} onChangeText={setDescription} placeholder="What was it for?" />
-      </Field>
+      <FormField label="Description" error={errors.description}>
+        <Input value={description} onChangeText={setDescription} placeholder="What was it for?" />
+      </FormField>
 
-      <Field label="Paid to" error={errors.payee}>
-        <TextInput style={styles.input} value={payee} onChangeText={setPayee} placeholder="Shop, person, company" />
-      </Field>
+      <FormField label="Paid to" error={errors.payee}>
+        <Input value={payee} onChangeText={setPayee} placeholder="Shop, person, company" />
+      </FormField>
 
-      <View style={styles.card}>
+      <Group footer={errors.occurredOn}>
         <OptionPicker
           label="Category"
           value={categoryId ?? NONE}
           options={[{ value: NONE, label: 'None' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           onChange={(v) => setCategoryId(v === NONE ? null : v)}
         />
-      </View>
-
-      <View style={styles.card}>
-        <DateField label="Date" value={occurredOn} onChange={(d) => d && setOccurredOn(d)} />
-        {errors.occurredOn ? <Text style={styles.error}>{errors.occurredOn}</Text> : null}
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.switchRow}>
-          <Text style={styles.label}>Paid on a different day</Text>
-          <Switch value={showPaidOn} onValueChange={setShowPaidOn} />
+        <View className="px-4 py-3">
+          <DateField label="Date" value={occurredOn} onChange={(d) => d && setOccurredOn(d)} />
         </View>
-        {showPaidOn ? <DateField label="Paid on" value={paidOn} onChange={setPaidOn} nullable /> : null}
-      </View>
+      </Group>
 
-      <View style={styles.card}>
-        <View style={styles.switchRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Estimated amount</Text>
-            <Text style={styles.help}>Flagged in totals until you confirm the exact figure.</Text>
+      <Group>
+        <GroupRow label="Paid on a different day" right={<Switch checked={showPaidOn} onCheckedChange={setShowPaidOn} />} />
+        {showPaidOn ? (
+          <View className="px-4 py-3">
+            <DateField label="Paid on" value={paidOn} onChange={setPaidOn} nullable />
           </View>
-          <Switch value={isEstimated} onValueChange={setIsEstimated} />
-        </View>
-      </View>
+        ) : null}
+        <GroupRow
+          label="Estimated amount"
+          description="Flagged in totals until you confirm the exact figure."
+          right={<Switch checked={isEstimated} onCheckedChange={setIsEstimated} />}
+        />
+      </Group>
 
-      <Field label="Notes" error={errors.notes}>
-        <TextInput style={[styles.input, styles.multiline]} value={notes} onChangeText={setNotes} multiline placeholder="Optional" />
-      </Field>
+      <FormField label="Notes" error={errors.notes}>
+        <Textarea value={notes} onChangeText={setNotes} placeholder="Optional" />
+      </FormField>
 
       {extra}
 
-      <Pressable style={[styles.button, submitting && styles.buttonDisabled]} disabled={submitting} onPress={submit}>
-        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{submitLabel}</Text>}
-      </Pressable>
+      <Button size="lg" className="mt-2" disabled={submitting} onPress={submit}>
+        {submitting ? <ActivityIndicator color={THEME.light.primaryForeground} /> : <Text>{submitLabel}</Text>}
+      </Button>
     </ScrollView>
   );
 }
-
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, paddingBottom: 48 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 4, gap: 4 },
-  field: { gap: 6 },
-  label: { fontSize: 15 },
-  help: { fontSize: 12, color: '#777' },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#D7DAE0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, gap: 12 },
-  button: { backgroundColor: '#1F5EFF', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  error: { color: '#C0392B', fontSize: 12, marginLeft: 4 },
-});

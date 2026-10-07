@@ -1,20 +1,26 @@
-import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 
 import { getPrefs } from '@/src/lib/prefs';
+import { getNotifications } from './module';
 import { ensureChannel } from './permissions';
 import { scheduleMonthlyRecap, type ReminderPayload } from './schedule';
 
-// Foreground behaviour: show the banner even while the app is open.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+let handlerInstalled = false;
+
+/** Foreground behaviour: show the banner even while the app is open. */
+function installHandler(N: NonNullable<ReturnType<typeof getNotifications>>) {
+  if (handlerInstalled) return;
+  handlerInstalled = true;
+  N.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 function openFromPayload(data: unknown) {
   const payload = data as Partial<ReminderPayload> | undefined;
@@ -27,16 +33,19 @@ function openFromPayload(data: unknown) {
  */
 export function useNotificationSetup() {
   useEffect(() => {
+    const N = getNotifications();
+    if (!N) return; // Web or Expo Go on Android: no usable notifications module.
+    installHandler(N);
     void ensureChannel();
     void getPrefs().then((p) => {
       if (p.monthlyRecapReminder) void scheduleMonthlyRecap(p.recapReminderTime);
     });
 
     // Cold start from a tap.
-    void Notifications.getLastNotificationResponseAsync().then((res) => {
+    void N.getLastNotificationResponseAsync().then((res) => {
       if (res) openFromPayload(res.notification.request.content.data);
     });
-    const sub = Notifications.addNotificationResponseReceivedListener((res) => openFromPayload(res.notification.request.content.data));
+    const sub = N.addNotificationResponseReceivedListener((res) => openFromPayload(res.notification.request.content.data));
     return () => sub.remove();
   }, []);
 }

@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { CategoryDto } from '@/src/lib/schemas/category';

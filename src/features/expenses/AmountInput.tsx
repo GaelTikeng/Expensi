@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 
+import { Text } from '@/src/components/ui/text';
 import { formatMoney, parseLocaleAmount, toMajor, type CurrencyInfo } from '@/src/lib/money';
+import { cn } from '@/src/lib/utils';
 
 /**
  * Locale-aware amount field. Accepts "5.000", "5 000", "12,50"; stores minor
@@ -28,10 +30,15 @@ export function AmountInput({
   };
 
   return (
-    <View style={styles.wrap}>
-      <View style={[styles.row, error ? styles.rowError : null]}>
+    <View className="gap-1">
+      <View
+        className={cn(
+          'bg-card border-input flex-row items-center rounded-md border px-4 shadow-sm shadow-black/5',
+          error && 'border-destructive',
+        )}
+      >
         <TextInput
-          style={styles.input}
+          className="text-foreground placeholder:text-muted-foreground flex-1 py-3 text-3xl font-semibold"
           value={text}
           onChangeText={handle}
           keyboardType="decimal-pad"
@@ -39,28 +46,11 @@ export function AmountInput({
           autoFocus={autoFocus}
           accessibilityLabel="Amount"
         />
-        <Text style={styles.symbol}>{currency.symbol}</Text>
+        <Text className="text-muted-foreground ml-2 text-lg">{currency.symbol}</Text>
       </View>
-      <Text style={[styles.hint, error ? styles.hintError : null]}>
+      <Text className={cn('ml-1 text-xs', error ? 'text-destructive' : 'text-muted-foreground')}>
         {error ?? (value != null ? formatMoney(value, currency) : ' ')}
       </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { gap: 4 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D7DAE0',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-  },
-  rowError: { borderColor: '#C0392B' },
-  input: { flex: 1, fontSize: 28, fontWeight: '600', paddingVertical: 12 },
-  symbol: { fontSize: 18, color: '#666', marginLeft: 8 },
-  hint: { fontSize: 12, color: '#777', marginLeft: 4 },
-  hintError: { color: '#C0392B' },
-});
