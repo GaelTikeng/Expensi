@@ -237,8 +237,10 @@ All v2 screens exist; see §6 for what each still lacks.
    `users.timezone`.
 5. Locale: `.` and thin space are thousands separators, `,` is decimal; numeric dates
    DD/MM; default currency XAF; default timezone Africa/Douala. Overridable per user.
-6. Migrations: `drizzle-kit generate`, read the SQL, then `drizzle-kit migrate` against
-   the **direct** Neon URL. Never edit a shipped migration.
+6. Migrations (E13): any change to `src/server/db/schema.ts` → `pnpm db:generate`
+   (new SQL file + journal + snapshot) → read the SQL → `pnpm db:migrate` against the
+   **direct** Neon URL → commit schema, migration and journal together. Never edit a
+   shipped migration; fix forward with a new one.
 7. AI model IDs live in one `MODELS` constant. TensorX model ids are verified against
    `GET /v1/models` before release.
 8. Every AI call records model, tokens and latency to `ai_usage` and to the owning
@@ -391,6 +393,44 @@ Set up 2026-10-10. One runner, four projects; `pnpm test` is the fast default.
 - [x] F12.5 CI (`.github/workflows/ci.yml`) on every PR and every push to `main`: `check` (typecheck, lint, unit + components), `build` (`expo export` for android, ios, web with a placeholder publishable key), `integration` (route handlers on the Neon test branch; pushes to main and same-repo PRs, serialised through the `integration-db` concurrency group; needs the `DATABASE_URL_TEST` repository secret). Superseded runs on the same ref are cancelled
 - [ ] F12.6 UI end-to-end on a device (Detox, which also runs on Jest) once the dev build is installed on the phone
 
+### E13 — Schema migrations discipline
+Registered 2026-10-10 (owner request). Every change to `src/server/db/schema.ts`
+ships with its migration in the same commit.
+- [ ] F13.1 Convention (§5.6 made explicit): touch `schema.ts` → `pnpm db:generate` (new SQL file + `meta/_journal.json` + snapshot) → read the SQL → `pnpm db:migrate` against the direct URL → commit schema, migration and journal together. Never hand-edit a shipped migration; fix forward with a new one
+- [ ] F13.2 Drift guard in CI: a `migrations` step runs `drizzle-kit generate` into a scratch folder and fails when it would produce a file (schema changed without a migration); also `drizzle-kit check` for journal conflicts
+- [ ] F13.3 Integration setup already applies the migrations folder to the test branch; add one test asserting the journal and the folder agree (every journal entry has its SQL file and vice versa)
+- [ ] F13.4 `docs/NEON_NOTES.md` section "Changing the schema" with the exact commands and the rollback stance (forward-only)
+
+### E14 — Internationalisation (English, French)
+Registered 2026-10-10. Library: **react-i18next** (+ `i18next`, `expo-localization`); register them in §2 when installed.
+- [ ] F14.1 Setup: `src/i18n/` with `en.json` and `fr.json` namespaces (common, expenses, plan, recaps, imports, settings, errors), initialised before the root layout; device locale via `expo-localization`, override stored in prefs; language row in the account hub (E17)
+- [ ] F14.2 Extract every user-facing string from screens and components (`t('…')`), including alerts, action sheets, skeleton a11y labels, form validation messages (zod messages mapped by key, not text)
+- [ ] F14.3 Server strings: API routes return codes only (`invalid_body`, `too_many_rows`…); the client maps codes to translated messages. Model-facing prompts stay English; the recap narrative is requested in the user's language
+- [ ] F14.4 Locale-aware formatting through one helper: dates (`formatDDMMYYYY` already DD/MM), money (`formatMoney` locale arg), relative day labels, month names
+- [ ] F14.5 Tests: a unit test that `en.json` and `fr.json` have identical key sets; component tests run in both languages for one screen
+
+### E15 — Profile and avatar
+Registered 2026-10-10.
+- [ ] F15.1 Avatar from the identity provider: Clerk exposes Google's picture as `user.imageUrl`; show it wherever the user is represented (home header, account hub). Sync `image_url` + `display_name` into `users` via the existing Clerk webhook (`user.updated`) and on sign-in
+- [ ] F15.2 Editable profile screen "Personal information": display name, phone (optional), email read-only, avatar change (camera / library, resized, uploaded to S3 under `users/{id}/avatar.jpg`, served through a presigned URL like proofs). Migration: `users.phone`, `users.avatar_key`, `users.image_url`
+- [ ] F15.3 `PATCH /api/me` accepts the new fields; `useMe` optimistic update; cache invalidation of the header
+- [ ] F15.4 Tests: integration for PATCH + avatar presign/confirm; component test for the edit form
+
+### E16 — Expense location
+Registered 2026-10-10. Optional GPS position on an expense, shown on a map in the detail.
+- [ ] F16.1 Migration: `expenses.latitude`, `expenses.longitude` (double precision, nullable), `expenses.location_label` (reverse-geocoded, nullable). Zod schemas and DTO updated
+- [ ] F16.2 Capture: a "Save my location" toggle in the expense form (default off, remembered in prefs). On save, `expo-location` current position with the permission rationale flow like notifications; reverse geocode to a short label when available; works offline (coordinates only)
+- [ ] F16.3 Display: a small map in the expense detail when coordinates exist, with the label and a tap-through to the system maps app. Library decision pending: `react-native-maps` works in Expo Go; `expo-maps` needs the dev build. Web shows a static map image or the label only
+- [ ] F16.4 Privacy: location never sent to the AI, excluded from exports by default (optional column), purged with the account; permission strings in `app.json`; privacy policy updated
+- [ ] F16.5 Tests: integration for create/patch with coordinates and validation of ranges; component test for the toggle
+
+### E17 — Account hub (replaces the Settings tab)
+Registered 2026-10-10, modelled on the screenshots provided (name, phone/email and avatar header; grouped rows; sign out; version footer).
+- [ ] F17.1 Home header: "Hello, {name}" replaced by the user's avatar (E15) at the top right; tapping opens `/account`
+- [ ] F17.2 `app/account.tsx`: header (avatar, display name, phone or email); **Account settings**: Personal information (E15), Language (E14), Appearance (system / light / dark — removes the hard-pinned scheme choice from F9.5), Reminders (today's toggles), Security & sign-in (passkeys / password later); **Data**: Export expenses, AI usage this month; **Help**: FAQ (static), Contact; **Legal**: Privacy policy, Terms of service; **Sign out**; **Delete account**; footer with app version from `expo-constants`
+- [ ] F17.3 Remove the Settings tab from the tab bar (four tabs: Home, Expenses, Plan, Recaps); redirect `/settings` to `/account`
+- [ ] F17.4 Tests: component test for the hub rendering every section and the sign-out action; e2e step unchanged (settings routes kept server-side)
+
 ### E10 — Export expenses (PDF / XLSX)
 Built 2026-10-10. Download the ledger for a date range as a spreadsheet or a
 printable statement.
@@ -434,6 +474,9 @@ printable statement.
 
 ## 8. Changelog
 
+- 2026-10-10 — Backlog: registered E13 (migrations discipline), E14 (i18n
+  EN/FR with react-i18next), E15 (profile and avatar), E16 (expense
+  location), E17 (account hub replacing the Settings tab).
 - 2026-10-10 — **camelCase everywhere in our own identifiers.** The AI
   extraction contract (tool name `recordExpenseLines`, fields `lineKind`,
   `amountMinor`, `detectedCurrency`, …) and its consumers renamed from
