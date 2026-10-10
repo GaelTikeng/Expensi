@@ -10,7 +10,7 @@ import { Text } from '@/src/components/ui/text';
 const SECTIONS: { title: string; body: string }[] = [
   {
     title: 'What we store',
-    body: 'Your email (via Clerk), the expenses, plans and fixed charges you enter, and any receipt photos, PDFs or spreadsheets you upload.',
+    body: 'Your email (via Clerk), the expenses, plans and fixed charges you enter, any receipt photos, PDFs or spreadsheets you upload, and, only when you turn on "Save my location" for an expense, the place where it was made.',
   },
   {
     title: 'AI processing',

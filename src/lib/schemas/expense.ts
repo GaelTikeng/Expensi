@@ -18,7 +18,15 @@ export const isoDateSchema = z
 export const EXPENSE_SOURCES = ['manual', 'import', 'planned', 'recurring'] as const;
 export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
 
-export const expenseInputSchema = z.object({
+/** E16: a position is a pair; one coordinate alone is a client bug, not data. */
+function bothCoordinatesOrNeither(v: { latitude?: number | null; longitude?: number | null }, ctx: z.RefinementCtx) {
+  if (v.latitude === undefined && v.longitude === undefined) return;
+  if ((v.latitude == null) !== (v.longitude == null)) {
+    ctx.addIssue({ code: 'custom', path: ['longitude'], message: 'Both coordinates or neither' });
+  }
+}
+
+const expenseFields = z.object({
   /** Client-generated UUID (v7). Makes POST idempotent. */
   id: z.string().uuid(),
   amountMinor: z.number().int().positive('Amount must be greater than zero'),
@@ -30,10 +38,16 @@ export const expenseInputSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   isEstimated: z.boolean().optional(),
+  /** E16: optional GPS position; both coordinates or neither. */
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
+  locationLabel: z.string().trim().max(200).nullable().optional(),
 });
+
+export const expenseInputSchema = expenseFields.superRefine(bothCoordinatesOrNeither);
 export type ExpenseInput = z.infer<typeof expenseInputSchema>;
 
-export const expensePatchSchema = expenseInputSchema.omit({ id: true }).partial().strict();
+export const expensePatchSchema = expenseFields.omit({ id: true }).partial().strict().superRefine(bothCoordinatesOrNeither);
 export type ExpensePatch = z.infer<typeof expensePatchSchema>;
 
 export const expenseListQuerySchema = z.object({
@@ -66,6 +80,9 @@ export interface ExpenseDto {
   notes: string | null;
   source: ExpenseSource;
   isEstimated: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  locationLabel: string | null;
   importItemId: string | null;
   recurringChargeId: string | null;
   /** Confirmed proof files linked to this expense. */
