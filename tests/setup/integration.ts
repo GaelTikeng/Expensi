@@ -34,6 +34,7 @@ jest.mock('@/src/server/storage/s3', () => {
   return {
     ...actual,
     __store: store,
+    isStorageConfigured: () => true,
     presignPut: async ({ key, contentType }: { key: string; contentType: string }) => ({
       url: `https://s3.test/${key}?put`,
       expiresAt: new Date(Date.now() + 600_000),
