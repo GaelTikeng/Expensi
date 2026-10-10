@@ -8,7 +8,6 @@ import { RecapsRepository } from './recaps';
 import { RecurringRepository } from './recurring';
 
 export { UsersRepository } from './users';
-export { ReferenceRepository } from './reference';
 export { ExpensesRepository } from './expenses';
 export { CategoriesRepository } from './categories';
 export { RecapsRepository } from './recaps';

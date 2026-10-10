@@ -29,7 +29,6 @@ notifications need native modules).
 pnpm install
 cp .env.example .env        # fill in Clerk, Neon, TensorX, S3 values
 pnpm db:migrate             # applies src/server/db/migrations against DIRECT_URL
-pnpm db:seed                # reference currencies
 pnpm start                  # Metro + API routes
 ```
 
@@ -49,7 +48,6 @@ eas build --profile development --platform all
 | `pnpm test` | Vitest unit tests (`src/**/*.test.ts`) |
 | `pnpm db:generate` | Drizzle migration from `src/server/db/schema.ts` — read the SQL before committing |
 | `pnpm db:migrate` | Apply migrations (direct Neon URL) |
-| `pnpm db:seed` | Seed `currencies` |
 | `pnpm db:studio` | Drizzle Studio |
 
 ## Layout

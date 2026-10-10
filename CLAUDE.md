@@ -47,6 +47,7 @@ the design must not hard-code that. iOS + Android, public app.
 | File parsing | SheetJS (`xlsx`) for Excel/CSV, `pdf-parse` for text PDFs, multimodal TensorX model for scanned PDFs | |
 | Observability | `@sentry/react-native` (client, DSN-gated); server routes log via `console` | server Sentry pending |
 | UI / styling | **NativeWind 4.2** (Tailwind CSS **v3**) + **React Native Reusables** components copied into `src/components/ui/` (`@rn-primitives/*`, `class-variance-authority`, `tailwind-merge` v2, `lucide-react-native` + `react-native-svg`); `@react-native-community/datetimepicker`; `react-native-gesture-handler` + `react-native-reanimated` (swipe rows) | see D13. Category glyphs stay on `@expo/vector-icons` Ionicons (stored in DB) |
+| Client cache | **TanStack Query 5** (`@tanstack/react-query`) | `src/lib/query.ts`: `queryClient`, `keys`, `invalidate`, `useRefetchOnFocus`; see D15 |
 | Native builds | **EAS Build**, project `@gaeltikeng/xpens-ia`; `expo-dev-client`; pnpm pinned to **9.15.2** in every `eas.json` profile | EAS defaults to pnpm 11, which ignores `package.json#pnpm`; see `docs/DEPLOY.md` |
 
 ```
@@ -105,22 +106,34 @@ minted by the API.
   `components.json` aliases → `src/components/ui`) and are then ours to edit.
   Colours are CSS variables in `global.css`, mirrored as literals in
   `src/lib/theme.ts` for props that need raw values (ActivityIndicator, icons,
-  navigation chrome); keep the two in sync. No new `StyleSheet.create` in
-  migrated code. Shared layout helpers: `src/components/form-field.tsx`,
-  `src/components/group.tsx`. Light mode is pinned until every screen is
-  migrated (E9), then the app follows the system setting.
+  navigation chrome) through `useThemeColors()`; keep the two in sync. No new
+  `StyleSheet.create` in migrated code. Shared layout helpers:
+  `src/components/form-field.tsx`, `src/components/group.tsx`. The app follows
+  the system colour scheme (F9.5).
+- **D14 — Supported currencies are a constant, not a table.** `src/lib/currencies.ts`
+  (`CURRENCIES`, `CURRENCY_CODES`, `currencyInfo()`) is shared by pickers, zod
+  schemas and the API. The `currencies` table and the FKs to it were dropped in
+  migration `0001_strong_nova.sql`; adding a currency is a one-line code change.
+- **D15 — One client cache: TanStack Query.** Every read goes through `useQuery` /
+  `useInfiniteQuery` with keys from `src/lib/query.ts#keys`; every write calls the
+  matching `invalidate.*` helper. Cached data renders instantly, refreshes in the
+  background (`useRefetchOnFocus` for tab screens, `focusManager` for app
+  foreground), and skeletons show only on a cold cache. Profile and categories
+  are prefetched after sign-in and kept 10 min; lists 60 s. Detail screens open
+  with `placeholderData` taken from the list that was tapped. The cache is
+  cleared on sign-out.
 
 ---
 
 ## 3. Data model
 
 Source of truth: `src/server/db/schema.ts`. Migrations in `src/server/db/migrations/`
-(first one: `0000_curious_whiplash.sql`, 11 tables, 8 enums). Tables:
+(`0000_curious_whiplash.sql`: 11 tables, 8 enums; `0001_strong_nova.sql`: drops
+`currencies`, D14). Tables:
 
 | Table | Purpose | Status |
 |---|---|---|
 | `users` | one row per Clerk user; currency, timezone, push token | done |
-| `currencies` | reference data: code, exponent, symbol | done |
 | `categories` | per-user, optional monthly budget, one-level `parent_id` | done |
 | `expenses` | the ledger; `import_item_id` and `recurring_charge_id` audit links | done |
 | `imports` | one row per uploaded xlsx/csv/pdf; `storage_key` into S3, status, model, tokens | done |
@@ -161,13 +174,12 @@ expense-app/
 │   └── api/                           Expo API Routes (server-only)
 │       ├── health+api.ts              liveness, no server imports
 │       ├── me+api.ts                  GET profile, PATCH prefs, DELETE account
-│       ├── currencies+api.ts          reference currencies
 │       └── webhooks/clerk+api.ts      Clerk user.* events (verifyWebhook)
 ├── src/
 │   ├── server/                        never imported by client code
 │   │   ├── env.ts                     zod-validated server env
-│   │   ├── db/schema.ts, client.ts, seed.ts, migrations/
-│   │   ├── repositories/              base, users, expenses, categories, attachments, imports, planned, recurring, recaps, reference
+│   │   ├── db/schema.ts, client.ts, migrations/
+│   │   ├── repositories/              base, users, expenses, categories, attachments, imports, planned, recurring, recaps
 │   │   ├── services/account.ts        deleteAccountData(): S3 purge + cascade delete
 │   │   ├── services/imports/          parse (SheetJS, pdf-parse), extract (model call), process, commit, dto
 │   │   ├── services/recaps/           stats (SQL), narrative (model), index (cache)
@@ -187,7 +199,7 @@ expense-app/
 │   │   ├── notifications/             permissions, schedule (recaps + planned), setup hook, prefs toggles
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
 │   │   └── settings/                  useMe (profile + currencies), OptionPicker
-│   └── lib/                           api, money, dates (+periods), uuid, prefs, timezones, schemas/
+│   └── lib/                           api, query (cache), currencies, money, dates (+periods), uuid, prefs, timezones, schemas/
 ├── eas.json                           build profiles
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
 ├── scripts/e2e-api.mjs                end-to-end API test (pnpm test:e2e)
@@ -243,7 +255,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F0.4 Server code in `src/server/`; `timestamptz` bug fixed via `timestamp(..., { withTimezone: true })` helper
 - [x] F0.5 Schema v2 — `src/server/db/schema.ts` (11 tables, 8 enums, all relations)
 - [x] F0.6 First migration applied to Neon (PostgreSQL 18, `eu-central-1`) on 2026-10-04: 11 tables, 8 enums. Prep script `scripts/db-init.mjs` (pgcrypto) then `pnpm db:migrate` against `DIRECT_URL`
-- [x] F0.7 Currencies seeded (XAF, XOF, EUR, USD, GBP, NGN) via `pnpm db:seed`
+- [-] F0.7 Currencies seeded via `pnpm db:seed` — replaced by the constant in `src/lib/currencies.ts` (D14, 2026-10-10); table dropped in migration 0001
 - [x] F0.8 Repository layer — `src/server/repositories/` (`UserScopedRepository`, `UsersRepository`, `ExpensesRepository`, `createRepositories()`)
 - [x] F0.9 `pnpm typecheck` / `lint` / `test`, ESLint client→server import ban, GitHub Actions CI
 - [x] F0.10 Tests — `src/ai/extraction-contract.test.ts` (12), `src/lib/money.test.ts` (6)
@@ -256,7 +268,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F1.1 Clerk provider + secure token cache — `app/_layout.tsx`. Migrated from `@clerk/clerk-expo` to `@clerk/expo` 4.x on 2026-10-04
 - [x] F1.2 Sign-in-or-up — `app/(auth)/sign-in.tsx` → `src/features/auth/ClerkAuthScreen{,.web}.tsx`: Clerk `<SignIn withSignUp />` on web, native `AuthView` in dev/store builds, `CustomSignIn` (email code + Google) in Expo Go. **Open issue:** the Clerk instance requires a password at sign-up but only allows email-code sign-in, so `CustomSignIn` cannot finish a new sign-up; turn the password requirement off in the Clerk dashboard (or collect a password there). Google redirect for native: `xpensia://sso-callback`
 - [x] F1.3 API middleware `withAuth()` — `src/server/auth/clerk.ts`; smoke route `app/api/me+api.ts`
-- [x] F1.4 Settings: currency, timezone (curated list `src/lib/timezones.ts`), sign out — `app/(tabs)/settings.tsx`, `src/features/settings/*`, `PATCH /api/me`, `GET /api/currencies`
+- [x] F1.4 Settings: currency, timezone (curated list `src/lib/timezones.ts`), sign out — `app/(tabs)/settings.tsx`, `src/features/settings/*`, `PATCH /api/me` (`GET /api/currencies` removed with D14)
 - [x] F1.5 Clerk webhook (`user.created/updated/deleted`) — `app/api/webhooks/clerk+api.ts`, `src/server/services/account.ts`. Needs `CLERK_WEBHOOK_SIGNING_SECRET` and the endpoint registered in Clerk
 - [x] F1.6 In-app delete account — `DELETE /api/me` purges S3 prefix + DB rows, then deletes the Clerk user
 
@@ -301,7 +313,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F4.1 `src/server/services/recaps/stats.ts`: total/count/estimated/with-proof, vs previous period, by category (+budget % for months), top payees, by day, largest 3, fixed vs variable, other currencies
 - [x] F4.2 `GET /api/recaps?period=&start=&narrative=` — `services/recaps/index.ts` serves the cache when fresh, recomputes when missing/stale, upserts
 - [x] F4.3 `services/recaps/narrative.ts` — narrative model over trimmed stats JSON, 3–5 sentences, stored in `narrative_md`; failure never fails the recap
-- [x] F4.4 Recaps tab `app/(tabs)/recaps.tsx`: Day/Week/Month segment, prev/next, headline + delta, by-day columns, narrative card (loaded after stats), category bars with budget %, fixed vs variable, top payees, largest — `src/features/recaps/*`
+- [x] F4.4 Recaps tab `app/(tabs)/recaps.tsx`: Day/Week/Month segment, prev/next, headline + delta, by-day columns, narrative card (on demand since 2026-10-10: a **Summarise** button triggers the model; a stored summary shows at once), category bars with budget %, fixed vs variable, top payees, largest — `src/features/recaps/*`
 - [x] F4.5 Home `app/(tabs)/index.tsx` via `GET /api/recaps/overview`: three tiles with deltas, biggest category, quick actions
 - [x] F4.6 Opt-in **local** reminders (Monday / 1st at 09:00) scheduled on-device — `src/features/notifications/*`, toggles in Settings, prefs in `src/lib/prefs.ts`. Android monthly re-armed on app open. Server push not needed for this
 - [x] F4.7 `is_stale` rows recomputed on next read; stale narrative cleared when stats change
@@ -338,16 +350,35 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [ ] F8.2 SMS auto-capture of mobile-money confirmations (Android only)
 - [ ] F8.3 Offline outbox with expo-sqlite
 - [ ] F8.4 Shared / household ledgers
-- [ ] F8.5 Export to Excel / PDF
+- [-] F8.5 Export to Excel / PDF — promoted to E10 (2026-10-10)
 
 ### E9 — UI kit: NativeWind + React Native Reusables (D13)
 - [x] F9.1 Setup: `babel.config.js`, `metro.config.js` (`inlineRem: 16`), `tailwind.config.js`, `global.css` (light + dark palettes from the existing look), `nativewind-env.d.ts`, `components.json`, `src/lib/utils.ts` (`cn`), `src/lib/theme.ts` (`THEME`, `NAV_THEME`); root layout loads the CSS, wraps `ThemeProvider` and mounts `PortalHost`. Reusables `doctor`: all checks pass
 - [x] F9.2 Components in `src/components/ui/`: button, text, input, textarea, label, card, separator, switch, checkbox, badge, dialog, alert-dialog, select, toggle, toggle-group, skeleton, progress, icon, native-only-animated-view
 - [x] F9.3 Phase 1 migration: `OptionPicker`, `AmountInput`, `DateField`, `TimeField`, `ExpenseForm`, `ExpenseRow`, `FileTile`/`AddTile`, `LocalFilesPicker`, `AttachmentsSection`, `CustomSignIn`, `ClerkAuthScreen{,.web}`, Settings (grouped rows, usage progress bars, AlertDialog for delete account)
-- [ ] F9.4 Phase 2 migration: home, expenses tab (search + proof chips → ToggleGroup), plan tab and its views, recaps tab and charts, import screens and modals, planned / recurring forms and screens, expense new/detail screens, attachment viewer, upload overlay, privacy, tabs and stack chrome
-- [ ] F9.5 Dark mode: after F9.4, replace `colorScheme.set('light')` with system following and pick `NAV_THEME` from `useColorScheme()`
+- [x] F9.4 Phase 2 migration (2026-10-07): tabs layout (lucide tab icons, THEME tints), home, expenses (search `Input`, proof filter `ToggleGroup`), recaps + `charts.tsx`, plan tab (`ToggleGroup` segment), `PlanningView`, `FixedChargesView`, `PlannedRow`, `CompleteSheet`, `PlannedForm`, `RecurringForm`, planned/recurring screens, import history + review, `ImportItemRow` (Reusables `Checkbox`), `ItemEditModal`, expense new/detail, privacy, `AttachmentViewer`, `UploadOverlay`. No `StyleSheet` left outside `src/components/ui`; remaining inline styles are data-driven only (chart sizes, category colours). Recap "fixed vs variable" bar uses warning (fixed) / primary (variable) since the old purple has no token
+- [x] F9.5 Dark mode (2026-10-10): the app follows the system setting. Root layout picks `NAV_THEME` from `useColorScheme()`, `StatusBar style="auto"`, web mirrors the media query via `colorScheme.set('system')` in an effect; `useThemeColors()` in `src/lib/theme.ts` replaces every `THEME.light.*` read (spinners, icons, tab tints). Clerk's prebuilt web `<SignIn>` still renders light (would need `@clerk/themes`)
+- [x] F9.7 Skeleton loaders (2026-10-10): every screen that waits on the API shows a placeholder shaped like its content instead of a centred spinner. Shared pieces in `src/components/skeletons.tsx` (`ExpenseListSkeleton`, `PlannedListSkeleton`, `GroupSkeleton`, `FormSkeleton` + `FORM_LAYOUTS`, `TileStripSkeleton`, `AttachmentsCardSkeleton`, `loadingA11y`); screen-specific ones sit next to their screens (home tiles, recap cards, planning months, fixed charges, planned detail, import history and review). Spinners remain only for actions (buttons, uploads), the AI steps (import extraction, recap narrative) and Clerk's session restore. Skeleton colour is `bg-border` (our `accent` is blue)
 - [ ] F9.6 Bundle size: Metro does not tree-shake `lucide-react-native` (bundle grew ~2.5k → ~4.5k modules); switch to per-icon imports or enable Expo tree shaking before a store release
 
+
+### E11 — Client data cache (D15)
+- [x] F11.1 `src/lib/query.ts`: `queryClient` (60 s stale, 30 min gc, retry 1), hierarchical `keys`, `invalidate.{expenses,plans,imports,attachments}`, `useRefetchOnFocus`, `errorMessage`; `QueryClientProvider` in the root layout; cache cleared on sign-out; AppState → `focusManager`
+- [x] F11.2 Hooks on the cache: `useMe` (optimistic prefs mutation), `useCategories`, `useExpenses` (`useInfiniteQuery`, `keepPreviousData` while searching, optimistic delete), `useUpcomingPlanned`, `useRecurringList`, `useRecap` / `useRecapOverview`, `useAttachments`
+- [x] F11.3 Screens: home, expenses, plan, recaps, settings refresh in the background on focus; planning / month / fixed charges / import history and review / expense, planned and recurring detail read through `useQuery`; detail screens open from the tapped list row via `placeholderData`
+- [x] F11.4 Fixed-charge materialisation (F6.3) runs once per session (`ensureMaterialized`, 6 h) and after a charge is created or edited (`markMaterializationStale`), instead of on every Plan visit
+- [x] F11.5 Profile and categories prefetched in the tabs layout, so forms open without a loading state after the first seconds of a session
+- [x] F11.6 Currencies hardcoded (D14): `src/lib/currencies.ts`; `/api/currencies`, `ReferenceRepository`, `seed.ts` and `db:seed` removed; zod schemas validate codes against the list; migration `0001_strong_nova.sql` applied to Neon 2026-10-10
+
+### E10 — Export expenses (PDF / XLSX)
+Registered 2026-10-10; not started. Download the ledger for a date range as a
+spreadsheet or a printable statement.
+- [ ] F10.1 `GET /api/expenses/export?from=&to=&format=pdf|xlsx` (+ optional `categoryId`, `hasAttachment`) through `ExpensesRepository`; same filters as F2.2; hard cap on rows (5 000) with a clear 400 for reversed / oversize ranges; `Content-Disposition` filename `xpens-ia_<from>_<to>.<ext>`
+- [ ] F10.2 XLSX via SheetJS (already a dependency, F3.5): sheet **Expenses** (date, description, payee, category, amount as a number, currency, estimated, proofs) + sheet **Summary** (totals per currency and per category)
+- [ ] F10.3 PDF: header (user, range, generated on), expense table, totals per currency and per category; DD/MM dates and per-currency amount formatting (D7). Library to add and register in §2: `pdf-lib` (pure JS, runs on EAS Hosting)
+- [ ] F10.4 Export screen `app/export.tsx`: range shortcuts (this month, last month, this year, custom via `DateField`), PDF / XLSX toggle, preview line ("42 expenses · 315 000 FCFA" via `GET /api/expenses` count), Export button; entry points from the Expenses tab and Settings
+- [ ] F10.5 Delivery: native saves to the cache dir then opens the share sheet (`expo-sharing`, to register in §2); web triggers a browser download
+- [ ] F10.6 Tests: row selection by range, totals, empty range, mixed currencies
 ---
 
 ## 7. Working agreements for Claude Code
@@ -361,8 +392,9 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - Client code never imports from `src/server/`. ESLint enforces it
   (`no-restricted-imports` in `eslint.config.js`); do not disable the rule, add an API route.
 - Model IDs only in `MODELS`. Verify TensorX ids via `GET /v1/models`.
-- Client data fetching is plain hooks over `apiFetch` for now (see `useMe`). Introduce
-  a query library only when a list screen needs caching, and register it in §2.
+- Client data fetching goes through TanStack Query (D15): add a key under
+  `keys` in `src/lib/query.ts`, read with `useQuery`, and call the matching
+  `invalidate.*` after every write. No ad-hoc `useEffect` + `useState` fetches.
 - Pure client logic that gets unit-tested must not import `@clerk/expo` or
   `react-native`; vitest runs in Node (see `src/features/auth/errors.ts`).
 - UI: build with `src/components/ui/*` and Tailwind classes (D13). Add a missing
@@ -376,6 +408,46 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ## 8. Changelog
 
+- 2026-10-10 — **Client cache (E11, D15) and hardcoded currencies (D14).**
+  TanStack Query added; every data hook and screen reads through it, writes
+  invalidate the affected families, tab screens refresh in the background on
+  focus, detail screens open instantly from the tapped row, profile and
+  categories are prefetched after sign-in. Fixed-charge materialisation runs
+  once per session. The `currencies` table, its route, repository and seed are
+  gone (migration 0001 applied); the list lives in `src/lib/currencies.ts`.
+- 2026-10-10 — **Dark mode follows the system (F9.5)** and the recap summary
+  card collapses: once a summary is shown, tapping its header folds it to the
+  title (state resets when the period changes).
+- 2026-10-10 — **Recap summary on demand.** `useRecap` no longer requests
+  the AI narrative after the stats; the "In short" card offers a Summarise
+  button (`loadNarrative`) and shows a stored summary immediately. Saves a
+  model call per visit and keeps the quota for summaries the user asked for.
+- 2026-10-10 — **Tab headers removed; home shell reworked.** The five tabs
+  render without a navigation header (`headerShown: false`); `TabScreen`
+  (`src/components/tab-screen.tsx`) applies the status-bar inset instead. The
+  Expenses import button moved from the header to the search row. Home: "Add
+  expense" is now a floating button like the Expenses tab, the Recaps shortcut
+  is gone, "Import a file" stays as a single action. Export to PDF / XLSX
+  registered as E10 (F8.5 promoted).
+- 2026-10-10 — **Skeleton loaders replace page spinners (F9.7).** Home,
+  expenses (incl. load-more), recaps, plan (upcoming, planning, fixed
+  charges), planned month, settings, expense / planned / recurring create and
+  detail, import history and review, and the proof strip now render
+  layout-matching skeletons while their data loads. Import review no longer
+  shows "10 to 40 seconds" during the plain fetch; that message is kept for
+  the AI step only.
+- 2026-10-10 — **Runtime fixes from the first Expo Go session.** Root layout is
+  wrapped in `GestureHandlerRootView` (swipe-to-delete rows crashed without
+  it); `DateField` / `TimeField` use datetimepicker 9's `onValueChange` +
+  `onDismiss` instead of the deprecated `onChange`; Reanimated strict-mode
+  logging is off because gesture-handler 2.32's `ReanimatedSwipeable` reads
+  shared values during render (re-enable when a fixed release ships).
+- 2026-10-07 — **E9 phase 2: every screen on NativeWind + Reusables.** 27 files
+  migrated (tabs, home, expenses, recaps and charts, plan and its views, forms
+  and sheet, planned/recurring screens, imports, expense screens, privacy,
+  attachment viewer, upload overlay). Ionicons remain only for category glyphs.
+  Typecheck, lint, 53 tests, Android/iOS/web exports pass. Light mode still
+  pinned; dark mode is F9.5.
 - 2026-10-07 — **Notifications disabled on web.** The web build crashed after
   sign-in calling `getLastNotificationResponseAsync`; `module.ts` now reports
   web as unsupported (`notificationsUnavailableReason`), and Settings explains

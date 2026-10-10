@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src
 import { Input } from '@/src/components/ui/input';
 import { Separator } from '@/src/components/ui/separator';
 import { Text } from '@/src/components/ui/text';
-import { THEME } from '@/src/lib/theme';
+import { useThemeColors } from '@/src/lib/theme';
 import { useEmailCodeAuth } from './useEmailCodeAuth';
 import { useGoogleAuth } from './useGoogleAuth';
 import { useWarmUpBrowser } from './useWarmUpBrowser';
@@ -18,6 +18,7 @@ import { useWarmUpBrowser } from './useWarmUpBrowser';
  * created on first code entry. Google is a one-tap alternative.
  */
 export function CustomSignIn() {
+  const theme = useThemeColors();
   useWarmUpBrowser();
   const email = useEmailCodeAuth();
   const google = useGoogleAuth();
@@ -55,7 +56,7 @@ export function CustomSignIn() {
                 onSubmitEditing={() => email.sendCode(emailText)}
               />
               <Button disabled={busy || !emailText.includes('@')} onPress={() => email.sendCode(emailText)}>
-                {email.busy ? <ActivityIndicator color={THEME.light.primaryForeground} /> : <Text>Continue with email</Text>}
+                {email.busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>Continue with email</Text>}
               </Button>
 
               <View className="flex-row items-center gap-2">
@@ -84,7 +85,7 @@ export function CustomSignIn() {
                 onSubmitEditing={() => email.verifyCode(codeText)}
               />
               <Button disabled={busy || codeText.length < 6} onPress={() => email.verifyCode(codeText)}>
-                {email.busy ? <ActivityIndicator color={THEME.light.primaryForeground} /> : <Text>Verify</Text>}
+                {email.busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>Verify</Text>}
               </Button>
               <Button
                 variant="link"

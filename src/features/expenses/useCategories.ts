@@ -1,47 +1,26 @@
 import { useAuth } from '@clerk/expo';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import type { CategoryDto } from '@/src/lib/schemas/category';
+import { errorMessage, keys, REFERENCE_STALE } from '@/src/lib/query';
 import { categoriesApi } from './api';
 
+const EMPTY: CategoryDto[] = [];
+
+/** The user's categories, cached for the session (D15); forms open without waiting. */
 export function useCategories() {
   const { getToken } = useAuth();
   const api = useMemo(() => categoriesApi(getToken), [getToken]);
-  const [categories, setCategories] = useState<CategoryDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .list()
-      .then((items) => {
-        if (!cancelled) setCategories(items);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api]);
+  const query = useQuery({
+    queryKey: keys.categories,
+    queryFn: () => api.list(),
+    staleTime: REFERENCE_STALE,
+  });
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      setCategories(await api.list());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
+  const categories = query.data ?? EMPTY;
   const byId = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
-  return { categories, byId, loading, error, reload, api };
+  return { categories, byId, loading: query.isPending, error: errorMessage(query.error), reload: () => query.refetch(), api };
 }

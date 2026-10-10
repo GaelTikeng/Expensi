@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isKnownCurrency } from '../currencies';
+
 import { isoDateSchema } from './expense';
 
 export type PlannedStatus = 'planned' | 'done' | 'skipped';
@@ -10,7 +12,7 @@ export const plannedInputSchema = z.object({
   id: z.string().uuid(),
   title: z.string().trim().min(1, 'Title is required').max(200),
   amountMinor: z.number().int().positive('Amount must be greater than zero'),
-  currency: z.string().length(3).toUpperCase(),
+  currency: z.string().length(3).toUpperCase().refine((c): boolean => isKnownCurrency(c), 'Unsupported currency'),
   /** ISO instant; the moment the expense is meant to happen. */
   scheduledAt: isoDateTime,
   place: z.string().trim().max(200).nullable().optional(),

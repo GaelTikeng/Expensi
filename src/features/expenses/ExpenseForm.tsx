@@ -8,7 +8,7 @@ import { Input } from '@/src/components/ui/input';
 import { Switch } from '@/src/components/ui/switch';
 import { Text } from '@/src/components/ui/text';
 import { Textarea } from '@/src/components/ui/textarea';
-import { THEME } from '@/src/lib/theme';
+import { useThemeColors } from '@/src/lib/theme';
 
 import { OptionPicker } from '@/src/features/settings/OptionPicker';
 import { todayISO } from '@/src/lib/dates';
@@ -39,7 +39,7 @@ export function ExpenseForm({
 }: {
   initial?: Partial<ExpenseFormValues>;
   categories: CategoryDto[];
-  currencies: CurrencyInfo[];
+  currencies: readonly CurrencyInfo[];
   defaultCurrency: string;
   submitLabel: string;
   submitting: boolean;
@@ -47,6 +47,7 @@ export function ExpenseForm({
   /** Rendered between the last field and the submit button (e.g. proof picker). */
   extra?: React.ReactNode;
 }) {
+  const theme = useThemeColors();
   const [amountMinor, setAmountMinor] = useState<number | null>(initial?.amountMinor ?? null);
   const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency);
   const [occurredOn, setOccurredOn] = useState(initial?.occurredOn ?? todayISO());
@@ -142,7 +143,7 @@ export function ExpenseForm({
       {extra}
 
       <Button size="lg" className="mt-2" disabled={submitting} onPress={submit}>
-        {submitting ? <ActivityIndicator color={THEME.light.primaryForeground} /> : <Text>{submitLabel}</Text>}
+        {submitting ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>{submitLabel}</Text>}
       </Button>
     </ScrollView>
   );

@@ -1,43 +1,34 @@
 import { useAuth } from '@clerk/expo';
-import { Ionicons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Trash2 } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
+import { Alert, Pressable, View } from 'react-native';
+
+import { FORM_LAYOUTS, FormSkeleton } from '@/src/components/skeletons';
+import { Icon } from '@/src/components/ui/icon';
+import { Text } from '@/src/components/ui/text';
 
 import { useCategories } from '@/src/features/expenses/useCategories';
 import { recurringApi } from '@/src/features/planned/api';
 import { RecurringForm } from '@/src/features/planned/RecurringForm';
+import { markMaterializationStale, useRecurringList } from '@/src/features/planned/usePlanned';
 import { useMe } from '@/src/features/settings/useMe';
-import type { RecurringDto } from '@/src/lib/schemas/recurring';
+import { errorMessage, invalidate } from '@/src/lib/query';
 
 /** F6.2: edit / deactivate / delete a fixed charge. */
 export default function RecurringDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
+  const qc = useQueryClient();
   const api = useMemo(() => recurringApi(getToken), [getToken]);
   const { categories, loading: catLoading } = useCategories();
   const { profile, currencies, loading: meLoading } = useMe();
-  const [charge, setCharge] = useState<RecurringDto | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .list()
-      .then((r) => {
-        if (cancelled) return;
-        const found = r.items.find((c) => c.id === id);
-        if (found) setCharge(found);
-        else setError('Fixed charge not found');
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, id]);
+  const list = useRecurringList();
+  const charge = list.data?.items.find((c) => c.id === id) ?? null;
+  const error = errorMessage(list.error) ?? (list.data && !charge ? 'Fixed charge not found' : null);
 
   const remove = () =>
     Alert.alert('Delete this fixed charge?', 'Future unpaid plans for it are removed; past payments stay in your expenses.', [
@@ -48,6 +39,7 @@ export default function RecurringDetailScreen() {
         onPress: async () => {
           try {
             await api.remove(id);
+            void invalidate.plans(qc);
             router.back();
           } catch (err) {
             Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
@@ -58,17 +50,14 @@ export default function RecurringDetailScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>{error}</Text>
+      <View className="bg-background flex-1 items-center justify-center p-6">
+        <Text className="text-destructive">{error}</Text>
       </View>
     );
   }
   if (!charge || catLoading || meLoading || !profile) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
+    // Editing adds the "Active" group at the end of the form.
+    return <FormSkeleton blocks={[...FORM_LAYOUTS.recurring, 1]} />;
   }
 
   return (
@@ -78,7 +67,7 @@ export default function RecurringDetailScreen() {
           title: charge.name,
           headerRight: () => (
             <Pressable onPress={remove} hitSlop={12} accessibilityLabel="Delete">
-              <Ionicons name="trash-outline" size={22} color="#C0392B" />
+              <Icon as={Trash2} className="text-destructive size-[22px]" />
             </Pressable>
           ),
         }}
@@ -98,6 +87,8 @@ export default function RecurringDetailScreen() {
             // Amount/day changes apply from next materialisation; this month's
             // existing plan is left as the user may already have acted on it.
             await api.materialize().catch(() => undefined);
+            markMaterializationStale();
+            void invalidate.plans(qc);
             router.back();
           } catch (err) {
             Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
@@ -109,8 +100,3 @@ export default function RecurringDetailScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  error: { color: '#C0392B' },
-});

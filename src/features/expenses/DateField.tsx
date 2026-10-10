@@ -1,4 +1,4 @@
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
 
@@ -26,11 +26,13 @@ export function DateField({
   const today = todayISO();
   const yesterday = addDays(today, -1);
 
-  const handlePicker = (event: DateTimePickerEvent, date?: Date) => {
+  // onChange is deprecated in datetimepicker 9: picks arrive via onValueChange,
+  // cancellation via onDismiss.
+  const handlePick = (_event: unknown, date: Date) => {
     setShowAndroid(false);
-    if (event.type === 'dismissed' || !date) return;
     onChange(toISODate(date));
   };
+  const handleDismiss = () => setShowAndroid(false);
 
   return (
     <View className="gap-2">
@@ -41,7 +43,8 @@ export function DateField({
             mode="date"
             display="compact"
             value={parseISODate(value ?? today)}
-            onChange={handlePicker}
+            onValueChange={handlePick}
+            onDismiss={handleDismiss}
             maximumDate={parseISODate(addDays(today, 366))}
           />
         ) : (
@@ -58,7 +61,7 @@ export function DateField({
       </View>
 
       {showAndroid && Platform.OS === 'android' ? (
-        <DateTimePicker mode="date" display="default" value={parseISODate(value ?? today)} onChange={handlePicker} />
+        <DateTimePicker mode="date" display="default" value={parseISODate(value ?? today)} onValueChange={handlePick} onDismiss={handleDismiss} />
       ) : null}
     </View>
   );

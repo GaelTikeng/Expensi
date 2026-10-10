@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 
+import { TileStripSkeleton } from '@/src/components/skeletons';
 import { Text } from '@/src/components/ui/text';
 
 import type { AttachmentDto } from '@/src/lib/schemas/attachment';
@@ -38,7 +39,7 @@ export function AttachmentsSection({ expenseId }: { expenseId: string }) {
         </Text>
       </View>
       {loading ? (
-        <ActivityIndicator className="m-3" />
+        <TileStripSkeleton />
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2.5">
           <AddTile onPress={() => chooseSource((files) => void add(files))} />

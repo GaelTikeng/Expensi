@@ -3,23 +3,33 @@ import '../global.css';
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { PortalHost } from '@rn-primitives/portal';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { colorScheme } from 'nativewind';
+import { colorScheme, useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 
+import { queryClient } from '@/src/lib/query';
 import { initSentry, setSentryUser } from '@/src/lib/sentry';
-import { NAV_THEME, THEME } from '@/src/lib/theme';
+import { NAV_THEME, useThemeColors } from '@/src/lib/theme';
 
 initSentry();
 
-// Phase 1 of the NativeWind migration: most screens are still hand-styled in
-// light colours, so the app stays light until phase 2 converts them. Then this
-// becomes colorScheme.set('system') and NAV_THEME follows useColorScheme().
-// Web needs no call (class-based dark mode defaults to light) and the call
-// throws during server rendering, so it is native-only.
-if (Platform.OS !== 'web') colorScheme.set('light');
+// react-native-gesture-handler 2.32 (pinned by Expo SDK 57) reads and writes
+// shared values during render inside ReanimatedSwipeable (ExpenseRow), which
+// Reanimated 4's strict mode reports on every row. Our own code reads shared
+// values only inside worklets. Re-enable strict mode once a gesture-handler
+// release fixes ReanimatedSwipeable.
+configureReanimatedLogger({ level: ReanimatedLogLevel.warn, strict: false });
+
+// F9.5: the app follows the device setting. Native defaults to "system"
+// already. Web uses class-based dark mode, and NativeWind's
+// colorScheme.set('system') only removes the `dark` class, so RootLayout
+// mirrors the media query onto <html class="dark"> itself (in an effect: the
+// call throws during server rendering).
 
 const publishableKey: string = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 
@@ -35,15 +45,18 @@ if (!publishableKey) {
  */
 function RootNavigator() {
   const { isLoaded, isSignedIn, userId } = useAuth();
+  const theme = useThemeColors();
 
   useEffect(() => {
     setSentryUser(userId ?? null);
-  }, [userId]);
+    // Signing out must not leave the previous user's data in the cache.
+    if (isLoaded && !isSignedIn) queryClient.clear();
+  }, [userId, isLoaded, isSignedIn]);
 
   if (!isLoaded) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator color={THEME.light.primary} />
+        <ActivityIndicator color={theme.primary} />
       </View>
     );
   }
@@ -71,14 +84,31 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  const { colorScheme: scheme } = useColorScheme();
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => colorScheme.set(query.matches ? 'dark' : 'light');
+    apply();
+    query.addEventListener('change', apply);
+    return () => query.removeEventListener('change', apply);
+  }, []);
+
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ThemeProvider value={NAV_THEME.light}>
-        <RootNavigator />
-        <StatusBar style="dark" />
-        {/* Dialogs, selects and menus from src/components/ui render here. */}
-        <PortalHost />
-      </ThemeProvider>
-    </ClerkProvider>
+    // Required by react-native-gesture-handler (swipe-to-delete rows). Inline
+    // style because GestureHandlerRootView is not registered with NativeWind.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider value={scheme === 'dark' ? NAV_THEME.dark : NAV_THEME.light}>
+            <RootNavigator />
+            <StatusBar style="auto" />
+            {/* Dialogs, selects and menus from src/components/ui render here. */}
+            <PortalHost />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </ClerkProvider>
+    </GestureHandlerRootView>
   );
 }

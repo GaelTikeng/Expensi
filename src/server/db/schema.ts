@@ -101,14 +101,8 @@ export const users = pgTable(
   (t) => [uniqueIndex('users_clerk_user_id_key').on(t.clerkUserId)],
 );
 
-/* ── currencies (reference data, seeded) ──────────────────────────────────── */
-export const currencies = pgTable('currencies', {
-  code: varchar('code', { length: 3 }).primaryKey(),
-  /** 0 for XAF, 2 for USD/EUR. Resolve before formatting. */
-  exponent: smallint('exponent').notNull(),
-  symbol: varchar('symbol', { length: 8 }).notNull(),
-  name: text('name').notNull(),
-});
+/* Currency codes are validated against src/lib/currencies.ts (D14); the former
+   `currencies` reference table was dropped in migration 0001. */
 
 /* ── categories ───────────────────────────────────────────────────────────── */
 export const categories = pgTable(
@@ -126,7 +120,7 @@ export const categories = pgTable(
       onDelete: 'set null',
     }),
     budgetMinor: bigint('budget_minor', { mode: 'number' }),
-    budgetCurrency: varchar('budget_currency', { length: 3 }).references(() => currencies.code),
+    budgetCurrency: varchar('budget_currency', { length: 3 }),
     sortOrder: integer('sort_order').notNull().default(0),
     ...auditCols,
   },
@@ -229,9 +223,7 @@ export const recurringCharges = pgTable(
 
     name: varchar('name', { length: 200 }).notNull(),
     amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(),
-    currency: varchar('currency', { length: 3 })
-      .notNull()
-      .references(() => currencies.code),
+    currency: varchar('currency', { length: 3 }).notNull(),
     categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
     payee: varchar('payee', { length: 200 }),
     notes: text('notes'),
@@ -260,9 +252,7 @@ export const expenses = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
 
     amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(),
-    currency: varchar('currency', { length: 3 })
-      .notNull()
-      .references(() => currencies.code),
+    currency: varchar('currency', { length: 3 }).notNull(),
 
     /** Drives all reporting. */
     occurredOn: date('occurred_on').notNull(),
@@ -307,9 +297,7 @@ export const plannedExpenses = pgTable(
 
     title: varchar('title', { length: 200 }).notNull(),
     amountMinor: bigint('amount_minor', { mode: 'number' }).notNull(),
-    currency: varchar('currency', { length: 3 })
-      .notNull()
-      .references(() => currencies.code),
+    currency: varchar('currency', { length: 3 }).notNull(),
     categoryId: uuid('category_id').references(() => categories.id, { onDelete: 'set null' }),
 
     /** The moment the expense is meant to happen; reminders are T-24h and T-1h. */

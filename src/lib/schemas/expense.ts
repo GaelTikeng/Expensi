@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isKnownCurrency } from '../currencies';
+
 import { isValidISODate } from '../dates';
 
 /**
@@ -20,7 +22,7 @@ export const expenseInputSchema = z.object({
   /** Client-generated UUID (v7). Makes POST idempotent. */
   id: z.string().uuid(),
   amountMinor: z.number().int().positive('Amount must be greater than zero'),
-  currency: z.string().length(3).toUpperCase(),
+  currency: z.string().length(3).toUpperCase().refine((c): boolean => isKnownCurrency(c), 'Unsupported currency'),
   occurredOn: isoDateSchema,
   paidOn: isoDateSchema.nullable().optional(),
   description: z.string().trim().min(1, 'Description is required').max(500),

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isKnownCurrency } from '../currencies';
+
 import { isoDateSchema } from './expense';
 import type { PlannedStatus } from './planned';
 
@@ -7,7 +9,7 @@ export const recurringInputSchema = z.object({
   id: z.string().uuid(),
   name: z.string().trim().min(1, 'Name is required').max(200),
   amountMinor: z.number().int().positive('Amount must be greater than zero'),
-  currency: z.string().length(3).toUpperCase(),
+  currency: z.string().length(3).toUpperCase().refine((c): boolean => isKnownCurrency(c), 'Unsupported currency'),
   categoryId: z.string().uuid().nullable().optional(),
   payee: z.string().trim().max(200).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),

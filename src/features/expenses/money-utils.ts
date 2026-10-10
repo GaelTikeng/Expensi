@@ -4,7 +4,7 @@ import type { ExpenseDto } from '@/src/lib/schemas/expense';
 export type CurrencyLookup = (code: string) => CurrencyInfo;
 
 /** Falls back to a zero-decimal rendering when reference data is not loaded yet. */
-export function makeCurrencyLookup(list: CurrencyInfo[]): CurrencyLookup {
+export function makeCurrencyLookup(list: readonly CurrencyInfo[]): CurrencyLookup {
   const map = new Map(list.map((c) => [c.code, c]));
   return (code) => map.get(code) ?? { code, exponent: 0, symbol: code };
 }

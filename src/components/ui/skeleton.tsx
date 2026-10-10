@@ -5,7 +5,9 @@ function Skeleton({
   className,
   ...props
 }: React.ComponentProps<typeof View> & React.RefAttributes<View>) {
-  return <View className={cn('bg-accent animate-pulse rounded-md', className)} {...props} />;
+  // bg-border rather than the registry's bg-accent: our accent is a blue tint,
+  // and the page background is grey, so a neutral one step darker reads on both.
+  return <View className={cn('bg-border animate-pulse rounded-md', className)} {...props} />;
 }
 
 export { Skeleton };

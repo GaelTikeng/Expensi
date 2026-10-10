@@ -1,81 +1,64 @@
 import { useAuth } from '@clerk/expo';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { RecapPeriod } from '@/src/lib/dates';
-import type { RecapDto, RecapOverview } from '@/src/lib/schemas/recap';
+import { errorMessage, keys } from '@/src/lib/query';
+import type { RecapDto } from '@/src/lib/schemas/recap';
 import { recapsApi } from './api';
 
 /**
- * Two-step load: stats first (fast, SQL only), then the narrative, so the
- * screen never waits on the model to show numbers.
+ * Stats for one period from the shared cache (D15). The AI narrative is
+ * requested on demand through `loadNarrative`, so a visit never spends a
+ * model call unless the user asks; one already stored for these stats comes
+ * back with the stats.
  */
 export function useRecap(period: RecapPeriod, start: string) {
   const { getToken } = useAuth();
+  const qc = useQueryClient();
   const api = useMemo(() => recapsApi(getToken), [getToken]);
-  const [recap, setRecap] = useState<RecapDto | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [narrativeLoading, setNarrativeLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const seq = useRef(0);
+  const queryKey = keys.recaps.one(period, start);
+  const slot = `${period}:${start}`;
 
-  // Fetches stats, then (for week/month) the narrative. Only touches state
-  // after an await, so it is safe to call from an effect.
-  const run = useCallback(
-    async (mine: number) => {
-      try {
-        const stats = await api.get(period, start, false);
-        if (mine !== seq.current) return;
-        setRecap(stats);
-        setLoading(false);
-        setError(null);
-        if (period !== 'day' && stats.stats.count > 0 && !stats.narrativeMd) {
-          setNarrativeLoading(true);
-          const withText = await api.get(period, start, true);
-          if (mine !== seq.current) return;
-          setRecap(withText);
-        }
-      } catch (err) {
-        if (mine === seq.current) setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (mine === seq.current) {
-          setLoading(false);
-          setNarrativeLoading(false);
-        }
-      }
-    },
-    [api, period, start],
-  );
+  const query = useQuery({ queryKey, queryFn: () => api.get(period, start, false) });
 
-  useEffect(() => {
-    void run(++seq.current);
-  }, [run]);
+  // Keyed per period so switching periods mid-request shows the right state.
+  const [narrativeBusy, setNarrativeBusy] = useState<Record<string, boolean>>({});
+  const [narrativeErrors, setNarrativeErrors] = useState<Record<string, string | null>>({});
 
-  const load = useCallback(async () => {
-    const mine = ++seq.current;
-    setLoading(true);
-    await run(mine);
-  }, [run]);
+  /** F4.3: ask the model for the summary of the currently shown period. */
+  const loadNarrative = useCallback(async () => {
+    setNarrativeBusy((b) => ({ ...b, [slot]: true }));
+    try {
+      const withText = await api.get(period, start, true);
+      qc.setQueryData(queryKey, withText);
+      setNarrativeErrors((e) => ({ ...e, [slot]: withText.narrativeMd ? null : 'No summary could be written. Try again later.' }));
+    } catch (err) {
+      setNarrativeErrors((e) => ({ ...e, [slot]: errorMessage(err) }));
+    } finally {
+      setNarrativeBusy((b) => ({ ...b, [slot]: false }));
+    }
+    // queryKey derives from period + start.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, period, start, qc, slot]);
 
-  return { recap, loading, narrativeLoading, error, reload: load };
+  return {
+    recap: query.data ?? null,
+    loading: query.isPending,
+    narrativeLoading: narrativeBusy[slot] ?? false,
+    narrativeError: narrativeErrors[slot] ?? null,
+    error: errorMessage(query.error),
+    reload: () => query.refetch(),
+    loadNarrative,
+  };
 }
 
+/** F4.5: today / week / month stats for the home tiles. */
 export function useRecapOverview() {
   const { getToken } = useAuth();
   const api = useMemo(() => recapsApi(getToken), [getToken]);
-  const [overview, setOverview] = useState<RecapOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    try {
-      setOverview(await api.overview());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  return { overview, loading, error, reload };
+  const query = useQuery({ queryKey: keys.recaps.overview, queryFn: () => api.overview() });
+  return { overview: query.data ?? null, loading: query.isPending, error: errorMessage(query.error), reload: () => query.refetch() };
 }
+
+export type { RecapDto };

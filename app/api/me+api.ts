@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
+import { CURRENCY_CODES } from '@/src/lib/currencies';
+
 import { clerk, json, withAuth } from '@/src/server/auth/clerk';
 import { db } from '@/src/server/db/client';
 import type { User } from '@/src/server/db/schema';
-import { ReferenceRepository } from '@/src/server/repositories/reference';
 import { UsersRepository } from '@/src/server/repositories/users';
 import { deleteAccountData } from '@/src/server/services/account';
 import { isKnownTimezone } from '@/src/lib/timezones';
@@ -23,23 +24,17 @@ export const GET = withAuth(async (_req, { user }) => json(profile(user)));
 
 const patchSchema = z
   .object({
-    defaultCurrency: z.string().length(3).toUpperCase().optional(),
+    defaultCurrency: z.string().length(3).toUpperCase().pipe(z.enum(CURRENCY_CODES)).optional(),
     timezone: z.string().refine(isKnownTimezone, 'Unknown timezone').optional(),
     expoPushToken: z.string().min(1).nullable().optional(),
   })
   .strict();
 
-/** F1.4: preferences. Validates currency against reference data. */
+/** F1.4: preferences. Currency codes are validated by the schema (D14). */
 export const PATCH = withAuth(async (req, { user }) => {
   const body = patchSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) {
     return json({ error: 'invalid_body', issues: body.error.issues }, { status: 400 });
-  }
-  if (
-    body.data.defaultCurrency &&
-    !(await new ReferenceRepository(db).currencyExists(body.data.defaultCurrency))
-  ) {
-    return json({ error: 'unknown_currency' }, { status: 400 });
   }
   const updated = await new UsersRepository(db).updateProfile(user.id, body.data);
   return json(profile(updated ?? user));

@@ -3,7 +3,7 @@ import { lazy, Suspense } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { THEME } from '@/src/lib/theme';
+import { useThemeColors } from '@/src/lib/theme';
 import { CustomSignIn } from './CustomSignIn';
 
 /** Expo Go ships without Clerk's native module, so AuthView cannot load there. */
@@ -20,13 +20,14 @@ const AuthView = lazy(() => import('@clerk/expo/native').then((m) => ({ default:
  * The web build resolves ClerkAuthScreen.web.tsx instead of this file.
  */
 export function ClerkAuthScreen() {
+  const theme = useThemeColors();
   if (isExpoGo) return <CustomSignIn />;
   return (
     <SafeAreaView className="bg-card flex-1" edges={['top', 'bottom']}>
       <Suspense
         fallback={
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color={THEME.light.primary} />
+            <ActivityIndicator color={theme.primary} />
           </View>
         }
       >

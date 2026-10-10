@@ -8,6 +8,13 @@
       "when": 1791105576288,
       "tag": "0000_curious_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791634515517,
+      "tag": "0001_strong_nova",
+      "breakpoints": true
     }
   ]
 }

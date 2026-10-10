@@ -1,16 +1,25 @@
 import { useAuth } from '@clerk/expo';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { CalendarDays, Plus } from 'lucide-react-native';
+import { useState } from 'react';
+import { Alert, Pressable, SectionList, View } from 'react-native';
 
+import { PlannedListSkeleton } from '@/src/components/skeletons';
+import { TabScreen } from '@/src/components/tab-screen';
+import { Icon } from '@/src/components/ui/icon';
+import { Separator } from '@/src/components/ui/separator';
+import { Text } from '@/src/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/src/components/ui/toggle-group';
 import { completePlan } from '@/src/features/planned/completeFlow';
 import { CompleteSheet, type CompleteValues } from '@/src/features/planned/CompleteSheet';
 import { FixedChargesView } from '@/src/features/planned/FixedChargesView';
 import { PlannedRow } from '@/src/features/planned/PlannedRow';
 import { PlanningView } from '@/src/features/planned/PlanningView';
 import { useUpcomingPlanned } from '@/src/features/planned/usePlanned';
+import { invalidate, keys, useRefetchOnFocus } from '@/src/lib/query';
 import type { PlannedDto } from '@/src/lib/schemas/planned';
+import { cn } from '@/src/lib/utils';
 
 type Tab = 'upcoming' | 'planning' | 'fixed';
 
@@ -18,20 +27,12 @@ type Tab = 'upcoming' | 'planning' | 'fixed';
 export default function PlanScreen() {
   const [tab, setTab] = useState<Tab>('upcoming');
   const { getToken } = useAuth();
-  const { overdue, upcoming, loading, error, reload, skip, api, lookup } = useUpcomingPlanned();
+  const qc = useQueryClient();
+  const { overdue, upcoming, loading, error, reload, api, lookup } = useUpcomingPlanned();
   const [completing, setCompleting] = useState<PlannedDto | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const firstFocus = useRef(true);
-  useFocusEffect(
-    useCallback(() => {
-      if (firstFocus.current) {
-        firstFocus.current = false;
-        return;
-      }
-      void reload();
-    }, [reload]),
-  );
+  useRefetchOnFocus(keys.planned.all);
 
   const confirmComplete = async (values: CompleteValues) => {
     if (!completing) return;
@@ -40,7 +41,8 @@ export default function PlanScreen() {
       const res = await completePlan(api, completing, values, getToken);
       setCompleting(null);
       if (res.parked) Alert.alert('Saved', 'The receipt will upload when you are back online.');
-      void reload();
+      void invalidate.plans(qc);
+      void invalidate.expenses(qc);
     } catch (err) {
       Alert.alert('Could not complete', err instanceof Error ? err.message : String(err));
     } finally {
@@ -54,8 +56,15 @@ export default function PlanScreen() {
   ];
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.segment}>
+    <TabScreen>
+      <ToggleGroup
+        type="single"
+        value={tab}
+        onValueChange={(v) => {
+          if (v) setTab(v as Tab);
+        }}
+        className="bg-muted m-3 rounded-lg p-[3px]"
+      >
         {(
           [
             ['upcoming', 'Upcoming'],
@@ -63,18 +72,23 @@ export default function PlanScreen() {
             ['fixed', 'Fixed charges'],
           ] as const
         ).map(([k, label]) => (
-          <Pressable key={k} style={[styles.segmentItem, tab === k && styles.segmentActive]} onPress={() => setTab(k)}>
-            <Text style={[styles.segmentText, tab === k && styles.segmentTextActive]}>{label}</Text>
-          </Pressable>
+          <ToggleGroupItem
+            key={k}
+            value={k}
+            aria-label={label}
+            className={cn('h-9 flex-1 rounded-md', tab === k ? 'bg-card shadow-sm shadow-black/5' : 'bg-transparent')}
+          >
+            <Text className={cn('text-[13px]', tab === k ? 'text-foreground font-semibold' : 'text-muted-foreground font-normal')}>{label}</Text>
+          </ToggleGroupItem>
         ))}
-      </View>
+      </ToggleGroup>
 
       {tab === 'planning' ? <PlanningView lookup={lookup} /> : null}
       {tab === 'fixed' ? <FixedChargesView lookup={lookup} /> : null}
 
       {tab === 'upcoming' ? (
         loading ? (
-          <ActivityIndicator style={{ marginTop: 40 }} />
+          <PlannedListSkeleton header withCheck />
         ) : (
           <SectionList
             sections={sections}
@@ -82,9 +96,16 @@ export default function PlanScreen() {
             stickySectionHeadersEnabled
             onRefresh={reload}
             refreshing={false}
-            contentContainerStyle={sections.length === 0 ? { flexGrow: 1 } : { paddingBottom: 100 }}
+            contentContainerClassName={sections.length === 0 ? 'grow' : 'pb-[100px]'}
             renderSectionHeader={({ section }) => (
-              <Text style={[styles.sectionTitle, section.key === 'overdue' && styles.overdue]}>{section.title}</Text>
+              <Text
+                className={cn(
+                  'bg-background px-4 py-2 text-xs font-semibold uppercase',
+                  section.key === 'overdue' ? 'text-warning' : 'text-muted-foreground',
+                )}
+              >
+                {section.title}
+              </Text>
             )}
             renderItem={({ item, section }) => (
               <PlannedRow
@@ -95,66 +116,38 @@ export default function PlanScreen() {
                 onDone={() => setCompleting(item)}
               />
             )}
-            ItemSeparatorComponent={() => <View style={styles.sep} />}
+            ItemSeparatorComponent={() => <Separator className="ml-[62px]" />}
             ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="calendar-outline" size={40} color="#bbb" />
-                <Text style={styles.emptyTitle}>Nothing planned</Text>
-                <Text style={styles.emptyText}>Plan an expense and we will remind you the day before and an hour before.</Text>
+              <View className="flex-1 items-center justify-center gap-2 p-8">
+                <Icon as={CalendarDays} className="text-muted-foreground size-10" />
+                <Text className="text-[17px] font-semibold">Nothing planned</Text>
+                <Text variant="muted" className="text-center">
+                  Plan an expense and we will remind you the day before and an hour before.
+                </Text>
               </View>
             }
             ListFooterComponent={
               overdue.length ? (
-                <Text style={styles.footerHint}>Overdue items: tap ✓ to mark paid, or open one to skip it.</Text>
+                <Text className="text-muted-foreground p-4 text-center text-xs">Overdue items: tap ✓ to mark paid, or open one to skip it.</Text>
               ) : null
             }
           />
         )
       ) : null}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text className="text-destructive p-3 text-[13px]">{error}</Text> : null}
 
       {tab === 'upcoming' ? (
-        <Pressable style={styles.fab} onPress={() => router.push('/planned/new')} accessibilityLabel="Plan an expense">
-          <Ionicons name="add" size={28} color="#fff" />
+        <Pressable
+          className="bg-primary absolute bottom-6 right-5 size-14 items-center justify-center rounded-full shadow-md shadow-black/20 active:bg-primary/90"
+          onPress={() => router.push('/planned/new')}
+          accessibilityLabel="Plan an expense"
+        >
+          <Icon as={Plus} className="text-primary-foreground size-7" />
         </Pressable>
       ) : null}
 
       <CompleteSheet plan={completing} currency={lookup(completing?.currency ?? 'XAF')} busy={busy} onConfirm={confirmComplete} onClose={() => setCompleting(null)} />
-      {void skip}
-    </View>
+    </TabScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F6F7F9' },
-  segment: { flexDirection: 'row', backgroundColor: '#E3E6EB', borderRadius: 10, padding: 3, margin: 12 },
-  segmentItem: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
-  segmentActive: { backgroundColor: '#fff' },
-  segmentText: { fontSize: 13, color: '#555' },
-  segmentTextActive: { color: '#111', fontWeight: '600' },
-  sectionTitle: { fontSize: 12, fontWeight: '600', color: '#555', textTransform: 'uppercase', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#F6F7F9' },
-  overdue: { color: '#E67E22' },
-  sep: { height: 1, backgroundColor: '#EEF0F3', marginLeft: 62 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
-  emptyTitle: { fontSize: 17, fontWeight: '600' },
-  emptyText: { fontSize: 14, color: '#777', textAlign: 'center' },
-  footerHint: { fontSize: 12, color: '#999', textAlign: 'center', padding: 16 },
-  error: { color: '#C0392B', fontSize: 13, padding: 12 },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#1F5EFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-});

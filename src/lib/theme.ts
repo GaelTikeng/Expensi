@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, type Theme } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 
 /**
  * Raw colour values mirroring the CSS variables in global.css. Use Tailwind
@@ -54,6 +55,12 @@ export const THEME = {
     radius: '0.75rem',
   },
 } as const;
+
+/** The raw palette for the current colour scheme (system-driven, F9.5). */
+export function useThemeColors() {
+  const { colorScheme } = useColorScheme();
+  return THEME[colorScheme === 'dark' ? 'dark' : 'light'];
+}
 
 /** Headers and the tab bar pick their colours from this via ThemeProvider. */
 export const NAV_THEME: Record<'light' | 'dark', Theme> = {

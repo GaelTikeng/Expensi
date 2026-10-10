@@ -1,14 +1,25 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Sparkles } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
+import { loadingA11y, SkeletonLine } from '@/src/components/skeletons';
+import { Button } from '@/src/components/ui/button';
+import { TabScreen } from '@/src/components/tab-screen';
+import { Card } from '@/src/components/ui/card';
+import { Icon } from '@/src/components/ui/icon';
+import { Skeleton } from '@/src/components/ui/skeleton';
+import { Text } from '@/src/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/src/components/ui/toggle-group';
 import { makeCurrencyLookup } from '@/src/features/expenses/money-utils';
 import { CategoryBars, DayColumns } from '@/src/features/recaps/charts';
 import { useRecap } from '@/src/features/recaps/useRecap';
 import { useMe } from '@/src/features/settings/useMe';
 import { formatDDMMYYYY, nextPeriodStart, periodLabel, periodStart, previousPeriodStart, todayISO, type RecapPeriod } from '@/src/lib/dates';
 import { formatMoney } from '@/src/lib/money';
+import { keys, useRefetchOnFocus } from '@/src/lib/query';
+import { useThemeColors } from '@/src/lib/theme';
+import { cn } from '@/src/lib/utils';
 
 const PERIODS: { key: RecapPeriod; label: string }[] = [
   { key: 'day', label: 'Day' },
@@ -21,20 +32,11 @@ export default function RecapsScreen() {
   const params = useLocalSearchParams<{ period?: string; start?: string }>();
   const [period, setPeriod] = useState<RecapPeriod>((params.period as RecapPeriod) ?? 'month');
   const [start, setStart] = useState(() => periodStart(period, params.start ?? todayISO()));
-  const { recap, loading, narrativeLoading, error, reload } = useRecap(period, start);
+  const { recap, loading, narrativeLoading, narrativeError, error, loadNarrative } = useRecap(period, start);
   const { currencies } = useMe();
   const lookup = useMemo(() => makeCurrencyLookup(currencies), [currencies]);
 
-  const firstFocus = useRef(true);
-  useFocusEffect(
-    useCallback(() => {
-      if (firstFocus.current) {
-        firstFocus.current = false;
-        return;
-      }
-      void reload();
-    }, [reload]),
-  );
+  useRefetchOnFocus(keys.recaps.all);
 
   const switchPeriod = (p: RecapPeriod) => {
     setPeriod(p);
@@ -47,148 +49,272 @@ export default function RecapsScreen() {
   const currency = lookup(s?.currency ?? 'XAF');
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <View style={styles.segment}>
-        {PERIODS.map((p) => (
-          <Pressable key={p.key} style={[styles.segmentItem, period === p.key && styles.segmentActive]} onPress={() => switchPeriod(p.key)}>
-            <Text style={[styles.segmentText, period === p.key && styles.segmentTextActive]}>{p.label}</Text>
+    <TabScreen>
+      <ScrollView className="flex-1" contentContainerClassName="gap-3 p-4 pb-10">
+        <ToggleGroup
+          type="single"
+          value={period}
+          // Tapping the active segment reports undefined; treat it as re-selecting
+          // that period (jumps back to the current one), as the old segment did.
+          onValueChange={(v) => switchPeriod((v as RecapPeriod | undefined) ?? period)}
+          className="bg-muted rounded-lg p-[3px]"
+        >
+          {PERIODS.map((p) => (
+            <ToggleGroupItem
+              key={p.key}
+              value={p.key}
+              aria-label={p.label}
+              className={cn('h-9 flex-1 rounded-md', period === p.key && 'bg-card shadow-sm shadow-black/5')}
+            >
+              <Text className={cn('text-sm', period === p.key ? 'text-foreground font-semibold' : 'text-muted-foreground font-normal')}>{p.label}</Text>
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+
+        <View className="flex-row items-center justify-between px-2">
+          <Pressable onPress={() => setStart(previousPeriodStart(period, start))} hitSlop={12} accessibilityLabel="Previous period">
+            <Icon as={ChevronLeft} className="text-primary" size={22} />
           </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.nav}>
-        <Pressable onPress={() => setStart(previousPeriodStart(period, start))} hitSlop={12}>
-          <Ionicons name="chevron-back" size={22} color="#1F5EFF" />
-        </Pressable>
-        <View style={{ alignItems: 'center' }}>
-          <Text style={styles.navTitle}>{periodLabel(period, start)}</Text>
-          {s ? (
-            <Text style={styles.navSub}>
-              {s.periodStart === s.periodEnd ? formatDDMMYYYY(s.periodStart) : `${formatDDMMYYYY(s.periodStart)} – ${formatDDMMYYYY(s.periodEnd)}`}
-            </Text>
-          ) : null}
-        </View>
-        <Pressable onPress={() => canGoForward && setStart(nextPeriodStart(period, start))} hitSlop={12} disabled={!canGoForward}>
-          <Ionicons name="chevron-forward" size={22} color={canGoForward ? '#1F5EFF' : '#ccc'} />
-        </Pressable>
-      </View>
-
-      {loading && !s ? (
-        <ActivityIndicator style={{ marginTop: 40 }} />
-      ) : error && !s ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : s ? (
-        <>
-          <View style={styles.card}>
-            <Text style={styles.headline}>{formatMoney(s.totalMinor, currency)}</Text>
-            <Text style={styles.sub}>
-              {s.count} expense{s.count === 1 ? '' : 's'}
-              {s.estimatedCount > 0 ? ` · ${s.estimatedCount} estimated` : ''}
-              {s.withProofCount > 0 ? ` · ${s.withProofCount} with proof` : ''}
-            </Text>
-            <Delta deltaMinor={s.previous.deltaMinor} deltaPct={s.previous.deltaPct} currency={currency} period={period} />
-            {s.otherCurrencies.length > 0 ? (
-              <Text style={styles.sub}>
-                Also: {s.otherCurrencies.map((o) => `${formatMoney(o.totalMinor, lookup(o.currency))} (${o.count})`).join(', ')}
+          <View className="items-center">
+            <Text className="text-[17px] font-semibold">{periodLabel(period, start)}</Text>
+            {s ? (
+              <Text className="text-muted-foreground text-xs">
+                {s.periodStart === s.periodEnd ? formatDDMMYYYY(s.periodStart) : `${formatDDMMYYYY(s.periodStart)} – ${formatDDMMYYYY(s.periodEnd)}`}
               </Text>
             ) : null}
           </View>
+          <Pressable
+            onPress={() => canGoForward && setStart(nextPeriodStart(period, start))}
+            hitSlop={12}
+            disabled={!canGoForward}
+            accessibilityLabel="Next period"
+          >
+            <Icon as={ChevronRight} className={canGoForward ? 'text-primary' : 'text-muted-foreground opacity-40'} size={22} />
+          </Pressable>
+        </View>
 
-          {period !== 'day' ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>By day</Text>
-              <DayColumns days={s.byDay} currency={currency} />
-            </View>
-          ) : null}
-
-          {(recap?.narrativeMd || narrativeLoading) && period !== 'day' ? (
-            <View style={[styles.card, styles.narrative]}>
-              <View style={styles.narrativeHeader}>
-                <Ionicons name="sparkles-outline" size={16} color="#6C3FB5" />
-                <Text style={styles.narrativeTitle}>In short</Text>
-              </View>
-              {narrativeLoading && !recap?.narrativeMd ? (
-                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                  <ActivityIndicator size="small" />
-                  <Text style={styles.sub}>Writing your summary…</Text>
-                </View>
-              ) : (
-                <Text style={styles.narrativeText}>{recap?.narrativeMd}</Text>
-              )}
-            </View>
-          ) : null}
-
-          {s.byCategory.length > 0 ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>By category</Text>
-              <CategoryBars rows={s.byCategory} currency={currency} />
-            </View>
-          ) : (
-            <View style={styles.card}>
-              <Text style={styles.sub}>Nothing recorded in this period.</Text>
-            </View>
-          )}
-
-          {s.fixedMinor > 0 ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Fixed vs variable</Text>
-              <View style={styles.split}>
-                <View style={[styles.splitFixed, { flex: Math.max(s.fixedMinor, 1) }]} />
-                <View style={[styles.splitVariable, { flex: Math.max(s.variableMinor, 1) }]} />
-              </View>
-              <Text style={styles.sub}>
-                Fixed charges {formatMoney(s.fixedMinor, currency)} · everything else {formatMoney(s.variableMinor, currency)}
+        {loading && !s ? (
+          <RecapSkeleton period={period} />
+        ) : error && !s ? (
+          <Text className="text-destructive p-4">{error}</Text>
+        ) : s ? (
+          <>
+            <Card className={CARD}>
+              <Text className="text-[32px] font-bold leading-10">{formatMoney(s.totalMinor, currency)}</Text>
+              <Text className={SUB}>
+                {s.count} expense{s.count === 1 ? '' : 's'}
+                {s.estimatedCount > 0 ? ` · ${s.estimatedCount} estimated` : ''}
+                {s.withProofCount > 0 ? ` · ${s.withProofCount} with proof` : ''}
               </Text>
-            </View>
-          ) : null}
+              <Delta deltaMinor={s.previous.deltaMinor} deltaPct={s.previous.deltaPct} currency={currency} period={period} />
+              {s.otherCurrencies.length > 0 ? (
+                <Text className={SUB}>
+                  Also: {s.otherCurrencies.map((o) => `${formatMoney(o.totalMinor, lookup(o.currency))} (${o.count})`).join(', ')}
+                </Text>
+              ) : null}
+            </Card>
 
-          {s.byPayee.length > 0 ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Top payees</Text>
-              {s.byPayee.map((p) => (
-                <View key={p.payee} style={styles.line}>
-                  <Text style={styles.lineText} numberOfLines={1}>
-                    {p.payee}
-                  </Text>
-                  <Text style={styles.lineValue}>{formatMoney(p.totalMinor, currency)}</Text>
+            {period !== 'day' ? (
+              <Card className={CARD}>
+                <CardLabel>By day</CardLabel>
+                <DayColumns days={s.byDay} currency={currency} />
+              </Card>
+            ) : null}
+
+            {period !== 'day' && s.count > 0 ? (
+              <SummaryCard
+                // Remount per period so the collapsed state resets when the user navigates.
+                key={`${period}-${start}`}
+                period={period}
+                text={recap?.narrativeMd ?? null}
+                loading={narrativeLoading}
+                error={narrativeError}
+                onRequest={() => void loadNarrative()}
+              />
+            ) : null}
+
+            {s.byCategory.length > 0 ? (
+              <Card className={CARD}>
+                <CardLabel>By category</CardLabel>
+                <CategoryBars rows={s.byCategory} currency={currency} />
+              </Card>
+            ) : (
+              <Card className={CARD}>
+                <Text className={SUB}>Nothing recorded in this period.</Text>
+              </Card>
+            )}
+
+            {s.fixedMinor > 0 ? (
+              <Card className={CARD}>
+                <CardLabel>Fixed vs variable</CardLabel>
+                <View className="h-2.5 flex-row overflow-hidden rounded-full">
+                  <View className="bg-warning" style={{ flex: Math.max(s.fixedMinor, 1) }} />
+                  <View className="bg-primary" style={{ flex: Math.max(s.variableMinor, 1) }} />
                 </View>
-              ))}
-            </View>
-          ) : null}
+                <Text className={SUB}>
+                  Fixed charges {formatMoney(s.fixedMinor, currency)} · everything else {formatMoney(s.variableMinor, currency)}
+                </Text>
+              </Card>
+            ) : null}
 
-          {s.largest.length > 0 ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Largest</Text>
-              {s.largest.map((e) => (
-                <View key={e.id} style={styles.line}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.lineText} numberOfLines={1}>
-                      {e.description}
+            {s.byPayee.length > 0 ? (
+              <Card className={CARD}>
+                <CardLabel>Top payees</CardLabel>
+                {s.byPayee.map((p) => (
+                  <View key={p.payee} className={LINE}>
+                    <Text className="shrink text-sm" numberOfLines={1}>
+                      {p.payee}
                     </Text>
-                    <Text style={styles.lineMeta}>
-                      {formatDDMMYYYY(e.occurredOn)}
-                      {e.categoryName ? ` · ${e.categoryName}` : ''}
-                    </Text>
+                    <Text className="text-sm font-semibold">{formatMoney(p.totalMinor, currency)}</Text>
                   </View>
-                  <Text style={styles.lineValue}>{formatMoney(e.amountMinor, currency)}</Text>
-                </View>
+                ))}
+              </Card>
+            ) : null}
+
+            {s.largest.length > 0 ? (
+              <Card className={CARD}>
+                <CardLabel>Largest</CardLabel>
+                {s.largest.map((e) => (
+                  <View key={e.id} className={LINE}>
+                    <View className="flex-1">
+                      <Text className="shrink text-sm" numberOfLines={1}>
+                        {e.description}
+                      </Text>
+                      <Text className="text-muted-foreground text-[11px]">
+                        {formatDDMMYYYY(e.occurredOn)}
+                        {e.categoryName ? ` · ${e.categoryName}` : ''}
+                      </Text>
+                    </View>
+                    <Text className="text-sm font-semibold">{formatMoney(e.amountMinor, currency)}</Text>
+                  </View>
+                ))}
+              </Card>
+            ) : null}
+          </>
+        ) : null}
+      </ScrollView>
+    </TabScreen>
+  );
+}
+
+/** Mirrors the headline, by-day chart, narrative and category cards while stats load. */
+function RecapSkeleton({ period }: { period: RecapPeriod }) {
+  const columns = period === 'week' ? 7 : 30;
+  return (
+    <View className="gap-3" {...loadingA11y}>
+      <Card className={CARD}>
+        <SkeletonLine className="my-1.5 h-7 w-44" />
+        <SkeletonLine className="w-40" />
+        <SkeletonLine className="w-52" />
+      </Card>
+      {period !== 'day' ? (
+        <>
+          <Card className={CARD}>
+            <SkeletonLine className="mb-1 w-16" />
+            <View className="h-[110px] flex-row items-end gap-1">
+              {Array.from({ length: columns }, (_, i) => (
+                // Fixed pseudo-random heights so the placeholder does not reshuffle on re-render.
+                <Skeleton key={i} className="flex-1 rounded-[3px]" style={{ height: `${20 + ((i * 37) % 70)}%` }} />
               ))}
             </View>
-          ) : null}
+          </Card>
+          <Card className={cn(CARD, 'bg-accent border-accent')}>
+            <SkeletonLine className="w-20" />
+            <SkeletonLine className="w-full" />
+            <SkeletonLine className="w-11/12" />
+            <SkeletonLine className="w-3/5" />
+          </Card>
         </>
       ) : null}
-    </ScrollView>
+      <Card className={CARD}>
+        <SkeletonLine className="mb-1 w-24" />
+        <View className="gap-3">
+          {['w-full', 'w-3/4', 'w-1/2', 'w-1/3'].map((bar, i) => (
+            <View key={i} className="gap-1.5">
+              <View className="flex-row items-center gap-2">
+                <Skeleton className="size-5 rounded-full" />
+                <SkeletonLine className="h-3.5 flex-1" />
+                <SkeletonLine className="h-3.5 w-16" />
+              </View>
+              <View className="bg-muted h-1.5 overflow-hidden rounded-[3px]">
+                <Skeleton className={cn('h-full rounded-[3px]', bar)} />
+              </View>
+              <SkeletonLine className="h-2.5 w-28" />
+            </View>
+          ))}
+        </View>
+      </Card>
+    </View>
+  );
+}
+
+/**
+ * F4.3 card. The AI summary is on demand (one model call against the monthly
+ * quota); a summary already stored for these stats shows at once, and once
+ * shown it can be collapsed to its header.
+ */
+function SummaryCard({
+  period,
+  text,
+  loading,
+  error,
+  onRequest,
+}: {
+  period: RecapPeriod;
+  text: string | null;
+  loading: boolean;
+  error: string | null;
+  onRequest: () => void;
+}) {
+  const theme = useThemeColors();
+  const [open, setOpen] = useState(true);
+  const header = (
+    <View className="flex-row items-center gap-1.5">
+      <Icon as={Sparkles} className="text-accent-foreground size-4" />
+      <Text className="text-accent-foreground flex-1 text-[13px] font-semibold uppercase">In short</Text>
+      {text ? <Icon as={open ? ChevronUp : ChevronDown} className="text-accent-foreground size-[18px]" /> : null}
+    </View>
+  );
+  return (
+    <Card className={cn(CARD, 'bg-accent border-accent')}>
+      {text ? (
+        <Pressable onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }} hitSlop={8}>
+          {header}
+        </Pressable>
+      ) : (
+        header
+      )}
+      {text ? (
+        open ? (
+          <Text className="text-[15px] leading-[22px]">{text}</Text>
+        ) : null
+      ) : loading ? (
+        <View className="flex-row items-center gap-2">
+          <ActivityIndicator size="small" color={theme.accentForeground} />
+          <Text className={SUB}>Writing your summary…</Text>
+        </View>
+      ) : (
+        <>
+          <Text className={SUB}>Get a short AI summary of this {period}: what moved, where the money went.</Text>
+          {error ? <Text className="text-destructive text-[13px]">{error}</Text> : null}
+          <Button variant="outline" size="sm" className="border-accent-foreground/40 self-start bg-transparent" onPress={onRequest}>
+            <Icon as={Sparkles} className="text-accent-foreground size-4" />
+            <Text className="text-accent-foreground">Summarise</Text>
+          </Button>
+        </>
+      )}
+    </Card>
   );
 }
 
 function Delta({ deltaMinor, deltaPct, currency, period }: { deltaMinor: number; deltaPct: number | null; currency: ReturnType<ReturnType<typeof makeCurrencyLookup>>; period: RecapPeriod }) {
   const prevLabel = period === 'day' ? 'yesterday' : period === 'week' ? 'last week' : 'last month';
-  if (deltaMinor === 0) return <Text style={styles.sub}>Same as {prevLabel}</Text>;
+  if (deltaMinor === 0) return <Text className={SUB}>Same as {prevLabel}</Text>;
   const up = deltaMinor > 0;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      <Ionicons name={up ? 'arrow-up' : 'arrow-down'} size={14} color={up ? '#C0392B' : '#27AE60'} />
-      <Text style={[styles.sub, { color: up ? '#C0392B' : '#27AE60' }]}>
+    <View className="flex-row items-center gap-1">
+      <Icon as={up ? ArrowUp : ArrowDown} className={up ? 'text-destructive' : 'text-success'} size={14} />
+      <Text className={cn('text-[13px]', up ? 'text-destructive' : 'text-success')}>
         {formatMoney(Math.abs(deltaMinor), currency)}
         {deltaPct != null ? ` (${Math.abs(deltaPct)}%)` : ''} {up ? 'more' : 'less'} than {prevLabel}
       </Text>
@@ -196,31 +322,10 @@ function Delta({ deltaMinor, deltaPct, currency, period }: { deltaMinor: number;
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F6F7F9' },
-  container: { padding: 16, gap: 12, paddingBottom: 40 },
-  segment: { flexDirection: 'row', backgroundColor: '#E3E6EB', borderRadius: 10, padding: 3 },
-  segmentItem: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
-  segmentActive: { backgroundColor: '#fff' },
-  segmentText: { fontSize: 14, color: '#555' },
-  segmentTextActive: { color: '#111', fontWeight: '600' },
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  navTitle: { fontSize: 17, fontWeight: '600' },
-  navSub: { fontSize: 12, color: '#777' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 8 },
-  cardTitle: { fontSize: 13, color: '#777', textTransform: 'uppercase', marginBottom: 4 },
-  headline: { fontSize: 32, fontWeight: '700' },
-  sub: { fontSize: 13, color: '#666' },
-  error: { color: '#C0392B', padding: 16 },
-  narrative: { backgroundColor: '#F4EEFF' },
-  narrativeHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  narrativeTitle: { fontSize: 13, color: '#6C3FB5', fontWeight: '600', textTransform: 'uppercase' },
-  narrativeText: { fontSize: 15, lineHeight: 22, color: '#333' },
-  split: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden' },
-  splitFixed: { backgroundColor: '#8E44AD' },
-  splitVariable: { backgroundColor: '#1F5EFF' },
-  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 4 },
-  lineText: { fontSize: 14, flexShrink: 1 },
-  lineMeta: { fontSize: 11, color: '#888' },
-  lineValue: { fontSize: 14, fontWeight: '600' },
-});
+function CardLabel({ children }: { children: React.ReactNode }) {
+  return <Text className="text-muted-foreground mb-1 text-[13px] uppercase tracking-wide">{children}</Text>;
+}
+
+const CARD = 'gap-2 rounded-lg p-4 shadow-none';
+const SUB = 'text-muted-foreground text-[13px]';
+const LINE = 'flex-row items-center justify-between gap-3 py-1';

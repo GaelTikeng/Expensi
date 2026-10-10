@@ -1,8 +1,10 @@
 import { useAuth } from '@clerk/expo';
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { Alert } from 'react-native';
 
+import { FORM_LAYOUTS, FormSkeleton } from '@/src/components/skeletons';
 import { LocalFilesPicker } from '@/src/features/attachments/LocalFilesPicker';
 import type { LocalFile } from '@/src/features/attachments/pick';
 import { enqueue } from '@/src/features/attachments/queue';
@@ -12,10 +14,12 @@ import { expensesApi } from '@/src/features/expenses/api';
 import { ExpenseForm } from '@/src/features/expenses/ExpenseForm';
 import { useCategories } from '@/src/features/expenses/useCategories';
 import { useMe } from '@/src/features/settings/useMe';
+import { invalidate } from '@/src/lib/query';
 
 /** F2.5 + F2b.5: create, then upload any picked proofs linked to the new row. */
 export default function NewExpenseScreen() {
   const { getToken } = useAuth();
+  const qc = useQueryClient();
   const api = useMemo(() => expensesApi(getToken), [getToken]);
   const { categories, loading: catLoading } = useCategories();
   const { profile, currencies, loading: meLoading } = useMe();
@@ -24,11 +28,7 @@ export default function NewExpenseScreen() {
   const [upload, setUpload] = useState<{ current: number; total: number; progress: number } | null>(null);
 
   if (catLoading || meLoading || !profile) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
-      </View>
-    );
+    return <FormSkeleton blocks={FORM_LAYOUTS.expense} />;
   }
 
   return (
@@ -44,6 +44,7 @@ export default function NewExpenseScreen() {
           setSubmitting(true);
           try {
             const saved = await api.create(values);
+            void invalidate.expenses(qc);
 
             let parked = 0;
             for (let i = 0; i < files.length; i++) {
@@ -65,6 +66,7 @@ export default function NewExpenseScreen() {
               }
             }
             setUpload(null);
+            if (files.length > 0) void invalidate.attachments(qc, saved.id);
             if (parked > 0) {
               Alert.alert('Saved', `${parked} file${parked > 1 ? 's' : ''} will upload when you are back online.`);
             }

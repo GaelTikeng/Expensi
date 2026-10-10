@@ -1,12 +1,18 @@
-import { Ionicons } from '@expo/vector-icons';
+import { ChevronRight, CircleMinus } from 'lucide-react-native';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { Checkbox } from '@/src/components/ui/checkbox';
+import { Icon } from '@/src/components/ui/icon';
+import { Text } from '@/src/components/ui/text';
 import { formatDDMMYYYY } from '@/src/lib/dates';
 import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
+import { cn } from '@/src/lib/utils';
 import type { ReviewedItem } from './review-utils';
 
-const SEVERITY_COLOR = { ok: '#27AE60', verify: '#E67E22', blocked: '#95A5A6' } as const;
+/** Severity → token: ok = success, verify = warning, blocked = muted. */
+const SEVERITY_DOT = { ok: 'bg-success', verify: 'bg-warning', blocked: 'bg-muted-foreground' } as const;
+const SEVERITY_TEXT = { ok: 'text-success', verify: 'text-warning', blocked: 'text-muted-foreground' } as const;
 
 export const ImportItemRow = memo(function ImportItemRow({
   reviewed,
@@ -28,59 +34,44 @@ export const ImportItemRow = memo(function ImportItemRow({
   const canTick = item.lineKind === 'expense';
 
   return (
-    <View style={[styles.row, blocked && styles.rowBlocked]}>
-      <Pressable onPress={onToggle} disabled={!canTick} hitSlop={8} style={styles.check} accessibilityRole="checkbox" accessibilityState={{ checked: selected }}>
-        <Ionicons
-          name={canTick ? (selected ? 'checkbox' : 'square-outline') : 'remove-circle-outline'}
-          size={24}
-          color={canTick ? (selected ? '#1F5EFF' : '#999') : '#bbb'}
-        />
-      </Pressable>
+    <View className={cn('bg-card flex-row items-center gap-2.5 px-3 py-2.5', blocked && 'bg-background')}>
+      <View className="w-7 items-center">
+        {canTick ? (
+          <Checkbox checked={selected} onCheckedChange={onToggle} className="size-5 rounded-[5px]" />
+        ) : (
+          <Icon as={CircleMinus} className="text-muted-foreground/50 size-5" accessibilityLabel="Not an expense" />
+        )}
+      </View>
 
-      <Pressable style={styles.body} onPress={onEdit}>
-        <View style={styles.topLine}>
-          <View style={[styles.dot, { backgroundColor: SEVERITY_COLOR[severity] }]} />
-          <Text style={[styles.desc, blocked && styles.muted]} numberOfLines={1}>
+      <Pressable className="flex-1 gap-0.5" onPress={onEdit}>
+        <View className="flex-row items-center gap-1.5">
+          <View className={cn('size-2 rounded-full', SEVERITY_DOT[severity])} />
+          <Text className={cn('flex-1 text-[15px] font-medium', blocked && 'text-muted-foreground line-through')} numberOfLines={1}>
             {item.description || item.rawText || `Line ${item.lineIndex + 1}`}
           </Text>
-          <Text style={[styles.amount, blocked && styles.muted]}>
+          <Text className={cn('text-[15px] font-semibold', blocked && 'text-muted-foreground line-through')}>
             {item.amountMinor != null ? formatMoney(item.amountMinor, currency) : '—'}
           </Text>
         </View>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text className="text-muted-foreground ml-3.5 text-xs" numberOfLines={1}>
           {item.occurredOn ? formatDDMMYYYY(item.occurredOn) : 'No date'}
           {item.payee ? ` · ${item.payee}` : ''}
           {categoryName ? ` · ${categoryName}` : ''}
           {item.editedByUser ? ' · edited' : ''}
         </Text>
         {reason && !(severity === 'ok') ? (
-          <Text style={[styles.reason, { color: SEVERITY_COLOR[severity] }]} numberOfLines={2}>
+          <Text className={cn('ml-3.5 text-xs', SEVERITY_TEXT[severity])} numberOfLines={2}>
             {reason}
           </Text>
         ) : null}
         {item.rawText && item.description && item.rawText !== item.description ? (
-          <Text style={styles.raw} numberOfLines={1}>
+          <Text className="text-muted-foreground ml-3.5 text-[11px] italic" numberOfLines={1}>
             “{item.rawText}”
           </Text>
         ) : null}
       </Pressable>
 
-      <Ionicons name="chevron-forward" size={18} color="#bbb" />
+      <Icon as={ChevronRight} className="text-muted-foreground/60 size-[18px]" />
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#fff' },
-  rowBlocked: { backgroundColor: '#FAFAFA' },
-  check: { width: 28, alignItems: 'center' },
-  body: { flex: 1, gap: 2 },
-  topLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  desc: { flex: 1, fontSize: 15, fontWeight: '500' },
-  amount: { fontSize: 15, fontWeight: '600' },
-  muted: { color: '#999', textDecorationLine: 'line-through' },
-  meta: { fontSize: 12, color: '#777', marginLeft: 14 },
-  reason: { fontSize: 12, marginLeft: 14 },
-  raw: { fontSize: 11, color: '#999', marginLeft: 14, fontStyle: 'italic' },
 });

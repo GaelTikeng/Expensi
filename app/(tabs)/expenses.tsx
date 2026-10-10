@@ -1,15 +1,29 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
+import { CloudUpload, Plus, Search } from 'lucide-react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, SectionList, View } from 'react-native';
 
+import { ExpenseListSkeleton } from '@/src/components/skeletons';
+import { TabScreen } from '@/src/components/tab-screen';
+import { Icon } from '@/src/components/ui/icon';
+import { Input } from '@/src/components/ui/input';
+import { Separator } from '@/src/components/ui/separator';
+import { Text } from '@/src/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/src/components/ui/toggle-group';
 import { ExpenseRow } from '@/src/features/expenses/ExpenseRow';
 import { formatTotals, makeCurrencyLookup, sumByCurrency } from '@/src/features/expenses/money-utils';
 import { useCategories } from '@/src/features/expenses/useCategories';
 import { useExpenses } from '@/src/features/expenses/useExpenses';
 import { useMe } from '@/src/features/settings/useMe';
 import { formatMonthLabel, monthKey } from '@/src/lib/dates';
+import { keys, useRefetchOnFocus } from '@/src/lib/query';
 import type { ExpenseDto } from '@/src/lib/schemas/expense';
+
+const PROOF_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'with', label: 'With proof' },
+  { value: 'without', label: 'Without proof' },
+] as const;
 
 /** F2.6: list grouped by month, search, swipe to delete, FAB to add. */
 export default function ExpensesScreen() {
@@ -26,17 +40,8 @@ export default function ExpensesScreen() {
   const { currencies } = useMe();
   const lookup = useMemo(() => makeCurrencyLookup(currencies), [currencies]);
 
-  // Pick up changes made in the create/edit screens.
-  const firstFocus = useRef(true);
-  useFocusEffect(
-    useCallback(() => {
-      if (firstFocus.current) {
-        firstFocus.current = false;
-        return;
-      }
-      void refresh();
-    }, [refresh]),
-  );
+  // Pick up changes made in the create/edit screens, in the background.
+  useRefetchOnFocus(keys.expenses.all);
 
   const onSearch = (t: string) => {
     setSearchText(t);
@@ -65,32 +70,51 @@ export default function ExpensesScreen() {
     ]);
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={18} color="#888" />
-        <TextInput
-          style={styles.search}
-          placeholder="Search description or payee"
-          value={searchText}
-          onChangeText={onSearch}
-          autoCorrect={false}
-          clearButtonMode="while-editing"
-        />
+    <TabScreen>
+      <View className="m-3 flex-row items-center gap-2">
+        <View className="flex-1 justify-center">
+          <Input
+            className="bg-card pl-9"
+            placeholder="Search description or payee"
+            value={searchText}
+            onChangeText={onSearch}
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
+          <View className="absolute left-3" pointerEvents="none">
+            <Icon as={Search} className="text-muted-foreground size-[18px]" />
+          </View>
+        </View>
+        <Pressable
+          className="bg-card border-input active:bg-accent size-10 items-center justify-center rounded-md border"
+          onPress={() => router.push('/import')}
+          hitSlop={6}
+          accessibilityLabel="Import a file"
+        >
+          <Icon as={CloudUpload} className="text-primary size-[22px]" />
+        </Pressable>
       </View>
 
-      <View style={styles.chips}>
-        {(['all', 'with', 'without'] as const).map((k) => (
-          <Pressable key={k} style={[styles.chip, proof === k && styles.chipActive]} onPress={() => setProof(k)}>
-            <Text style={[styles.chipText, proof === k && styles.chipTextActive]}>
-              {k === 'all' ? 'All' : k === 'with' ? 'With proof' : 'Without proof'}
-            </Text>
-          </Pressable>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        value={proof}
+        onValueChange={(v) => {
+          if (v) setProof(v as typeof proof);
+        }}
+        className="bg-card mx-3 mb-2"
+      >
+        {PROOF_FILTERS.map((f, i) => (
+          <ToggleGroupItem key={f.value} value={f.value} isFirst={i === 0} isLast={i === PROOF_FILTERS.length - 1} className="flex-1" aria-label={f.label}>
+            <Text>{f.label}</Text>
+          </ToggleGroupItem>
         ))}
-      </View>
+      </ToggleGroup>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator />
+        <View className="flex-1">
+          <ExpenseListSkeleton />
         </View>
       ) : (
         <SectionList
@@ -102,9 +126,9 @@ export default function ExpensesScreen() {
           onEndReachedThreshold={0.4}
           onEndReached={() => hasMore && loadMore()}
           renderSectionHeader={({ section }) => (
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <Text style={styles.sectionTotal}>{section.total}</Text>
+            <View className="bg-background flex-row justify-between px-4 py-2">
+              <Text className="text-muted-foreground text-[13px] font-semibold uppercase">{section.title}</Text>
+              <Text className="text-muted-foreground text-[13px]">{section.total}</Text>
             </View>
           )}
           renderItem={({ item }) => (
@@ -116,74 +140,34 @@ export default function ExpensesScreen() {
               onDelete={() => confirmDelete(item)}
             />
           )}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <Separator className="ml-[62px]" />}
           ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyTitle}>{query ? 'No matches' : 'No expenses yet'}</Text>
-              <Text style={styles.emptyText}>{query ? 'Try another search.' : 'Tap + to record your first one.'}</Text>
+            <View className="flex-1 items-center justify-center gap-1.5 p-8">
+              <Text variant="large">{query ? 'No matches' : 'No expenses yet'}</Text>
+              <Text variant="muted">{query ? 'Try another search.' : 'Tap + to record your first one.'}</Text>
             </View>
           }
-          ListFooterComponent={loadingMore ? <ActivityIndicator style={{ margin: 16 }} /> : null}
-          contentContainerStyle={items.length === 0 ? { flexGrow: 1 } : undefined}
+          ListFooterComponent={
+            loadingMore ? (
+              <>
+                <Separator className="ml-[62px]" />
+                <ExpenseListSkeleton rows={2} header={false} />
+              </>
+            ) : null
+          }
+          contentContainerClassName={items.length === 0 ? 'grow' : undefined}
         />
       )}
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Text className="text-destructive p-3 text-[13px]">{error}</Text> : null}
 
-      <Pressable style={styles.fab} onPress={() => router.push('/expense/new')} accessibilityLabel="Add expense">
-        <Ionicons name="add" size={28} color="#fff" />
+      <Pressable
+        className="bg-primary absolute bottom-6 right-5 size-14 items-center justify-center rounded-full shadow-lg shadow-black/20 active:opacity-90"
+        onPress={() => router.push('/expense/new')}
+        accessibilityLabel="Add expense"
+      >
+        <Icon as={Plus} className="text-primary-foreground size-7" />
       </Pressable>
-    </View>
+    </TabScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F6F7F9' },
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    margin: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E3E6EB',
-  },
-  search: { flex: 1, paddingVertical: 10, fontSize: 15 },
-  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingBottom: 8 },
-  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, borderColor: '#D7DAE0', backgroundColor: '#fff' },
-  chipActive: { backgroundColor: '#1F5EFF', borderColor: '#1F5EFF' },
-  chipText: { fontSize: 13, color: '#333' },
-  chipTextActive: { color: '#fff' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 6 },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F6F7F9',
-  },
-  sectionTitle: { fontSize: 13, fontWeight: '600', color: '#555', textTransform: 'uppercase' },
-  sectionTotal: { fontSize: 13, color: '#555' },
-  separator: { height: 1, backgroundColor: '#EEF0F3', marginLeft: 62 },
-  emptyTitle: { fontSize: 17, fontWeight: '600' },
-  emptyText: { fontSize: 14, color: '#777' },
-  error: { color: '#C0392B', fontSize: 13, padding: 12 },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#1F5EFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-});

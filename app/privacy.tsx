@@ -1,4 +1,7 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView } from 'react-native';
+
+import { Card, CardTitle } from '@/src/components/ui/card';
+import { Text } from '@/src/components/ui/text';
 
 /**
  * F7.1: in-app privacy summary. The full policy lives in docs/PRIVACY_POLICY.md
@@ -33,25 +36,15 @@ const SECTIONS: { title: string; body: string }[] = [
 
 export default function PrivacyScreen() {
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
-      <Text style={styles.intro}>A plain-language summary. The full policy is published at the link in the app store listing.</Text>
+    <ScrollView className="bg-background flex-1" contentContainerClassName="gap-3 p-4 pb-10">
+      <Text className="text-muted-foreground text-[13px]">A plain-language summary. The full policy is published at the link in the app store listing.</Text>
       {SECTIONS.map((s) => (
-        <View key={s.title} style={styles.card}>
-          <Text style={styles.title}>{s.title}</Text>
-          <Text style={styles.body}>{s.body}</Text>
-        </View>
+        <Card key={s.title} className="gap-1.5 p-3.5">
+          <CardTitle className="text-[15px]">{s.title}</CardTitle>
+          <Text className="text-sm leading-5">{s.body}</Text>
+        </Card>
       ))}
-      <Text style={styles.footer}>Contact: privacy@nyota.ltd</Text>
+      <Text className="text-muted-foreground mt-2 text-center text-xs">Contact: privacy@nyota.ltd</Text>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F6F7F9' },
-  container: { padding: 16, gap: 12, paddingBottom: 40 },
-  intro: { fontSize: 13, color: '#666' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, gap: 6 },
-  title: { fontSize: 15, fontWeight: '600' },
-  body: { fontSize: 14, lineHeight: 20, color: '#333' },
-  footer: { fontSize: 12, color: '#888', textAlign: 'center', marginTop: 8 },
-});

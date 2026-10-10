@@ -1,4 +1,4 @@
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
 
@@ -13,23 +13,25 @@ export function TimeField({ label, value, onChange }: { label: string; value: st
   const [h, m] = value.split(':').map(Number);
   const asDate = new Date(2000, 0, 1, h || 0, m || 0);
 
-  const handle = (e: DateTimePickerEvent, d?: Date) => {
+  // onChange is deprecated in datetimepicker 9: picks arrive via onValueChange,
+  // cancellation via onDismiss.
+  const handlePick = (_event: unknown, d: Date) => {
     setShow(false);
-    if (e.type === 'dismissed' || !d) return;
     onChange(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
   };
+  const handleDismiss = () => setShow(false);
 
   return (
     <View className="min-h-9 flex-row items-center justify-between">
       <Text className="text-[15px]">{label}</Text>
       {Platform.OS === 'ios' ? (
-        <DateTimePicker mode="time" display="compact" value={asDate} onChange={handle} />
+        <DateTimePicker mode="time" display="compact" value={asDate} onValueChange={handlePick} onDismiss={handleDismiss} />
       ) : (
         <>
           <Button variant="secondary" size="sm" onPress={() => setShow(true)}>
             <Text>{value}</Text>
           </Button>
-          {show ? <DateTimePicker mode="time" display="default" is24Hour value={asDate} onChange={handle} /> : null}
+          {show ? <DateTimePicker mode="time" display="default" is24Hour value={asDate} onValueChange={handlePick} onDismiss={handleDismiss} /> : null}
         </>
       )}
     </View>

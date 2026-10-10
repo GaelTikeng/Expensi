@@ -1,9 +1,16 @@
 import { useAuth } from '@clerk/expo';
-import { Ionicons } from '@expo/vector-icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CircleCheck, Receipt, Trash2 } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { Group } from '@/src/components/group';
+import { GroupSkeleton, loadingA11y, SkeletonLine } from '@/src/components/skeletons';
+import { Button } from '@/src/components/ui/button';
+import { Icon } from '@/src/components/ui/icon';
+import { Skeleton } from '@/src/components/ui/skeleton';
+import { Text } from '@/src/components/ui/text';
 import { useCategories } from '@/src/features/expenses/useCategories';
 import { makeCurrencyLookup } from '@/src/features/expenses/money-utils';
 import { plannedApi } from '@/src/features/planned/api';
@@ -11,41 +18,41 @@ import { completePlan } from '@/src/features/planned/completeFlow';
 import { CompleteSheet, type CompleteValues } from '@/src/features/planned/CompleteSheet';
 import { PlannedForm } from '@/src/features/planned/PlannedForm';
 import { cancelFor, scheduleFor } from '@/src/features/planned/reminders';
+import { findCachedPlan } from '@/src/features/planned/usePlanned';
 import { useMe } from '@/src/features/settings/useMe';
 import { formatMoney } from '@/src/lib/money';
+import { errorMessage, invalidate, keys } from '@/src/lib/query';
 import type { PlannedDto } from '@/src/lib/schemas/planned';
+import { cn } from '@/src/lib/utils';
 
 /** F5.6 / F5.8: detail with one-tap "Mark as paid", skip, edit, delete. */
 export default function PlannedDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
+  const qc = useQueryClient();
   const api = useMemo(() => plannedApi(getToken), [getToken]);
   const { categories, loading: catLoading } = useCategories();
   const { profile, currencies, loading: meLoading } = useMe();
   const lookup = useMemo(() => makeCurrencyLookup(currencies), [currencies]);
 
-  const [plan, setPlan] = useState<PlannedDto | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: keys.planned.detail(id),
+    queryFn: () => api.get(id),
+    // Open at once with the row the Upcoming list already holds.
+    placeholderData: () => findCachedPlan(qc, id),
+  });
+  const plan = query.data ?? null;
+  const error = errorMessage(query.error);
+  // Every change here also touches the lists, so write through and mark them stale.
+  const setPlan = (p: PlannedDto) => {
+    qc.setQueryData(keys.planned.detail(id), p);
+    void invalidate.plans(qc);
+  };
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [now] = useState(() => Date.now());
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get(id)
-      .then((p) => {
-        if (!cancelled) setPlan(p);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, id]);
 
   const skip = () =>
     Alert.alert('Skip this one?', 'It stays in your history as skipped.', [
@@ -83,6 +90,7 @@ export default function PlannedDetailScreen() {
           try {
             await api.remove(id);
             await cancelFor(id);
+            void invalidate.plans(qc);
             router.back();
           } catch (err) {
             Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
@@ -97,6 +105,7 @@ export default function PlannedDetailScreen() {
     try {
       const res = await completePlan(api, plan, values, getToken);
       setPlan(res.planned);
+      void invalidate.expenses(qc);
       setCompleting(false);
       if (res.parked) Alert.alert('Saved', 'The receipt will upload when you are back online.');
     } catch (err) {
@@ -108,22 +117,27 @@ export default function PlannedDetailScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>{error}</Text>
+      <View className="bg-background flex-1 items-center justify-center p-6">
+        <Text className="text-destructive">{error}</Text>
       </View>
     );
   }
   if (!plan || catLoading || meLoading || !profile) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
+    return <PlannedDetailSkeleton />;
   }
 
   const currency = lookup(plan.currency);
   const when = new Date(plan.scheduledAt);
   const overdue = plan.status === 'planned' && when.getTime() < now;
+  const categoryName = plan.categoryId ? (categories.find((c) => c.id === plan.categoryId)?.name ?? null) : null;
+  const rows: [string, string | null | undefined][] = [
+    ['Where', plan.place],
+    ['To whom', plan.payee],
+    ['Why', plan.reason],
+    ['Category', categoryName],
+    ['Notes', plan.notes],
+  ];
+  const details = rows.filter((d): d is [string, string] => Boolean(d[1]));
 
   if (editing) {
     return (
@@ -163,59 +177,64 @@ export default function PlannedDetailScreen() {
           headerRight: () =>
             plan.status !== 'done' ? (
               <Pressable onPress={remove} hitSlop={12} accessibilityLabel="Delete">
-                <Ionicons name="trash-outline" size={22} color="#C0392B" />
+                <Icon as={Trash2} className="text-destructive size-[22px]" />
               </Pressable>
             ) : null,
         }}
       />
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.hero}>
-          <Text style={styles.amount}>{formatMoney(plan.amountMinor, currency)}</Text>
-          <Text style={[styles.when, overdue && styles.overdue]}>
+      <ScrollView className="bg-background flex-1" contentContainerClassName="gap-3 p-4 pb-12">
+        <View className="bg-card border-border items-center gap-1.5 rounded-lg border p-5">
+          <Text className="text-[32px] font-bold leading-10">{formatMoney(plan.amountMinor, currency)}</Text>
+          <Text className={cn('text-center text-sm', overdue ? 'text-warning font-semibold' : 'text-muted-foreground')}>
             {when.toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
             {overdue ? ' · overdue' : ''}
           </Text>
-          <Text style={[styles.status, styles[`status_${plan.status}` as const]]}>
+          <Text
+            className={cn(
+              'mt-1 text-xs font-semibold uppercase',
+              plan.status === 'done' ? 'text-success' : plan.status === 'skipped' ? 'text-muted-foreground' : 'text-primary',
+            )}
+          >
             {plan.status === 'done' ? 'Paid' : plan.status === 'skipped' ? 'Skipped' : plan.recurringChargeId ? 'Fixed charge · due' : 'Planned'}
           </Text>
         </View>
 
         {plan.status === 'planned' ? (
-          <Pressable style={styles.primary} onPress={() => setCompleting(true)}>
-            <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
-            <Text style={styles.primaryText}>Mark as paid</Text>
-          </Pressable>
+          <Button size="lg" className="bg-success active:bg-success/90 h-14" onPress={() => setCompleting(true)}>
+            <Icon as={CircleCheck} className="text-success-foreground size-[22px]" />
+            <Text className="text-success-foreground text-[17px] font-bold">Mark as paid</Text>
+          </Button>
         ) : null}
 
-        <View style={styles.card}>
-          <Detail label="Where" value={plan.place} />
-          <Detail label="To whom" value={plan.payee} />
-          <Detail label="Why" value={plan.reason} />
-          <Detail label="Category" value={plan.categoryId ? (categories.find((c) => c.id === plan.categoryId)?.name ?? null) : null} />
-          <Detail label="Notes" value={plan.notes} />
-        </View>
+        {details.length ? (
+          <Group>
+            {details.map(([label, value]) => (
+              <Detail key={label} label={label} value={value} />
+            ))}
+          </Group>
+        ) : null}
 
         {plan.status === 'done' && plan.completedExpenseId ? (
-          <Pressable style={styles.link} onPress={() => router.push(`/expense/${plan.completedExpenseId}`)}>
-            <Ionicons name="receipt-outline" size={18} color="#1F5EFF" />
-            <Text style={styles.linkText}>Open the recorded expense</Text>
-          </Pressable>
+          <Button variant="link" onPress={() => router.push(`/expense/${plan.completedExpenseId}`)}>
+            <Icon as={Receipt} className="text-primary size-[18px]" />
+            <Text className="text-[15px]">Open the recorded expense</Text>
+          </Button>
         ) : null}
 
-        <View style={styles.actions}>
+        <View className="flex-row gap-3">
           {plan.status === 'planned' ? (
             <>
-              <Pressable style={styles.secondary} onPress={() => setEditing(true)}>
-                <Text style={styles.secondaryText}>Edit</Text>
-              </Pressable>
-              <Pressable style={styles.secondary} onPress={skip}>
-                <Text style={styles.secondaryText}>Skip</Text>
-              </Pressable>
+              <Button variant="outline" size="lg" className="flex-1" onPress={() => setEditing(true)}>
+                <Text className="text-[15px]">Edit</Text>
+              </Button>
+              <Button variant="outline" size="lg" className="flex-1" onPress={skip}>
+                <Text className="text-[15px]">Skip</Text>
+              </Button>
             </>
           ) : plan.status === 'skipped' ? (
-            <Pressable style={styles.secondary} onPress={unskip}>
-              <Text style={styles.secondaryText}>Put back in plan</Text>
-            </Pressable>
+            <Button variant="outline" size="lg" className="flex-1" onPress={unskip}>
+              <Text className="text-[15px]">Put back in plan</Text>
+            </Button>
           ) : null}
         </View>
       </ScrollView>
@@ -225,37 +244,30 @@ export default function PlannedDetailScreen() {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
+/** Mirrors the amount card, "Mark as paid", the details group and the Edit / Skip buttons. */
+function PlannedDetailSkeleton() {
   return (
-    <View style={styles.detail}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
+    <View className="bg-background flex-1 gap-3 p-4" {...loadingA11y}>
+      <View className="bg-card border-border items-center gap-2.5 rounded-lg border p-5">
+        <SkeletonLine className="my-1.5 h-7 w-40" />
+        <SkeletonLine className="h-3.5 w-56" />
+        <SkeletonLine className="mt-1 w-16" />
+      </View>
+      <Skeleton className="h-14 rounded-md" />
+      <GroupSkeleton rows={3} />
+      <View className="flex-row gap-3">
+        <Skeleton className="h-11 flex-1 rounded-md" />
+        <Skeleton className="h-11 flex-1 rounded-md" />
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  container: { padding: 16, gap: 12, paddingBottom: 48 },
-  error: { color: '#C0392B' },
-  hero: { backgroundColor: '#fff', borderRadius: 14, padding: 20, alignItems: 'center', gap: 6 },
-  amount: { fontSize: 32, fontWeight: '700' },
-  when: { fontSize: 14, color: '#555', textAlign: 'center' },
-  overdue: { color: '#E67E22', fontWeight: '600' },
-  status: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', marginTop: 4 },
-  status_planned: { color: '#1F5EFF' },
-  status_done: { color: '#27AE60' },
-  status_skipped: { color: '#95A5A6' },
-  primary: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#27AE60', borderRadius: 12, paddingVertical: 16 },
-  primaryText: { color: '#fff', fontWeight: '700', fontSize: 17 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 4 },
-  detail: { padding: 12, gap: 2 },
-  detailLabel: { fontSize: 11, color: '#888', textTransform: 'uppercase' },
-  detailValue: { fontSize: 15 },
-  link: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', padding: 12 },
-  linkText: { color: '#1F5EFF', fontSize: 15 },
-  actions: { flexDirection: 'row', gap: 12 },
-  secondary: { flex: 1, backgroundColor: '#fff', borderRadius: 10, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#D7DAE0' },
-  secondaryText: { fontSize: 15, color: '#111' },
-});
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="gap-0.5 px-4 py-3">
+      <Text className="text-muted-foreground text-[11px] uppercase">{label}</Text>
+      <Text className="text-[15px]">{value}</Text>
+    </View>
+  );
+}

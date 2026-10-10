@@ -1,6 +1,12 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FormField } from '@/src/components/form-field';
+import { Group } from '@/src/components/group';
+import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
+import { Text } from '@/src/components/ui/text';
 import { AmountInput } from '@/src/features/expenses/AmountInput';
 import { DateField } from '@/src/features/expenses/DateField';
 import { OptionPicker } from '@/src/features/settings/OptionPicker';
@@ -64,13 +70,17 @@ function Body({
   const [lineKind, setLineKind] = useState(item.lineKind);
 
   return (
-    <View style={styles.modal}>
-      <View style={styles.header}>
-        <Pressable onPress={onClose} hitSlop={12}>
-          <Text style={styles.headerAction}>Cancel</Text>
-        </Pressable>
-        <Text style={styles.title}>Line {item.lineIndex + 1}</Text>
-        <Pressable
+    <SafeAreaView className="bg-background flex-1" edges={['top', 'bottom']}>
+      <View className="border-border flex-row items-center justify-between border-b px-4 pb-3 pt-2">
+        <Button variant="ghost" size="sm" onPress={onClose}>
+          <Text className="text-primary text-base">Cancel</Text>
+        </Button>
+        <Text variant="large" className="text-base">
+          Line {item.lineIndex + 1}
+        </Text>
+        <Button
+          variant="ghost"
+          size="sm"
           onPress={() =>
             onSave({
               amountMinor,
@@ -82,32 +92,35 @@ function Body({
             })
           }
           disabled={saving}
-          hitSlop={12}
         >
-          <Text style={[styles.headerAction, styles.save]}>{saving ? 'Saving…' : 'Save'}</Text>
-        </Pressable>
+          <Text className="text-primary text-base font-semibold">{saving ? 'Saving…' : 'Save'}</Text>
+        </Button>
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <View style={styles.raw}>
-          <Text style={styles.rawLabel}>As written</Text>
-          <Text style={styles.rawText}>{item.rawText}</Text>
-          {item.ambiguityNote ? <Text style={styles.note}>{item.ambiguityNote}</Text> : null}
+      <ScrollView className="flex-1" contentContainerClassName="gap-3 p-4 pb-12" keyboardShouldPersistTaps="handled">
+        <View className="bg-warning/10 gap-1 rounded-lg p-3">
+          <Text className="text-warning text-[11px] font-medium uppercase tracking-wide">As written</Text>
+          <Text className="font-mono text-sm">{item.rawText}</Text>
+          {item.ambiguityNote ? <Text className="text-warning text-xs italic">{item.ambiguityNote}</Text> : null}
         </View>
 
         <AmountInput value={amountMinor} currency={currency} onChange={setAmountMinor} />
 
-        <View style={styles.card}>
-          <DateField label="Date" value={occurredOn} onChange={setOccurredOn} nullable />
-        </View>
+        <Group>
+          <View className="px-4 py-3">
+            <DateField label="Date" value={occurredOn} onChange={setOccurredOn} nullable />
+          </View>
+        </Group>
 
-        <Text style={styles.label}>Description</Text>
-        <TextInput style={styles.input} value={description} onChangeText={setDescription} placeholder="What was it for?" />
+        <FormField label="Description">
+          <Input value={description} onChangeText={setDescription} placeholder="What was it for?" />
+        </FormField>
 
-        <Text style={styles.label}>Paid to</Text>
-        <TextInput style={styles.input} value={payee} onChangeText={setPayee} placeholder="Optional" />
+        <FormField label="Paid to">
+          <Input value={payee} onChangeText={setPayee} placeholder="Optional" />
+        </FormField>
 
-        <View style={styles.card}>
+        <Group>
           <OptionPicker
             label="Category"
             value={categoryId ?? NONE}
@@ -115,33 +128,8 @@ function Body({
             onChange={(v) => setCategoryId(v === NONE ? null : v)}
           />
           <OptionPicker label="Line type" value={lineKind} options={KINDS} onChange={(v) => setLineKind(v as typeof lineKind)} />
-        </View>
+        </Group>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  modal: { flex: 1, backgroundColor: '#F6F7F9', paddingTop: 56 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E3E6EB',
-    backgroundColor: '#fff',
-  },
-  headerAction: { fontSize: 16, color: '#1F5EFF' },
-  save: { fontWeight: '600' },
-  title: { fontSize: 16, fontWeight: '600' },
-  body: { padding: 16, gap: 12, paddingBottom: 48 },
-  raw: { backgroundColor: '#FFF8E1', borderRadius: 10, padding: 12, gap: 4 },
-  rawLabel: { fontSize: 11, color: '#8A6D1F', textTransform: 'uppercase' },
-  rawText: { fontSize: 14, fontFamily: 'Menlo' },
-  note: { fontSize: 12, color: '#8A6D1F', fontStyle: 'italic' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 4 },
-  label: { fontSize: 15 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D7DAE0', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-});

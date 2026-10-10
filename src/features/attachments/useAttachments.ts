@@ -1,6 +1,8 @@
 import { useAuth } from '@clerk/expo';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { errorMessage, invalidate, keys } from '@/src/lib/query';
 import type { AttachmentDto } from '@/src/lib/schemas/attachment';
 import { attachmentsApi } from './api';
 import type { LocalFile } from './pick';
@@ -12,44 +14,33 @@ export interface UploadingEntry {
   progress: number;
 }
 
+const EMPTY: AttachmentDto[] = [];
+
 /**
- * Attachments of an existing expense: server list + in-flight uploads +
- * parked (offline) uploads, so the strip reflects every state.
+ * Attachments of an existing expense: cached server list (D15) + in-flight
+ * uploads + parked (offline) uploads, so the strip reflects every state.
+ * View URLs are presigned for 15 min, so the list goes stale after 5.
  */
 export function useAttachments(expenseId: string) {
   const { getToken } = useAuth();
+  const qc = useQueryClient();
   const api = useMemo(() => attachmentsApi(getToken), [getToken]);
+  const queryKey = keys.attachments(expenseId);
 
-  const [items, setItems] = useState<AttachmentDto[]>([]);
+  const query = useQuery({ queryKey, queryFn: () => api.listForExpense(expenseId), staleTime: 5 * 60_000 });
+  const items = query.data ?? EMPTY;
+
   const [uploading, setUploading] = useState<UploadingEntry[]>([]);
   const [queued, setQueued] = useState<QueuedUpload[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    try {
-      setItems(await api.listForExpense(expenseId));
-      setQueued(await pendingForExpense(expenseId));
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, [api, expenseId]);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.listForExpense(expenseId), pendingForExpense(expenseId)])
-      .then(([list, pending]) => {
-        if (cancelled) return;
-        setItems(list);
-        setQueued(pending);
+    pendingForExpense(expenseId)
+      .then((pending) => {
+        if (!cancelled) setQueued(pending);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      .catch(() => undefined);
     const unsub = subscribe((q) => {
       if (!cancelled) setQueued(q.filter((e) => e.expenseId === expenseId));
     });
@@ -57,7 +48,7 @@ export function useAttachments(expenseId: string) {
       cancelled = true;
       unsub();
     };
-  }, [api, expenseId]);
+  }, [expenseId]);
 
   const add = useCallback(
     async (files: LocalFile[]) => {
@@ -66,7 +57,7 @@ export function useAttachments(expenseId: string) {
         try {
           staged = await stageFile(f);
         } catch (err) {
-          setError(err instanceof Error ? err.message : String(err));
+          setActionError(errorMessage(err));
           continue;
         }
         setUploading((u) => [...u, { file: staged, progress: 0 }]);
@@ -77,9 +68,9 @@ export function useAttachments(expenseId: string) {
             onProgress: (p) =>
               setUploading((u) => u.map((e) => (e.file.attachmentId === staged.attachmentId ? { ...e, progress: p } : e))),
           });
-          setItems((prev) => [saved, ...prev]);
-          // The list response carries view URLs; refresh to get one for the new file.
-          void api.listForExpense(expenseId).then(setItems).catch(() => undefined);
+          qc.setQueryData<AttachmentDto[]>(queryKey, (prev) => [saved, ...(prev ?? [])]);
+          // The list response carries view URLs; refetch to get one for the new file.
+          void invalidate.attachments(qc, expenseId);
         } catch (err) {
           await enqueue(staged, expenseId, err);
         } finally {
@@ -87,22 +78,37 @@ export function useAttachments(expenseId: string) {
         }
       }
     },
-    [api, expenseId, getToken],
+    // queryKey derives from expenseId.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [expenseId, getToken, qc],
   );
 
   const remove = useCallback(
     async (id: string) => {
-      const previous = items;
-      setItems((prev) => prev.filter((a) => a.id !== id));
+      const previous = qc.getQueryData<AttachmentDto[]>(queryKey);
+      qc.setQueryData<AttachmentDto[]>(queryKey, (prev) => (prev ?? []).filter((a) => a.id !== id));
       try {
         await api.remove(id);
+        setActionError(null);
+        void qc.invalidateQueries({ queryKey: keys.expenses.all });
       } catch (err) {
-        setItems(previous);
-        setError(err instanceof Error ? err.message : String(err));
+        if (previous) qc.setQueryData(queryKey, previous);
+        setActionError(errorMessage(err));
       }
     },
-    [api, items],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [api, qc, expenseId],
   );
 
-  return { items, uploading, queued, loading, error, add, remove, reload, api };
+  return {
+    items,
+    uploading,
+    queued,
+    loading: query.isPending,
+    error: errorMessage(query.error) ?? actionError,
+    add,
+    remove,
+    reload: () => query.refetch(),
+    api,
+  };
 }

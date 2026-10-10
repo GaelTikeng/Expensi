@@ -4,7 +4,7 @@
  *   node --env-file=.env scripts/db-init.mjs
  *
  * Enables pgcrypto (gen_random_uuid) and prints the server version. Follow
- * with `pnpm db:migrate` and `pnpm db:seed`.
+ * with `pnpm db:migrate`.
  */
 import { neon } from '@neondatabase/serverless';
 

@@ -1,9 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
+import { CalendarDays, Check, CircleCheck, Repeat } from 'lucide-react-native';
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
+import { Icon } from '@/src/components/ui/icon';
+import { Text } from '@/src/components/ui/text';
 import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import type { PlannedDto } from '@/src/lib/schemas/planned';
+import { cn } from '@/src/lib/utils';
 
 function when(iso: string): string {
   const d = new Date(iso);
@@ -23,45 +26,40 @@ export const PlannedRow = memo(function PlannedRow({
   onPress: () => void;
   onDone?: () => void;
 }) {
+  const done = item.status === 'done';
+  const skipped = item.status === 'skipped';
   return (
-    <Pressable style={styles.row} onPress={onPress}>
-      <View style={[styles.icon, overdue && styles.iconOverdue, item.status === 'done' && styles.iconDone]}>
-        <Ionicons
-          name={item.status === 'done' ? 'checkmark' : item.recurringChargeId ? 'repeat-outline' : 'calendar-outline'}
-          size={18}
-          color="#fff"
+    <Pressable className="bg-card flex-row items-center gap-3 p-3.5 active:bg-accent" onPress={onPress}>
+      <View
+        className={cn(
+          'size-9 items-center justify-center rounded-full',
+          done ? 'bg-success' : skipped ? 'bg-muted' : overdue ? 'bg-warning' : 'bg-primary',
+        )}
+      >
+        <Icon
+          as={done ? Check : item.recurringChargeId ? Repeat : CalendarDays}
+          className={cn(
+            'size-[18px]',
+            done ? 'text-success-foreground' : skipped ? 'text-muted-foreground' : overdue ? 'text-warning-foreground' : 'text-primary-foreground',
+          )}
         />
       </View>
-      <View style={styles.body}>
-        <Text style={[styles.title, item.status !== 'planned' && styles.muted]} numberOfLines={1}>
+      <View className="flex-1 gap-0.5">
+        <Text className={cn('text-[15px] font-medium', item.status !== 'planned' && 'text-muted-foreground')} numberOfLines={1}>
           {item.title}
         </Text>
-        <Text style={[styles.meta, overdue && styles.overdueText]} numberOfLines={1}>
+        <Text className={cn('text-xs', overdue ? 'text-warning font-semibold' : 'text-muted-foreground')} numberOfLines={1}>
           {when(item.scheduledAt)}
           {item.place ? ` · ${item.place}` : ''}
           {item.payee ? ` · ${item.payee}` : ''}
         </Text>
       </View>
-      <Text style={styles.amount}>{formatMoney(item.amountMinor, currency)}</Text>
+      <Text className="text-[15px] font-semibold">{formatMoney(item.amountMinor, currency)}</Text>
       {onDone && item.status === 'planned' ? (
-        <Pressable onPress={onDone} hitSlop={10} style={styles.doneBtn} accessibilityLabel="Mark as paid">
-          <Ionicons name="checkmark-circle-outline" size={26} color="#27AE60" />
+        <Pressable onPress={onDone} hitSlop={10} className="ml-1" accessibilityLabel="Mark as paid">
+          <Icon as={CircleCheck} className="text-success size-[26px]" />
         </Pressable>
       ) : null}
     </Pressable>
   );
-});
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, backgroundColor: '#fff' },
-  icon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1F5EFF', alignItems: 'center', justifyContent: 'center' },
-  iconOverdue: { backgroundColor: '#E67E22' },
-  iconDone: { backgroundColor: '#27AE60' },
-  body: { flex: 1, gap: 2 },
-  title: { fontSize: 15, fontWeight: '500' },
-  muted: { color: '#999' },
-  meta: { fontSize: 12, color: '#777' },
-  overdueText: { color: '#E67E22', fontWeight: '600' },
-  amount: { fontSize: 15, fontWeight: '600' },
-  doneBtn: { marginLeft: 4 },
 });

@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
+
+import { FormField } from '@/src/components/form-field';
+import { Group, GroupRow } from '@/src/components/group';
+import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
+import { Switch } from '@/src/components/ui/switch';
+import { Text } from '@/src/components/ui/text';
+import { Textarea } from '@/src/components/ui/textarea';
+import { useThemeColors } from '@/src/lib/theme';
 
 import { AmountInput } from '@/src/features/expenses/AmountInput';
 import { DateField } from '@/src/features/expenses/DateField';
@@ -32,12 +41,13 @@ export function RecurringForm({
 }: {
   initial?: RecurringDto;
   categories: CategoryDto[];
-  currencies: CurrencyInfo[];
+  currencies: readonly CurrencyInfo[];
   defaultCurrency: string;
   submitLabel: string;
   submitting: boolean;
   onSubmit: (values: RecurringInput) => Promise<void> | void;
 }) {
+  const theme = useThemeColors();
   const [name, setName] = useState(initial?.name ?? '');
   const [amountMinor, setAmountMinor] = useState<number | null>(initial?.amountMinor ?? null);
   const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency);
@@ -83,89 +93,61 @@ export function RecurringForm({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Field label="Name" error={errors.name}>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Rent, Internet, School bus" autoFocus={!initial} />
-      </Field>
+    <ScrollView className="bg-background flex-1" contentContainerClassName="gap-4 p-4 pb-12" keyboardShouldPersistTaps="handled">
+      <FormField label="Name" error={errors.name}>
+        <Input value={name} onChangeText={setName} placeholder="e.g. Rent, Internet, School bus" autoFocus={!initial} />
+      </FormField>
 
       <AmountInput value={amountMinor} currency={currencyInfo} onChange={setAmountMinor} error={errors.amountMinor} />
-      <View style={styles.card}>
+      <Group footer="Each month a planned expense is created for this charge, with reminders the day before and one hour before.">
         <OptionPicker label="Currency" value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
         <OptionPicker label="Due" value={String(dayOfMonth)} options={DAYS} onChange={(v) => setDayOfMonth(Number(v))} />
-        <View style={styles.inner}>
+        <View className="px-4 py-3">
           <TimeField label="Reminder at" value={reminderTime} onChange={setReminderTime} />
         </View>
-      </View>
-      <Text style={styles.help}>Each month a planned expense is created for this charge, with reminders the day before and one hour before.</Text>
+      </Group>
 
-      <View style={styles.card}>
-        <DateField label="Starts" value={startsOn} onChange={(d) => d && setStartsOn(d)} />
-        <View style={styles.separator} />
-        <View style={styles.switchRow}>
-          <Text style={styles.label}>Has an end date</Text>
-          <Switch value={hasEnd} onValueChange={setHasEnd} />
+      <Group>
+        <View className="px-4 py-3">
+          <DateField label="Starts" value={startsOn} onChange={(d) => d && setStartsOn(d)} />
         </View>
-        {hasEnd ? <DateField label="Ends" value={endsOn} onChange={setEndsOn} nullable /> : null}
-      </View>
+        <GroupRow label="Has an end date" right={<Switch checked={hasEnd} onCheckedChange={setHasEnd} />} />
+        {hasEnd ? (
+          <View className="px-4 py-3">
+            <DateField label="Ends" value={endsOn} onChange={setEndsOn} nullable />
+          </View>
+        ) : null}
+      </Group>
 
-      <View style={styles.card}>
+      <Group>
         <OptionPicker
           label="Category"
           value={categoryId ?? NONE}
           options={[{ value: NONE, label: 'None' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           onChange={(v) => setCategoryId(v === NONE ? null : v)}
         />
-      </View>
+      </Group>
 
-      <Field label="Paid to" error={errors.payee}>
-        <TextInput style={styles.input} value={payee} onChangeText={setPayee} placeholder="Optional" />
-      </Field>
-      <Field label="Notes" error={errors.notes}>
-        <TextInput style={[styles.input, styles.multiline]} value={notes} onChangeText={setNotes} multiline placeholder="Optional" />
-      </Field>
+      <FormField label="Paid to" error={errors.payee}>
+        <Input value={payee} onChangeText={setPayee} placeholder="Optional" />
+      </FormField>
+      <FormField label="Notes" error={errors.notes}>
+        <Textarea value={notes} onChangeText={setNotes} placeholder="Optional" />
+      </FormField>
 
       {initial ? (
-        <View style={styles.card}>
-          <View style={styles.switchRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Active</Text>
-              <Text style={styles.help}>Inactive charges stop creating planned expenses.</Text>
-            </View>
-            <Switch value={isActive} onValueChange={setIsActive} />
-          </View>
-        </View>
+        <Group>
+          <GroupRow
+            label="Active"
+            description="Inactive charges stop creating planned expenses."
+            right={<Switch checked={isActive} onCheckedChange={setIsActive} />}
+          />
+        </Group>
       ) : null}
 
-      <Pressable style={[styles.button, submitting && styles.disabled]} disabled={submitting} onPress={submit}>
-        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{submitLabel}</Text>}
-      </Pressable>
+      <Button size="lg" className="mt-2" disabled={submitting} onPress={submit}>
+        {submitting ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>{submitLabel}</Text>}
+      </Button>
     </ScrollView>
   );
 }
-
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, paddingBottom: 48 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 4, gap: 4 },
-  inner: { paddingHorizontal: 10, paddingVertical: 6 },
-  separator: { height: 1, backgroundColor: '#EEF0F3', marginHorizontal: 10 },
-  field: { gap: 6 },
-  label: { fontSize: 15 },
-  help: { fontSize: 12, color: '#777', marginLeft: 4 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D7DAE0', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  multiline: { minHeight: 70, textAlignVertical: 'top' },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, gap: 12 },
-  button: { backgroundColor: '#1F5EFF', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  disabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  error: { color: '#C0392B', fontSize: 12, marginLeft: 4 },
-});

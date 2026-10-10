@@ -1,5 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
+
+import { FormField } from '@/src/components/form-field';
+import { Group } from '@/src/components/group';
+import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
+import { Text } from '@/src/components/ui/text';
+import { Textarea } from '@/src/components/ui/textarea';
+import { useThemeColors } from '@/src/lib/theme';
 
 import { AmountInput } from '@/src/features/expenses/AmountInput';
 import { DateField } from '@/src/features/expenses/DateField';
@@ -26,12 +34,13 @@ export function PlannedForm({
 }: {
   initial?: PlannedDto;
   categories: CategoryDto[];
-  currencies: CurrencyInfo[];
+  currencies: readonly CurrencyInfo[];
   defaultCurrency: string;
   submitLabel: string;
   submitting: boolean;
   onSubmit: (values: PlannedInput) => Promise<void> | void;
 }) {
+  const theme = useThemeColors();
   const initialDate = initial ? new Date(initial.scheduledAt) : null;
   const [title, setTitle] = useState(initial?.title ?? '');
   const [amountMinor, setAmountMinor] = useState<number | null>(initial?.amountMinor ?? null);
@@ -77,74 +86,51 @@ export function PlannedForm({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Field label="What" error={errors.title}>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="e.g. Tithe, school fees, rent" autoFocus={!initial} />
-      </Field>
+    <ScrollView className="bg-background flex-1" contentContainerClassName="gap-4 p-4 pb-12" keyboardShouldPersistTaps="handled">
+      <FormField label="What" error={errors.title}>
+        <Input value={title} onChangeText={setTitle} placeholder="e.g. Tithe, school fees, rent" autoFocus={!initial} />
+      </FormField>
 
       <AmountInput value={amountMinor} currency={currencyInfo} onChange={setAmountMinor} error={errors.amountMinor} />
-      <View style={styles.card}>
+      <Group>
         <OptionPicker label="Currency" value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
-      </View>
+      </Group>
 
-      <View style={styles.card}>
-        <DateField label="When" value={date} onChange={(d) => d && setDate(d)} />
-        <View style={styles.separator} />
-        <TimeField label="At" value={time} onChange={setTime} />
-      </View>
-      <Text style={styles.help}>You will be reminded the day before and one hour before.</Text>
+      <Group footer="You will be reminded the day before and one hour before.">
+        <View className="px-4 py-3">
+          <DateField label="When" value={date} onChange={(d) => d && setDate(d)} />
+        </View>
+        <View className="px-4 py-3">
+          <TimeField label="At" value={time} onChange={setTime} />
+        </View>
+      </Group>
 
-      <Field label="Where" error={errors.place}>
-        <TextInput style={styles.input} value={place} onChangeText={setPlace} placeholder="Optional" />
-      </Field>
-      <Field label="To whom" error={errors.payee}>
-        <TextInput style={styles.input} value={payee} onChangeText={setPayee} placeholder="Optional" />
-      </Field>
-      <Field label="Why" error={errors.reason}>
-        <TextInput style={[styles.input, styles.multiline]} value={reason} onChangeText={setReason} multiline placeholder="Optional" />
-      </Field>
+      <FormField label="Where" error={errors.place}>
+        <Input value={place} onChangeText={setPlace} placeholder="Optional" />
+      </FormField>
+      <FormField label="To whom" error={errors.payee}>
+        <Input value={payee} onChangeText={setPayee} placeholder="Optional" />
+      </FormField>
+      <FormField label="Why" error={errors.reason}>
+        <Textarea value={reason} onChangeText={setReason} placeholder="Optional" />
+      </FormField>
 
-      <View style={styles.card}>
+      <Group>
         <OptionPicker
           label="Category"
           value={categoryId ?? NONE}
           options={[{ value: NONE, label: 'None' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           onChange={(v) => setCategoryId(v === NONE ? null : v)}
         />
-      </View>
+      </Group>
 
-      <Field label="Notes" error={errors.notes}>
-        <TextInput style={[styles.input, styles.multiline]} value={notes} onChangeText={setNotes} multiline placeholder="Optional" />
-      </Field>
+      <FormField label="Notes" error={errors.notes}>
+        <Textarea value={notes} onChangeText={setNotes} placeholder="Optional" />
+      </FormField>
 
-      <Pressable style={[styles.button, submitting && styles.disabled]} disabled={submitting} onPress={submit}>
-        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{submitLabel}</Text>}
-      </Pressable>
+      <Button size="lg" className="mt-2" disabled={submitting} onPress={submit}>
+        {submitting ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>{submitLabel}</Text>}
+      </Button>
     </ScrollView>
   );
 }
-
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, paddingBottom: 48 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 10, gap: 8 },
-  separator: { height: 1, backgroundColor: '#EEF0F3' },
-  field: { gap: 6 },
-  label: { fontSize: 15 },
-  help: { fontSize: 12, color: '#777', marginLeft: 4 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#D7DAE0', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  multiline: { minHeight: 70, textAlignVertical: 'top' },
-  button: { backgroundColor: '#1F5EFF', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  disabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  error: { color: '#C0392B', fontSize: 12, marginLeft: 4 },
-});

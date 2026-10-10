@@ -1,7 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { X } from 'lucide-react-native';
+import { Image, Modal, Pressable, View } from 'react-native';
 
+import { Icon } from '@/src/components/ui/icon';
+import { Text } from '@/src/components/ui/text';
 import type { AttachmentDto } from '@/src/lib/schemas/attachment';
 
 /**
@@ -27,13 +29,13 @@ export function ImageViewerModal({
 }) {
   return (
     <Modal visible={Boolean(attachment && url)} animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable style={styles.close} onPress={onClose} hitSlop={16} accessibilityLabel="Close">
-          <Ionicons name="close" size={28} color="#fff" />
+      <View className="flex-1 justify-center bg-black">
+        <Pressable className="absolute right-5 top-14 z-10" onPress={onClose} hitSlop={16} accessibilityLabel="Close">
+          <Icon as={X} className="size-7 text-white" />
         </Pressable>
-        {url ? <Image source={{ uri: url }} style={styles.image} resizeMode="contain" /> : null}
+        {url ? <Image source={{ uri: url }} className="h-[80%] w-full" resizeMode="contain" /> : null}
         {attachment?.originalFilename ? (
-          <Text style={styles.caption} numberOfLines={1}>
+          <Text className="absolute bottom-10 self-center text-xs text-white/80" numberOfLines={1}>
             {attachment.originalFilename}
           </Text>
         ) : null}
@@ -41,10 +43,3 @@ export function ImageViewerModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
-  close: { position: 'absolute', top: 56, right: 20, zIndex: 1 },
-  image: { width: '100%', height: '80%' },
-  caption: { position: 'absolute', bottom: 40, alignSelf: 'center', color: '#ccc', fontSize: 12 },
-});
