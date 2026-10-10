@@ -1,7 +1,7 @@
 import { useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { Tabs } from 'expo-router';
-import { Calendar, ChartColumn, House, Receipt, Settings } from 'lucide-react-native';
+import { Calendar, ChartColumn, House, Receipt } from 'lucide-react-native';
 
 import { Icon } from '@/src/components/ui/icon';
 import { categoriesApi } from '@/src/features/expenses/api';
@@ -57,13 +57,6 @@ export default function TabsLayout() {
         options={{
           title: 'Recaps',
           tabBarIcon: ({ color, size }) => <Icon as={ChartColumn} color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color, size }) => <Icon as={Settings} color={color} size={size} />,
         }}
       />
     </Tabs>

@@ -96,6 +96,11 @@ export const users = pgTable(
     defaultCurrency: varchar('default_currency', { length: 3 }).notNull().default('XAF'),
     timezone: varchar('timezone', { length: 64 }).notNull().default('Africa/Douala'),
     expoPushToken: text('expo_push_token'),
+    /** E15: picture from the identity provider (Google via Clerk). */
+    imageUrl: text('image_url'),
+    /** E15: custom avatar in S3, `users/{id}/avatar/{uuid}.jpg`; wins over imageUrl. */
+    avatarKey: text('avatar_key'),
+    phone: varchar('phone', { length: 32 }),
     ...auditCols,
   },
   (t) => [uniqueIndex('users_clerk_user_id_key').on(t.clerkUserId)],

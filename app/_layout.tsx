@@ -6,13 +6,14 @@ import { PortalHost } from '@rn-primitives/portal';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { colorScheme, useColorScheme } from 'nativewind';
+import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 
 import { ActionSheetHost } from '@/src/components/action-sheet';
+import { loadAppearance } from '@/src/lib/appearance';
 import { queryClient } from '@/src/lib/query';
 import { initSentry, setSentryUser } from '@/src/lib/sentry';
 import { NAV_THEME, useThemeColors } from '@/src/lib/theme';
@@ -26,11 +27,6 @@ initSentry();
 // release fixes ReanimatedSwipeable.
 configureReanimatedLogger({ level: ReanimatedLogLevel.warn, strict: false });
 
-// F9.5: the app follows the device setting. Native defaults to "system"
-// already. Web uses class-based dark mode, and NativeWind's
-// colorScheme.set('system') only removes the `dark` class, so RootLayout
-// mirrors the media query onto <html class="dark"> itself (in an effect: the
-// call throws during server rendering).
 
 const publishableKey: string = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '';
 
@@ -75,6 +71,9 @@ function RootNavigator() {
         <Stack.Screen name="planned/month" options={{ title: 'Month' }} />
         <Stack.Screen name="recurring/new" options={{ title: 'New fixed charge', presentation: 'modal' }} />
         <Stack.Screen name="recurring/[id]" options={{ title: 'Fixed charge' }} />
+        <Stack.Screen name="account/index" options={{ title: 'Account' }} />
+        <Stack.Screen name="account/profile" options={{ title: 'Personal information' }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="export" options={{ title: 'Export expenses' }} />
         <Stack.Screen name="privacy" options={{ title: 'Privacy' }} />
       </Stack.Protected>
@@ -88,13 +87,9 @@ function RootNavigator() {
 export default function RootLayout() {
   const { colorScheme: scheme } = useColorScheme();
 
+  // E17: stored appearance (system / light / dark); see src/lib/appearance.ts.
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const query = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => colorScheme.set(query.matches ? 'dark' : 'light');
-    apply();
-    query.addEventListener('change', apply);
-    return () => query.removeEventListener('change', apply);
+    void loadAppearance();
   }, []);
 
   return (

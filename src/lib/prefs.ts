@@ -10,9 +10,11 @@ export interface DevicePrefs {
   monthlyRecapReminder: boolean;
   /** Local time "HH:MM" for recap reminders. */
   recapReminderTime: string;
+  /** E17: colour scheme override; "system" follows the device. */
+  appearance: 'system' | 'light' | 'dark';
 }
 
-const DEFAULTS: DevicePrefs = { weeklyRecapReminder: false, monthlyRecapReminder: false, recapReminderTime: '09:00' };
+const DEFAULTS: DevicePrefs = { weeklyRecapReminder: false, monthlyRecapReminder: false, recapReminderTime: '09:00', appearance: 'system' };
 const PATH = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}device-prefs.json`;
 
 let cache: DevicePrefs | null = null;

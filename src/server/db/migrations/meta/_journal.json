@@ -15,6 +15,13 @@
       "when": 1791634515517,
       "tag": "0001_strong_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791664917491,
+      "tag": "0002_fresh_molly_hayes",
+      "breakpoints": true
     }
   ]
 }

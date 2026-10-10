@@ -60,6 +60,7 @@ export function withAuth(handler: AuthedHandler) {
           clerkUserId,
           email: profile.primaryEmailAddress?.emailAddress ?? null,
           displayName: profile.fullName ?? null,
+          imageUrl: profile.hasImage ? profile.imageUrl : null,
         });
         await new CategoriesRepository(db, user.id).seedDefaults();
       }

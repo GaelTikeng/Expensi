@@ -5,7 +5,8 @@
  */
 require('react-native-gesture-handler/jestSetup');
 
-jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
+// Reanimated 4's own test setup (with the worklets resolver in jest.config.js).
+require('react-native-reanimated').setUpTests();
 
 jest.mock('@clerk/expo', () => ({
   useAuth: () => ({ isLoaded: true, isSignedIn: true, userId: 'user_test', getToken: async () => 'test-token', signOut: jest.fn() }),

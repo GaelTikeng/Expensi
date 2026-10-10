@@ -19,6 +19,7 @@ export class UsersRepository {
     clerkUserId: string;
     email?: string | null;
     displayName?: string | null;
+    imageUrl?: string | null;
   }): Promise<User> {
     const [row] = await this.db
       .insert(users)
@@ -26,12 +27,15 @@ export class UsersRepository {
         clerkUserId: input.clerkUserId,
         email: input.email ?? null,
         displayName: input.displayName ?? null,
+        imageUrl: input.imageUrl ?? null,
       })
       .onConflictDoUpdate({
         target: users.clerkUserId,
         set: {
           email: input.email ?? undefined,
-          displayName: input.displayName ?? undefined,
+          // The provider picture follows the provider; a name the user typed
+          // in the app is kept (displayName is only set when still empty).
+          imageUrl: input.imageUrl === undefined ? undefined : input.imageUrl,
           updatedAt: new Date(),
         },
       })
@@ -41,7 +45,7 @@ export class UsersRepository {
 
   async updateProfile(
     userId: string,
-    patch: Partial<Pick<User, 'defaultCurrency' | 'timezone' | 'expoPushToken' | 'displayName'>>,
+    patch: Partial<Pick<User, 'defaultCurrency' | 'timezone' | 'expoPushToken' | 'displayName' | 'phone' | 'avatarKey' | 'imageUrl'>>,
   ): Promise<User | undefined> {
     const [row] = await this.db
       .update(users)
