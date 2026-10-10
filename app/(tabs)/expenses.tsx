@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { CloudUpload, Plus, Search } from 'lucide-react-native';
+import { CloudUpload, Download, Plus, Search } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, SectionList, View } from 'react-native';
 
@@ -93,6 +93,14 @@ export default function ExpensesScreen() {
           accessibilityLabel="Import a file"
         >
           <Icon as={CloudUpload} className="text-primary size-[22px]" />
+        </Pressable>
+        <Pressable
+          className="bg-card border-input active:bg-accent size-10 items-center justify-center rounded-md border"
+          onPress={() => router.push('/export')}
+          hitSlop={6}
+          accessibilityLabel="Export expenses"
+        >
+          <Icon as={Download} className="text-primary size-[22px]" />
         </Pressable>
       </View>
 

@@ -63,6 +63,7 @@ export const keys = {
     detail: (id: string) => ['imports', 'detail', id] as const,
   },
   attachments: (expenseId: string) => ['attachments', expenseId] as const,
+  exportSummary: (from: string, to: string) => ['export', 'summary', from, to] as const,
 };
 
 /**
@@ -72,7 +73,11 @@ export const keys = {
 export const invalidate = {
   /** Expense created, edited, deleted or imported: lists, details, recaps, home tiles. */
   expenses: (qc: QueryClient) =>
-    Promise.all([qc.invalidateQueries({ queryKey: keys.expenses.all }), qc.invalidateQueries({ queryKey: keys.recaps.all })]),
+    Promise.all([
+      qc.invalidateQueries({ queryKey: keys.expenses.all }),
+      qc.invalidateQueries({ queryKey: keys.recaps.all }),
+      qc.invalidateQueries({ queryKey: ['export'] }),
+    ]),
   /** Plan created, edited, completed, skipped or deleted; fixed charge changed. */
   plans: (qc: QueryClient) =>
     Promise.all([qc.invalidateQueries({ queryKey: keys.planned.all }), qc.invalidateQueries({ queryKey: keys.recurring.all })]),

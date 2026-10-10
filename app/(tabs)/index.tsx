@@ -9,6 +9,7 @@ import { TabScreen } from '@/src/components/tab-screen';
 import { Icon } from '@/src/components/ui/icon';
 import { Text } from '@/src/components/ui/text';
 import { makeCurrencyLookup } from '@/src/features/expenses/money-utils';
+import { HomeStats, HomeStatsSkeleton } from '@/src/features/recaps/HomeStats';
 import { useRecapOverview } from '@/src/features/recaps/useRecap';
 import { useMe } from '@/src/features/settings/useMe';
 import { todayISO, type RecapPeriod } from '@/src/lib/dates';
@@ -17,7 +18,7 @@ import { keys, useRefetchOnFocus } from '@/src/lib/query';
 import type { RecapStats } from '@/src/lib/schemas/recap';
 import { cn } from '@/src/lib/utils';
 
-/** F4.5: today / this week / this month at a glance, plus quick actions. */
+/** F4.5: today / this week / this month at a glance, charts, and the import shortcut. */
 export default function HomeScreen() {
   const { user } = useUser();
   const name = user?.firstName ?? user?.primaryEmailAddress?.emailAddress?.split('@')[0] ?? 'there';
@@ -48,11 +49,7 @@ export default function HomeScreen() {
               <Tile label="This week" stats={overview.week} lookup={lookup} onPress={() => openRecap('week')} prevLabel="last week" compact />
               <Tile label="This month" stats={overview.month} lookup={lookup} onPress={() => openRecap('month')} prevLabel="last month" compact />
             </View>
-            {overview.month.byCategory[0] ? (
-              <Text className="text-muted-foreground ml-1 text-[13px]">
-                Biggest this month: {overview.month.byCategory[0].name} · {formatMoney(overview.month.byCategory[0].totalMinor, lookup(overview.month.currency))}
-              </Text>
-            ) : null}
+            <HomeStats overview={overview} lookup={lookup} />
           </>
         ) : null}
 
@@ -107,7 +104,7 @@ function Tile({
   );
 }
 
-/** Mirrors the three tiles and the "biggest" hint while the overview loads. */
+/** Mirrors the three tiles and the stat cards while the overview loads. */
 function TilesSkeleton() {
   return (
     <View className="gap-3" {...loadingA11y}>
@@ -125,7 +122,7 @@ function TilesSkeleton() {
           </View>
         ))}
       </View>
-      <SkeletonLine className="ml-1 w-56" />
+      <HomeStatsSkeleton />
     </View>
   );
 }

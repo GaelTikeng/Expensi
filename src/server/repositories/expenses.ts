@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm';
 
 import { attachments, expenses, type Expense, type NewExpense } from '../db/schema';
 import type { ExpenseListQuery } from '@/src/lib/schemas/expense';
@@ -51,6 +51,27 @@ export class ExpensesRepository extends UserScopedRepository {
     const hasMore = rows.length > q.limit;
     const page = hasMore ? rows.slice(0, q.limit) : rows;
     return { items: await this.decorate(page), nextOffset: hasMore ? q.offset + q.limit : null };
+  }
+
+  /**
+   * E10: every live expense in a date range, oldest first. Reads `cap + 1`
+   * rows so the caller knows the export would be incomplete.
+   */
+  async listRange(
+    q: { from: string; to: string; categoryId?: string; hasAttachment?: boolean },
+    cap: number,
+  ): Promise<{ items: ExpenseWithCounts[]; truncated: boolean }> {
+    const conditions = [this.scope(), gte(expenses.occurredOn, q.from), lte(expenses.occurredOn, q.to)];
+    if (q.categoryId) conditions.push(eq(expenses.categoryId, q.categoryId));
+    if (q.hasAttachment !== undefined) conditions.push(q.hasAttachment ? this.proofExists() : sql`not ${this.proofExists()}`);
+    const rows = await this.db
+      .select()
+      .from(expenses)
+      .where(and(...conditions))
+      .orderBy(asc(expenses.occurredOn), asc(expenses.createdAt))
+      .limit(cap + 1);
+    const truncated = rows.length > cap;
+    return { items: await this.decorate(truncated ? rows.slice(0, cap) : rows), truncated };
   }
 
   async findById(id: string): Promise<ExpenseWithCounts | undefined> {

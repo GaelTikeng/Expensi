@@ -48,6 +48,7 @@ the design must not hard-code that. iOS + Android, public app.
 | Observability | `@sentry/react-native` (client, DSN-gated); server routes log via `console` | server Sentry pending |
 | UI / styling | **NativeWind 4.2** (Tailwind CSS **v3**) + **React Native Reusables** components copied into `src/components/ui/` (`@rn-primitives/*`, `class-variance-authority`, `tailwind-merge` v2, `lucide-react-native` + `react-native-svg`); `@react-native-community/datetimepicker`; `react-native-gesture-handler` + `react-native-reanimated` (swipe rows) | see D13. Category glyphs stay on `@expo/vector-icons` Ionicons (stored in DB) |
 | Action sheets | `src/components/action-sheet.tsx` (`ActionSheetHost` at the root, `useActionSheets().confirm/show`): iOS uses the system sheet via `@expo/react-native-action-sheet`; Android and web draw our own sheet over an `expo-blur` backdrop (NativeWindUI Action Sheet pattern) | every in-place choice (delete, skip, add proof, commit) is a sheet; plain messages stay `Alert` |
+| Export | `xlsx` (SheetJS, already present) for spreadsheets, **`pdf-lib`** for the PDF statement (pure JS, standard fonts), **`expo-sharing`** to hand the file to the share sheet | `src/server/services/export/*`, `app/api/expenses/export+api.ts`, `src/features/export/*`; see E10 |
 | Client cache | **TanStack Query 5** (`@tanstack/react-query`) | `src/lib/query.ts`: `queryClient`, `keys`, `invalidate`, `useRefetchOnFocus`; see D15 |
 | Native builds | **EAS Build**, project `@gaeltikeng/xpens-ia`; `expo-dev-client`; pnpm pinned to **9.15.2** in every `eas.json` profile | EAS defaults to pnpm 11, which ignores `package.json#pnpm`; see `docs/DEPLOY.md` |
 
@@ -174,10 +175,12 @@ expense-app/
 │   ├── expense/new.tsx, [id].tsx      create modal, detail/edit
 │   ├── import/index.tsx, [id].tsx     history + upload, review
 │   ├── planned/new, [id], month       plan create / detail / month list
+│   ├── export.tsx                     E10 export screen
 │   ├── recurring/new, [id]            fixed charge create / edit
 │   └── api/                           Expo API Routes (server-only)
 │       ├── health+api.ts              liveness, no server imports
 │       ├── me+api.ts                  GET profile, PATCH prefs, DELETE account
+│       ├── expenses/export+api.ts     E10 PDF / XLSX / summary
 │       └── webhooks/clerk+api.ts      Clerk user.* events (verifyWebhook)
 ├── src/
 │   ├── server/                        never imported by client code
@@ -187,6 +190,7 @@ expense-app/
 │   │   ├── services/account.ts        deleteAccountData(): S3 purge + cascade delete
 │   │   ├── services/imports/          parse (SheetJS, pdf-parse), extract (model call), process, commit, dto
 │   │   ├── services/recaps/           stats (SQL), narrative (model), index (cache)
+│   │   ├── services/export/           dataset (pure), xlsx (SheetJS), pdf (pdf-lib)
 │   │   ├── services/planned/dto.ts    planned + recurring DTOs
 │   │   ├── services/maintenance.ts    sweepStaleUploads() (cross-user, cron only)
 │   │   ├── ai/quota.ts                monthly AI limits (429)
@@ -198,7 +202,8 @@ expense-app/
 │   │   ├── attachments/               pick, upload (stage+presign+PUT+confirm), queue, tiles, viewer
 │   │   ├── expenses/                  api, hooks, ExpenseForm, AmountInput, DateField, ExpenseRow
 │   │   ├── imports/                   api, upload, review-utils, ImportItemRow, ItemEditModal
-│   │   ├── recaps/                    api, useRecap, charts (View-based)
+│   │   ├── recaps/                    api, useRecap, charts (View-based), donut (SVG), HomeStats
+│   │   ├── export/                    api, download (share sheet / browser download)
 │   │   ├── planned/                   api, usePlanned, reminders, PlannedForm, RecurringForm, CompleteSheet, PlanningView, FixedChargesView
 │   │   ├── notifications/             permissions, schedule (recaps + planned), setup hook, prefs toggles
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
@@ -319,7 +324,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F4.2 `GET /api/recaps?period=&start=&narrative=` — `services/recaps/index.ts` serves the cache when fresh, recomputes when missing/stale, upserts
 - [x] F4.3 `services/recaps/narrative.ts` — narrative model over trimmed stats JSON, 3–5 sentences, stored in `narrative_md`; failure never fails the recap
 - [x] F4.4 Recaps tab `app/(tabs)/recaps.tsx`: Day/Week/Month segment, prev/next, headline + delta, by-day columns, narrative card (on demand since 2026-10-10: a **Summarise** button triggers the model; a stored summary shows at once), category bars with budget %, fixed vs variable, top payees, largest — `src/features/recaps/*`
-- [x] F4.5 Home `app/(tabs)/index.tsx` via `GET /api/recaps/overview`: three tiles with deltas, biggest category, quick actions
+- [x] F4.5 Home `app/(tabs)/index.tsx` via `GET /api/recaps/overview`: three tiles with deltas, then (2026-10-10) `src/features/recaps/HomeStats.tsx`: week by day, month by category as an SVG donut (`donut.tsx`, top 5 + Other, budget %), this month vs last month with daily pace and projection, fixed vs variable, top payees; each card opens its recap; import shortcut; floating Add
 - [x] F4.6 Opt-in **local** reminders (Monday / 1st at 09:00) scheduled on-device — `src/features/notifications/*`, toggles in Settings, prefs in `src/lib/prefs.ts`. Android monthly re-armed on app open. Server push not needed for this
 - [x] F4.7 `is_stale` rows recomputed on next read; stale narrative cleared when stats change
 
@@ -376,14 +381,14 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F11.6 Currencies hardcoded (D14): `src/lib/currencies.ts`; `/api/currencies`, `ReferenceRepository`, `seed.ts` and `db:seed` removed; zod schemas validate codes against the list; migration `0001_strong_nova.sql` applied to Neon 2026-10-10
 
 ### E10 — Export expenses (PDF / XLSX)
-Registered 2026-10-10; not started. Download the ledger for a date range as a
-spreadsheet or a printable statement.
-- [ ] F10.1 `GET /api/expenses/export?from=&to=&format=pdf|xlsx` (+ optional `categoryId`, `hasAttachment`) through `ExpensesRepository`; same filters as F2.2; hard cap on rows (5 000) with a clear 400 for reversed / oversize ranges; `Content-Disposition` filename `xpens-ia_<from>_<to>.<ext>`
-- [ ] F10.2 XLSX via SheetJS (already a dependency, F3.5): sheet **Expenses** (date, description, payee, category, amount as a number, currency, estimated, proofs) + sheet **Summary** (totals per currency and per category)
-- [ ] F10.3 PDF: header (user, range, generated on), expense table, totals per currency and per category; DD/MM dates and per-currency amount formatting (D7). Library to add and register in §2: `pdf-lib` (pure JS, runs on EAS Hosting)
-- [ ] F10.4 Export screen `app/export.tsx`: range shortcuts (this month, last month, this year, custom via `DateField`), PDF / XLSX toggle, preview line ("42 expenses · 315 000 FCFA" via `GET /api/expenses` count), Export button; entry points from the Expenses tab and Settings
-- [ ] F10.5 Delivery: native saves to the cache dir then opens the share sheet (`expo-sharing`, to register in §2); web triggers a browser download
-- [ ] F10.6 Tests: row selection by range, totals, empty range, mixed currencies
+Built 2026-10-10. Download the ledger for a date range as a spreadsheet or a
+printable statement.
+- [x] F10.1 `GET /api/expenses/export?from=&to=&format=pdf|xlsx|summary` (+ optional `categoryId`, `hasAttachment`) — `app/api/expenses/export+api.ts`, `ExpensesRepository.listRange()` (oldest first, `cap + 1` probe); 400 `reversed_range` / `range_too_long` (731 days) / `too_many_rows` (5 000); `Content-Disposition` filename `xpens-ia_<from>_<to>.<ext>`; `format=summary` returns count + totals per currency for the preview
+- [x] F10.2 XLSX — `src/server/services/export/xlsx.ts`: sheet **Expenses** (ISO date, description, paid to, category, amount as a number in major units, currency, estimated, proofs, source) + sheet **Summary** (range, owner, generated; totals per currency and per category)
+- [x] F10.3 PDF — `src/server/services/export/pdf.ts` with `pdf-lib`: A4, header (owner, range, count, generated on), table with repeated column titles across pages, totals per currency and per category, page numbers. Standard Helvetica is Latin-1 only, so narrow spaces, `₦` and other characters are mapped before drawing
+- [x] F10.4 `app/export.tsx`: This month / Last month / This year / Custom (two `DateField`s), PDF / Excel toggle, live preview line from `format=summary` (cached under `keys.exportSummary`, invalidated with expenses), Export button; entry points: download icon in the Expenses tab search row, Settings → Data → Export expenses
+- [x] F10.5 `src/features/export/download.ts`: native downloads to `cache/exports/` with the session token then opens the share sheet (`expo-sharing`); web fetches a blob and triggers a browser download
+- [x] F10.6 Tests: `src/server/services/export/export.test.ts` (dataset totals and ordering, uncategorised bucket, mixed currencies, empty range, spreadsheet round trip, PDF validity, pagination and non-Latin-1 text: 8 cases); e2e checks summary, xlsx, pdf and the reversed-range 400 (30/30)
 ---
 
 ## 7. Working agreements for Claude Code
@@ -413,6 +418,13 @@ spreadsheet or a printable statement.
 
 ## 8. Changelog
 
+- 2026-10-10 — **Export to PDF / Excel (E10).** Range presets or custom
+  dates, live preview, PDF statement or two-sheet spreadsheet, delivered via
+  the share sheet on the phone and as a download on web. 8 unit tests, 4 e2e
+  checks.
+- 2026-10-10 — **Home stats.** Five chart cards under the tiles, all from
+  the overview response: week by day, category donut, month pace vs last
+  month, fixed vs variable, top payees. Empty state when nothing is recorded.
 - 2026-10-10 — **Action sheets for confirmations (NativeWindUI pattern).**
   Delete expense / plan / fixed charge, skip a plan, remove a proof, pick a
   proof source and commit an import now open a native action sheet

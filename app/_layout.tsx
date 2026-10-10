@@ -75,6 +75,7 @@ function RootNavigator() {
         <Stack.Screen name="planned/month" options={{ title: 'Month' }} />
         <Stack.Screen name="recurring/new" options={{ title: 'New fixed charge', presentation: 'modal' }} />
         <Stack.Screen name="recurring/[id]" options={{ title: 'Fixed charge' }} />
+        <Stack.Screen name="export" options={{ title: 'Export expenses' }} />
         <Stack.Screen name="privacy" options={{ title: 'Privacy' }} />
       </Stack.Protected>
       <Stack.Protected guard={!isSignedIn}>

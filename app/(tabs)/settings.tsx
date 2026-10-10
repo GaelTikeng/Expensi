@@ -141,6 +141,10 @@ export default function SettingsScreen() {
           <UsageRow label="Recap summaries" used={usage?.narrative.used} limit={usage?.narrative.limit} />
         </Group>
 
+        <Group title="Data">
+          <GroupRow label="Export expenses" description="PDF statement or Excel file for a period" onPress={() => router.push('/export')} />
+        </Group>
+
         <Group title="About">
           <GroupRow label="Privacy" onPress={() => router.push('/privacy')} />
         </Group>

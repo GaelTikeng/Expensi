@@ -122,6 +122,22 @@ try {
     purgeKey = second.key;
   }
 
+  // ── export (E10): summary, spreadsheet, statement ─────────────────────────
+  {
+    const range = `from=${today}&to=${today}`;
+    const summary = await api('GET', `/api/expenses/export?${range}&format=summary`);
+    check('GET export summary → 1 expense, XAF total', summary.status === 200 && summary.json?.count === 1 && summary.json?.byCurrency?.[0]?.currency === 'XAF', `count ${summary.json?.count}`);
+    const { jwt } = await clerk.sessions.getToken(sessionId);
+    const xlsx = await fetch(`${BASE}/api/expenses/export?${range}&format=xlsx`, { headers: { authorization: `Bearer ${jwt}` } });
+    const xlsxBytes = Buffer.from(await xlsx.arrayBuffer());
+    check('GET export xlsx → 200, spreadsheet bytes, attachment header', xlsx.status === 200 && xlsxBytes.slice(0, 2).toString() === 'PK' && /attachment; filename="xpens-ia_/.test(xlsx.headers.get('content-disposition') ?? ''), `${xlsxBytes.length} bytes`);
+    const pdf = await fetch(`${BASE}/api/expenses/export?${range}&format=pdf`, { headers: { authorization: `Bearer ${jwt}` } });
+    const pdfBytes = Buffer.from(await pdf.arrayBuffer());
+    check('GET export pdf → 200, PDF bytes', pdf.status === 200 && pdfBytes.slice(0, 5).toString() === '%PDF-', `${pdfBytes.length} bytes`);
+    const reversed = await api('GET', `/api/expenses/export?from=${today}&to=2020-01-01&format=pdf`);
+    check('export rejects a reversed range → 400', reversed.status === 400 && reversed.json?.error === 'reversed_range', `status ${reversed.status}`);
+  }
+
   const search = await api('GET', '/api/expenses?q=mokolo');
   check('search by payee (case-insensitive)', search.json?.items?.length === 1);
 
