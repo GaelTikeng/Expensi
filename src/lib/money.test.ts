@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { formatMoney, parseLocaleAmount, toMinor } from './money';
 
 const XAF = { code: 'XAF', exponent: 0, symbol: 'FCFA' };

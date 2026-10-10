@@ -3,7 +3,7 @@
  * generated on the device index well in Postgres (CLAUDE.md D9).
  *
  * Pure: the caller supplies 10 random bytes so this runs identically under
- * vitest (Node) and on device (expo-crypto). See features/expenses/ids.ts.
+ * Jest (Node) and on device (expo-crypto). See features/expenses/ids.ts.
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

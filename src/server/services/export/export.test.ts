@@ -1,5 +1,4 @@
 import { PDFDocument } from 'pdf-lib';
-import { describe, expect, it } from 'vitest';
 import * as XLSX from 'xlsx';
 
 import { buildDataset, type ExportableExpense } from './dataset';

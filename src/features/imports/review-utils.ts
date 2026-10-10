@@ -12,15 +12,15 @@ export interface ReviewedItem {
 export function reviewItems(items: ImportItemDto[]): ReviewedItem[] {
   return items.map((item) => {
     const line: ExtractedLine = {
-      line_index: item.lineIndex,
-      raw_text: item.rawText,
-      line_kind: item.lineKind,
-      amount_minor: item.amountMinor ?? undefined,
-      occurred_on: item.occurredOn ?? undefined,
+      lineIndex: item.lineIndex,
+      rawText: item.rawText,
+      lineKind: item.lineKind,
+      amountMinor: item.amountMinor ?? undefined,
+      occurredOn: item.occurredOn ?? undefined,
       description: item.description ?? undefined,
       // A user edit is a human confirmation; treat it as full confidence.
       confidence: item.editedByUser ? 1 : (item.confidence ?? undefined),
-      ambiguity_note: item.ambiguityNote ?? undefined,
+      ambiguityNote: item.ambiguityNote ?? undefined,
     };
     const r = classifyLine(line);
     // Duplicates are never pre-ticked, whatever the model's confidence.

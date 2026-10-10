@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { formatTotals, makeCurrencyLookup, sumByCurrency } from './money-utils';
 
 const lookup = makeCurrencyLookup([

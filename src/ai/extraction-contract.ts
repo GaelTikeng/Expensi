@@ -14,28 +14,28 @@ import { z } from 'zod';
 
 /* ── the tool (OpenAI function-calling shape) ────────────────────────────── */
 /**
- * Forced via tool_choice: { type: 'function', function: { name: 'record_expense_lines' } }.
+ * Forced via tool_choice: { type: 'function', function: { name: 'recordExpenseLines' } }.
  * That guarantees structured arguments and removes "here is the JSON you asked
  * for" preambles entirely.
  */
 export const RECORD_EXPENSE_LINES_TOOL = {
   type: 'function',
   function: {
-  name: 'record_expense_lines',
+  name: 'recordExpenseLines',
   description:
     'Record every line item transcribed from an image or PDF of an expense ' +
     'list. Call exactly once, after reading the entire document.',
   parameters: {
     type: 'object',
     properties: {
-      detected_currency: {
+      detectedCurrency: {
         type: 'string',
         description:
           'ISO-4217 code inferred from symbols, words, or plausible magnitudes ' +
           '(e.g. "FCFA"/"F"/"XAF" -> XAF). Use "UNKNOWN" if genuinely unclear.',
       },
-      detected_language: { type: 'string', description: 'BCP-47, e.g. "fr".' },
-      document_quality: {
+      detectedLanguage: { type: 'string', description: 'BCP-47, e.g. "fr".' },
+      documentQuality: {
         type: 'string',
         enum: ['good', 'usable', 'poor'],
         description: '"poor" means the user should be prompted to re-shoot.',
@@ -48,14 +48,14 @@ export const RECORD_EXPENSE_LINES_TOOL = {
         items: {
           type: 'object',
           properties: {
-            line_index: { type: 'integer', description: '0-based, top to bottom.' },
-            raw_text: {
+            lineIndex: { type: 'integer', description: '0-based, top to bottom.' },
+            rawText: {
               type: 'string',
               description:
                 'Verbatim transcription of the line exactly as written, ' +
                 'including original number formatting. Do not normalise here.',
             },
-            line_kind: {
+            lineKind: {
               type: 'string',
               enum: [
                 'expense',
@@ -70,15 +70,15 @@ export const RECORD_EXPENSE_LINES_TOOL = {
                 'A line crossed out by the writer is "struck_through" and must ' +
                 'not be counted.',
             },
-            amount_minor: {
+            amountMinor: {
               type: 'integer',
               description:
-                'Amount in MINOR UNITS of detected_currency. For zero-decimal ' +
+                'Amount in MINOR UNITS of detectedCurrency. For zero-decimal ' +
                 'currencies such as XAF, minor units equal whole units: ' +
                 '"5.000 F" -> 5000. For two-decimal currencies, "12,50 €" -> ' +
                 '1250. Omit if not legible.',
             },
-            occurred_on: {
+            occurredOn: {
               type: 'string',
               description:
                 'YYYY-MM-DD. Only if a date is written on or above this line. ' +
@@ -89,25 +89,25 @@ export const RECORD_EXPENSE_LINES_TOOL = {
               description: 'Cleaned-up label for what was purchased.',
             },
             payee: { type: 'string', description: 'Who was paid, if written.' },
-            category_guess: { type: 'string' },
+            categoryGuess: { type: 'string' },
             confidence: {
               type: 'number',
               description:
                 '0..1 for the AMOUNT specifically. Be pessimistic: <=0.7 for ' +
                 'any digit you would not bet money on.',
             },
-            ambiguity_note: {
+            ambiguityNote: {
               type: 'string',
               description:
                 'Plain-language note when uncertain, e.g. "second digit is ' +
                 'either 3 or 8". Shown verbatim to the user.',
             },
           },
-          required: ['line_index', 'raw_text', 'line_kind'],
+          required: ['lineIndex', 'rawText', 'lineKind'],
         },
       },
     },
-    required: ['detected_currency', 'document_quality', 'lines'],
+    required: ['detectedCurrency', 'documentQuality', 'lines'],
   },
   },
 } as const;
@@ -126,11 +126,11 @@ NUMBER FORMATTING
 - XAF (FCFA) has no subunit. Never emit a fractional XAF amount. Amounts are
   almost always round multiples of 5 or 25 — an amount like 5003 XAF is a signal
   you misread a digit, so lower confidence rather than reporting it confidently.
-- Strip currency symbols from amount_minor; record them in raw_text.
+- Strip currency symbols from amountMinor; record them in rawText.
 
 DATES
 - Written numeric dates are DD/MM, not MM/DD.
-- If no year is written, omit occurred_on rather than guessing. The app will ask.
+- If no year is written, omit occurredOn rather than guessing. The app will ask.
 - A date written once at the top of a list applies to the lines beneath it;
   propagate it, but only downward until a new date appears.
 
@@ -139,16 +139,16 @@ WHAT IS NOT AN EXPENSE
   figures. Mark them 'total'/'subtotal'. Including them double-counts the list.
 - Column headers, page numbers, names, phone numbers.
 - Lines the writer crossed out: 'struck_through'.
-Still emit these lines with their raw_text so the user sees nothing was dropped.
+Still emit these lines with their rawText so the user sees nothing was dropped.
 
 UNCERTAINTY
 - Never guess an amount to appear complete. An omitted amount with an
-  ambiguity_note is far more useful than a confident wrong number, because the
+  ambiguityNote is far more useful than a confident wrong number, because the
   user will correct the former and trust the latter.
 - Handwritten 1/7, 3/8, 4/9, 0/6 confusions are common. Say so explicitly.
-- If the image is blurry, cropped, or badly lit, set document_quality to 'poor'.
+- If the image is blurry, cropped, or badly lit, set documentQuality to 'poor'.
 
-Read the whole document first, then call record_expense_lines exactly once.
+Read the whole document first, then call recordExpenseLines exactly once.
 `.trim();
 
 /* ── tabular addendum ────────────────────────────────────────────────────── */
@@ -162,17 +162,17 @@ SOURCE FORMAT
 - Decide which columns hold the date, the amount, the description/label, and
   (optionally) the payee and category. Header names may be French or English
   (Date, Montant, Libellé, Désignation, Bénéficiaire, Catégorie…).
-- Emit exactly one line per DATA row, in order; raw_text is the row joined
+- Emit exactly one line per DATA row, in order; rawText is the row joined
   with " | ". Mark header rows 'header' and total rows 'total'.
 - Amounts may use spreadsheet number formatting; apply the same locale rules.
 - If a row has a debit and a credit column, only debits are expenses; a credit
-  row is 'header' with an ambiguity_note saying it is income.
+  row is 'header' with an ambiguityNote saying it is income.
 `.trim();
 
 /** Appended when the user's categories are known so guesses match them. */
 export function categoriesPromptAddendum(names: string[]): string {
   if (names.length === 0) return '';
-  return `\nCATEGORIES\nFor category_guess, pick the closest of: ${names.join(', ')}. Leave it out if none fits.`;
+  return `\nCATEGORIES\nFor categoryGuess, pick the closest of: ${names.join(', ')}. Leave it out if none fits.`;
 }
 
 /* ── typed output ────────────────────────────────────────────────────────── */
@@ -185,22 +185,22 @@ export type LineKind =
   | 'illegible';
 
 export interface ExtractedLine {
-  line_index: number;
-  raw_text: string;
-  line_kind: LineKind;
-  amount_minor?: number;
-  occurred_on?: string;
+  lineIndex: number;
+  rawText: string;
+  lineKind: LineKind;
+  amountMinor?: number;
+  occurredOn?: string;
   description?: string;
   payee?: string;
-  category_guess?: string;
+  categoryGuess?: string;
   confidence?: number;
-  ambiguity_note?: string;
+  ambiguityNote?: string;
 }
 
 export interface ExtractionResult {
-  detected_currency: string;
-  detected_language?: string;
-  document_quality: 'good' | 'usable' | 'poor';
+  detectedCurrency: string;
+  detectedLanguage?: string;
+  documentQuality: 'good' | 'usable' | 'poor';
   lines: ExtractedLine[];
 }
 
@@ -209,24 +209,24 @@ export interface ExtractionResult {
  * sloppy (string numbers, nulls) so one odd field does not fail a whole file.
  */
 export const extractionResultSchema = z.object({
-  detected_currency: z.string().trim().min(1).max(8).default('UNKNOWN'),
-  detected_language: z.string().trim().max(16).optional().nullable(),
-  document_quality: z.enum(['good', 'usable', 'poor']).catch('usable'),
+  detectedCurrency: z.string().trim().min(1).max(8).default('UNKNOWN'),
+  detectedLanguage: z.string().trim().max(16).optional().nullable(),
+  documentQuality: z.enum(['good', 'usable', 'poor']).catch('usable'),
   lines: z
     .array(
       z.object({
-        line_index: z.coerce.number().int().min(0),
-        raw_text: z.string().default(''),
-        line_kind: z
+        lineIndex: z.coerce.number().int().min(0),
+        rawText: z.string().default(''),
+        lineKind: z
           .enum(['expense', 'total', 'subtotal', 'header', 'struck_through', 'illegible'])
           .catch('illegible'),
-        amount_minor: z.coerce.number().int().optional().nullable(),
-        occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().catch(null),
+        amountMinor: z.coerce.number().int().optional().nullable(),
+        occurredOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable().catch(null),
         description: z.string().max(500).optional().nullable(),
         payee: z.string().max(200).optional().nullable(),
-        category_guess: z.string().max(120).optional().nullable(),
+        categoryGuess: z.string().max(120).optional().nullable(),
         confidence: z.coerce.number().min(0).max(1).optional().nullable().catch(null),
-        ambiguity_note: z.string().max(1000).optional().nullable(),
+        ambiguityNote: z.string().max(1000).optional().nullable(),
       }),
     )
     .default([]),
@@ -249,31 +249,31 @@ export function classifyLine(line: ExtractedLine): {
   defaultSelected: boolean;
   reason?: string;
 } {
-  if (line.line_kind !== 'expense') {
+  if (line.lineKind !== 'expense') {
     return {
       severity: 'blocked',
       defaultSelected: false,
-      reason: `Not an expense (${line.line_kind.replace('_', ' ')})`,
+      reason: `Not an expense (${line.lineKind.replace('_', ' ')})`,
     };
   }
-  if (line.amount_minor == null) {
+  if (line.amountMinor == null) {
     return {
       severity: 'blocked',
       defaultSelected: false,
-      reason: line.ambiguity_note ?? 'Amount could not be read',
+      reason: line.ambiguityNote ?? 'Amount could not be read',
     };
   }
-  if (line.amount_minor <= 0) {
+  if (line.amountMinor <= 0) {
     return { severity: 'blocked', defaultSelected: false, reason: 'Invalid amount' };
   }
   if ((line.confidence ?? 0) < CONFIDENCE_REVIEW_THRESHOLD) {
     return {
       severity: 'verify',
       defaultSelected: false,
-      reason: line.ambiguity_note ?? 'Low confidence — please check the amount',
+      reason: line.ambiguityNote ?? 'Low confidence — please check the amount',
     };
   }
-  if (!line.occurred_on) {
+  if (!line.occurredOn) {
     return {
       severity: 'verify',
       defaultSelected: true,
@@ -294,16 +294,16 @@ export function reconcileAgainstTotal(lines: ExtractedLine[]): {
   discrepancyMinor: number | null;
 } {
   const stated = lines.find(
-    (l) => l.line_kind === 'total' && l.amount_minor != null,
+    (l) => l.lineKind === 'total' && l.amountMinor != null,
   );
   const computed = lines
-    .filter((l) => l.line_kind === 'expense' && l.amount_minor != null)
-    .reduce((sum, l) => sum + l.amount_minor!, 0);
+    .filter((l) => l.lineKind === 'expense' && l.amountMinor != null)
+    .reduce((sum, l) => sum + l.amountMinor!, 0);
 
   return {
-    statedTotalMinor: stated?.amount_minor ?? null,
+    statedTotalMinor: stated?.amountMinor ?? null,
     computedTotalMinor: computed,
     discrepancyMinor:
-      stated?.amount_minor != null ? stated.amount_minor - computed : null,
+      stated?.amountMinor != null ? stated.amountMinor - computed : null,
   };
 }

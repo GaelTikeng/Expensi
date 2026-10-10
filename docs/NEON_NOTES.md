@@ -54,3 +54,13 @@ There is no RLS here — the API is the trust boundary. That means every single
 query must filter by `userId`. Do not hand-write that filter at call sites; put
 it in a repository layer that takes `userId` as a required constructor argument,
 so an unscoped query is impossible to express.
+
+## Test branch
+
+Integration tests (`pnpm test:integration`) run the API route handlers against
+a separate Neon **branch** so they can truncate tables freely. Create it in the
+Neon console (Branches → New branch from `main`, e.g. `test`), copy its pooled
+connection string into `.env` as `DATABASE_URL_TEST`, and add the same value as
+the `DATABASE_URL_TEST` repository secret for CI. The test setup applies the
+migrations itself and refuses to run if the variable is missing or equals
+`DATABASE_URL`.

@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { clerkErrorCode, clerkErrorMessage } from './errors';
 
 /** Shape Clerk throws for API errors; mirrors ClerkAPIResponseError. */

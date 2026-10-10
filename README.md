@@ -45,7 +45,9 @@ eas build --profile development --platform all
 |---|---|
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` | ESLint via `expo lint`; forbids client imports of `src/server` |
-| `pnpm test` | Vitest unit tests (`src/**/*.test.ts`) |
+| `pnpm test` | Unit + component tests (Jest) |
+| `pnpm test:integration` | API routes against the Neon test branch (`DATABASE_URL_TEST` in `.env`) |
+| `pnpm test:e2e` | Real API over HTTP against a running server (`E2E_BASE_URL=http://localhost:8083`) |
 | `pnpm db:generate` | Drizzle migration from `src/server/db/schema.ts` — read the SQL before committing |
 | `pnpm db:migrate` | Apply migrations (direct Neon URL) |
 | `pnpm db:studio` | Drizzle Studio |
