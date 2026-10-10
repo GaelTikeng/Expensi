@@ -18,8 +18,18 @@ import type { CurrencyInfo } from '@/src/lib/money';
 import type { CategoryDto } from '@/src/lib/schemas/category';
 import { plannedInputSchema, type PlannedDto, type PlannedInput } from '@/src/lib/schemas/planned';
 import { TimeField } from './TimeField';
+import { notificationsUnavailableReason } from '@/src/features/notifications/module';
 
 const NONE = '__none__';
+
+// Expo Go on Android ships without notifications and web has no local
+// scheduling; say so where the user expects a reminder.
+const REMINDER_FOOTER =
+  notificationsUnavailableReason === 'expo-go-android'
+    ? 'Reminders (the day before and at the time) need the full app build; Expo Go on Android cannot show notifications.'
+    : notificationsUnavailableReason === 'web'
+      ? 'Reminders are sent by the mobile app the day before and at the time.'
+      : 'You will be reminded the day before and at the time.';
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** F5.2: when, time, where, why, how much. */
@@ -96,7 +106,7 @@ export function PlannedForm({
         <OptionPicker label="Currency" value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
       </Group>
 
-      <Group footer="You will be reminded the day before and one hour before.">
+      <Group footer={REMINDER_FOOTER}>
         <View className="px-4 py-3">
           <DateField label="When" value={date} onChange={(d) => d && setDate(d)} />
         </View>

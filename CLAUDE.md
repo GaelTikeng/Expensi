@@ -47,6 +47,7 @@ the design must not hard-code that. iOS + Android, public app.
 | File parsing | SheetJS (`xlsx`) for Excel/CSV, `pdf-parse` for text PDFs, multimodal TensorX model for scanned PDFs | |
 | Observability | `@sentry/react-native` (client, DSN-gated); server routes log via `console` | server Sentry pending |
 | UI / styling | **NativeWind 4.2** (Tailwind CSS **v3**) + **React Native Reusables** components copied into `src/components/ui/` (`@rn-primitives/*`, `class-variance-authority`, `tailwind-merge` v2, `lucide-react-native` + `react-native-svg`); `@react-native-community/datetimepicker`; `react-native-gesture-handler` + `react-native-reanimated` (swipe rows) | see D13. Category glyphs stay on `@expo/vector-icons` Ionicons (stored in DB) |
+| Action sheets | `src/components/action-sheet.tsx` (`ActionSheetHost` at the root, `useActionSheets().confirm/show`): iOS uses the system sheet via `@expo/react-native-action-sheet`; Android and web draw our own sheet over an `expo-blur` backdrop (NativeWindUI Action Sheet pattern) | every in-place choice (delete, skip, add proof, commit) is a sheet; plain messages stay `Alert` |
 | Client cache | **TanStack Query 5** (`@tanstack/react-query`) | `src/lib/query.ts`: `queryClient`, `keys`, `invalidate`, `useRefetchOnFocus`; see D15 |
 | Native builds | **EAS Build**, project `@gaeltikeng/xpens-ia`; `expo-dev-client`; pnpm pinned to **9.15.2** in every `eas.json` profile | EAS defaults to pnpm 11, which ignores `package.json#pnpm`; see `docs/DEPLOY.md` |
 
@@ -76,7 +77,7 @@ minted by the API.
   repository class that takes `userId` as a required constructor argument. An
   unscoped query must be impossible to express.
 - **D4 — Reminders are scheduled on-device first.** When a planned expense is saved,
-  the app schedules two local notifications (T-24h, T-1h) with `expo-notifications`.
+  the app schedules two local notifications (T-24h, T-0) with `expo-notifications`.
   Server-side push is a later fallback for multi-device; `planned_expenses` keeps
   `reminder_24h_sent_at` / `reminder_1h_sent_at` so either path is idempotent.
 - **D5 — Nothing from a file import auto-commits.** Parsed rows land in
@@ -109,7 +110,10 @@ minted by the API.
   navigation chrome) through `useThemeColors()`; keep the two in sync. No new
   `StyleSheet.create` in migrated code. Shared layout helpers:
   `src/components/form-field.tsx`, `src/components/group.tsx`. The app follows
-  the system colour scheme (F9.5).
+  the system colour scheme (F9.5). NativeWindUI (nativewindui.com) patterns are
+  adopted piecemeal where they fit on top of this base (first: the Action
+  Sheet); its full template (own theme files, `Text`, SF-symbol icons, dev
+  client only) is not installed.
 - **D14 — Supported currencies are a constant, not a table.** `src/lib/currencies.ts`
   (`CURRENCIES`, `CURRENCY_CODES`, `currencyInfo()`) is shared by pickers, zod
   schemas and the API. The `currencies` table and the FKs to it were dropped in
@@ -202,7 +206,7 @@ expense-app/
 │   └── lib/                           api, query (cache), currencies, money, dates (+periods), uuid, prefs, timezones, schemas/
 ├── eas.json                           build profiles
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
-├── scripts/e2e-api.mjs                end-to-end API test (pnpm test:e2e)
+├── scripts/e2e-api.mjs                end-to-end API test incl. S3 uploads (pnpm test:e2e, E2E_BASE_URL)
 ├── scripts/db-init.mjs                one-time pgcrypto setup
 ├── docs/                              NEON_NOTES, S3_SETUP, DEPLOY, PRIVACY_POLICY
 └── assets/                            icons from the Expo template (replace later)
@@ -260,7 +264,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F0.9 `pnpm typecheck` / `lint` / `test`, ESLint client→server import ban, GitHub Actions CI
 - [x] F0.10 Tests — `src/ai/extraction-contract.test.ts` (12), `src/lib/money.test.ts` (6)
 - [x] F0.11 README rewritten; SQLite draft, `api/`, `SETUP.md`, babel/metro configs deleted; Neon notes moved to `docs/`
-- [~] F0.12 S3 bucket — runbook in `docs/S3_SETUP.md` (bucket, CORS, IAM policy); **bucket itself still to create** in AWS
+- [x] F0.12 S3 bucket `xpens-ia-files` (general purpose, `eu-central-1`, public access blocked, SSE-S3) created 2026-10-10 with the CORS rule and the `xpens-ia-api` IAM user scoped to `users/*` (`docs/S3_SETUP.md`). Verified by `pnpm test:e2e`: presign → PUT → confirm → view → delete, and the account purge
 - [x] F0.13 `src/server/storage/s3.ts`: `buildObjectKey`, `presignPut`, `presignGet`, `headObject`, `deleteObject`, `deletePrefix`, MIME/size constants
 - [x] F0.14 `src/server/ai/client.ts`: OpenAI SDK → TensorX, `MODELS` (env-overridable), `logUsage()`, `listModels()`
 
@@ -308,6 +312,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F3.11 `POST /api/imports/[id]/commit` — `services/imports/commit.ts` uses `db.batch`; validates kind/amount/date; marks recaps stale
 - [x] F3.12 History list in `app/import/index.tsx`; committed imports open read-only showing accepted rows
 - [x] F3.13 3 attempts, stale `processing` rows retryable after 2 min, friendly failure reasons, retry button with remaining count
+- [x] F3.14 Duplicate resolution (2026-10-10): the duplicate warning on a line opens `DuplicateSheet` (side-by-side fields, differences in bold, link to the saved expense). Before commit: skip the line / import and delete the saved expense / import anyway. After commit: keep this one or the saved one (the other is deleted). `possibleDuplicateOf` carries the full candidate; lines from the same import never match their own expense; `expenseId` on committed lines
 
 ### E4 — Recaps: daily, weekly, monthly
 - [x] F4.1 `src/server/services/recaps/stats.ts`: total/count/estimated/with-proof, vs previous period, by category (+budget % for months), top payees, by day, largest 3, fixed vs variable, other currencies
@@ -321,7 +326,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 ### E5 — Planned expenses and reminders
 - [x] F5.1 `GET/POST /api/planned`, `GET/PATCH/DELETE /api/planned/[id]`, `POST /api/planned/[id]/complete`, `GET /api/planned/summary` — `PlannedRepository`
 - [x] F5.2 `PlannedForm` (what, amount, currency, when + time, where, to whom, why, category, notes) — `app/planned/new.tsx`
-- [x] F5.3 Local T-24h / T-1h reminders — `src/features/planned/reminders.ts` + `notifications/schedule.ts`; armed on create/edit/unskip, cancelled on done/skip/delete; `syncReminders()` on Plan load (capped at 30 upcoming plans for the iOS 64-notification limit)
+- [x] F5.3 Local T-24h / T-0 reminders (T-1h dropped 2026-10-10 at the owner's request) — `src/features/planned/reminders.ts` + `notifications/schedule.ts`; armed on create/edit/unskip, cancelled on done/skip/delete; past offsets skipped; `syncReminders()` on Plan load (capped at 30 upcoming plans for the iOS 64-notification limit). The plan form says when reminders cannot fire (Expo Go on Android, web)
 - [x] F5.4 Permission flow with rationale alert, Settings deep link when denied, Android channel — `src/features/notifications/permissions.ts` (built with E4)
 - [x] F5.5 Plan tab `app/(tabs)/plan.tsx` — Upcoming with Overdue section, ✓ quick-complete, FAB
 - [x] F5.6 `CompleteSheet` (actual amount, paid date, receipt) → `complete` route runs one `db.batch`: insert expense (`source` planned/recurring), flip status, link attachments; Skip / put back via PATCH status
@@ -408,6 +413,27 @@ spreadsheet or a printable statement.
 
 ## 8. Changelog
 
+- 2026-10-10 — **Action sheets for confirmations (NativeWindUI pattern).**
+  Delete expense / plan / fixed charge, skip a plan, remove a proof, pick a
+  proof source and commit an import now open a native action sheet
+  (`useActionSheets`) instead of `Alert.alert`.
+  Android and web render the sheet over a blurred, dimmed backdrop
+  (`expo-blur`); iOS keeps the system sheet, which blurs on its own.
+- 2026-10-10 — **Planned reminders are now the day before and at the planned
+  time** (T-24h, T-0; the one-hour-before reminder is dropped). The plan form
+  states the Expo Go / web limitation instead of promising a reminder.
+- 2026-10-10 — **Duplicate compare-and-keep-one (F3.14)** and a detection
+  fix: committed lines no longer flag the expense they themselves created.
+- 2026-10-10 — **Imports work from Expo Go on Android.** The picker no
+  longer copies into Expo Go's cache (unreadable from a project sandbox);
+  the file is staged from its `content://` URI into our own cache. The
+  review screen polls while the server processes, so a dropped phone
+  request no longer looks like a failure; extraction budget 8 192 → 16 384
+  tokens (a 37-row sheet used 8 096) with an 8-minute, no-retry timeout;
+  SDK timeouts get a readable failure reason.
+- 2026-10-10 — **S3 storage live (F0.12).** Bucket, CORS and IAM user
+  created by the owner; `.env` carries the key pair and `S3_BUCKET`. The e2e
+  script gained an attachment round trip and a purge check (26/26 pass).
 - 2026-10-10 — **Client cache (E11, D15) and hardcoded currencies (D14).**
   TanStack Query added; every data hook and screen reads through it, writes
   invalidate the affected families, tab screens refresh in the background on

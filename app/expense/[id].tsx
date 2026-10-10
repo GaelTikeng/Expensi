@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
 import { AttachmentsCardSkeleton, FORM_LAYOUTS, FormSkeleton } from '@/src/components/skeletons';
+import { useActionSheets } from '@/src/components/action-sheet';
 import { Icon } from '@/src/components/ui/icon';
 import { Text } from '@/src/components/ui/text';
 import { AttachmentsSection } from '@/src/features/attachments/AttachmentsSection';
@@ -27,6 +28,7 @@ export default function ExpenseDetailScreen() {
   const { categories, loading: catLoading } = useCategories();
   const { profile, currencies, loading: meLoading } = useMe();
   const [submitting, setSubmitting] = useState(false);
+  const { confirm } = useActionSheets();
 
   const query = useQuery({
     queryKey: keys.expenses.detail(id),
@@ -37,23 +39,16 @@ export default function ExpenseDetailScreen() {
   const expense = query.data ?? null;
   const error = errorMessage(query.error);
 
-  const confirmDelete = () =>
-    Alert.alert('Delete expense?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.remove(id);
-            void invalidate.expenses(qc);
-            router.back();
-          } catch (err) {
-            Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
-          }
-        },
-      },
-    ]);
+  const confirmDelete = async () => {
+    if (!(await confirm({ title: 'Delete expense?', message: 'This cannot be undone.', actionLabel: 'Delete' }))) return;
+    try {
+      await api.remove(id);
+      void invalidate.expenses(qc);
+      router.back();
+    } catch (err) {
+      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+    }
+  };
 
   if (error) {
     return (

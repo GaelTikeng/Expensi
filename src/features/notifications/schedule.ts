@@ -75,8 +75,9 @@ export async function cancelMonthlyRecap() {
 }
 
 /**
- * Two reminders for one planned expense (E5): 24 h and 1 h before. Past
- * offsets are skipped; a reminder in the past is pointless noise.
+ * Two reminders for one planned expense (E5): the day before and at the time
+ * itself, so a plan made at short notice still gets one. Past offsets are
+ * skipped; a reminder in the past is pointless noise.
  */
 export async function schedulePlannedReminders(input: { id: string; title: string; amountLabel: string; scheduledAt: Date; now?: Date }) {
   const N = getNotifications();
@@ -86,7 +87,7 @@ export async function schedulePlannedReminders(input: { id: string; title: strin
   const data: ReminderPayload = { url: `/planned/${input.id}`, kind: 'planned', id: input.id };
   const offsets: { suffix: string; ms: number; body: string }[] = [
     { suffix: '24h', ms: 24 * 60 * 60 * 1000, body: `Tomorrow: ${input.title} · ${input.amountLabel}` },
-    { suffix: '1h', ms: 60 * 60 * 1000, body: `In one hour: ${input.title} · ${input.amountLabel}` },
+    { suffix: 'now', ms: 0, body: `Now: ${input.title} · ${input.amountLabel}` },
   ];
   for (const o of offsets) {
     const at = new Date(input.scheduledAt.getTime() - o.ms);
@@ -100,5 +101,6 @@ export async function schedulePlannedReminders(input: { id: string; title: strin
 }
 
 export async function cancelPlannedReminders(id: string) {
-  await Promise.all([cancel(`planned-${id}-24h`), cancel(`planned-${id}-1h`)]);
+  // `1h` is no longer scheduled; cancelling it clears reminders armed by earlier builds.
+  await Promise.all([cancel(`planned-${id}-24h`), cancel(`planned-${id}-now`), cancel(`planned-${id}-1h`)]);
 }

@@ -99,7 +99,7 @@ export function RecurringForm({
       </FormField>
 
       <AmountInput value={amountMinor} currency={currencyInfo} onChange={setAmountMinor} error={errors.amountMinor} />
-      <Group footer="Each month a planned expense is created for this charge, with reminders the day before and one hour before.">
+      <Group footer="Each month a planned expense is created for this charge, with reminders the day before and at the time.">
         <OptionPicker label="Currency" value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
         <OptionPicker label="Due" value={String(dayOfMonth)} options={DAYS} onChange={(v) => setDayOfMonth(Number(v))} />
         <View className="px-4 py-3">

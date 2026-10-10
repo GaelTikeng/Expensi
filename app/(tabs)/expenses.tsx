@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
 import { CloudUpload, Plus, Search } from 'lucide-react-native';
 import { useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, SectionList, View } from 'react-native';
+import { Pressable, SectionList, View } from 'react-native';
+
+import { useActionSheets } from '@/src/components/action-sheet';
 
 import { ExpenseListSkeleton } from '@/src/components/skeletons';
 import { TabScreen } from '@/src/components/tab-screen';
@@ -37,6 +39,7 @@ export default function ExpensesScreen() {
     hasAttachment: proof === 'all' ? undefined : proof === 'with',
   });
   const { byId: categoryById } = useCategories();
+  const { confirm } = useActionSheets();
   const { currencies } = useMe();
   const lookup = useMemo(() => makeCurrencyLookup(currencies), [currencies]);
 
@@ -63,11 +66,9 @@ export default function ExpensesScreen() {
     }));
   }, [items, lookup]);
 
-  const confirmDelete = (e: ExpenseDto) =>
-    Alert.alert('Delete expense?', e.description, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => remove(e.id).catch(() => undefined) },
-    ]);
+  const confirmDelete = async (e: ExpenseDto) => {
+    if (await confirm({ title: 'Delete expense?', message: e.description, actionLabel: 'Delete' })) await remove(e.id).catch(() => undefined);
+  };
 
   return (
     <TabScreen>

@@ -39,7 +39,7 @@ export default function NewPlannedScreen() {
         try {
           const saved = await api.create(values);
           void invalidate.plans(qc);
-          const allowed = await ensureNotificationPermission('Get reminded the day before and one hour before each planned expense.');
+          const allowed = await ensureNotificationPermission('Get reminded the day before and at the time of each planned expense.');
           if (allowed) await scheduleFor(saved, makeCurrencyLookup(currencies)(saved.currency));
           router.back();
         } catch (err) {

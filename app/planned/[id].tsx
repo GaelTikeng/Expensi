@@ -5,6 +5,7 @@ import { CircleCheck, Receipt, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { useActionSheets } from '@/src/components/action-sheet';
 import { Group } from '@/src/components/group';
 import { GroupSkeleton, loadingA11y, SkeletonLine } from '@/src/components/skeletons';
 import { Button } from '@/src/components/ui/button';
@@ -49,26 +50,21 @@ export default function PlannedDetailScreen() {
     void invalidate.plans(qc);
   };
   const [editing, setEditing] = useState(false);
+  const { confirm } = useActionSheets();
   const [submitting, setSubmitting] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [now] = useState(() => Date.now());
 
-  const skip = () =>
-    Alert.alert('Skip this one?', 'It stays in your history as skipped.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Skip',
-        onPress: async () => {
-          try {
-            setPlan(await api.update(id, { status: 'skipped' }));
-            await cancelFor(id);
-          } catch (err) {
-            Alert.alert('Could not skip', err instanceof Error ? err.message : String(err));
-          }
-        },
-      },
-    ]);
+  const skip = async () => {
+    if (!(await confirm({ title: 'Skip this one?', message: 'It stays in your history as skipped.', actionLabel: 'Skip', destructive: false }))) return;
+    try {
+      setPlan(await api.update(id, { status: 'skipped' }));
+      await cancelFor(id);
+    } catch (err) {
+      Alert.alert('Could not skip', err instanceof Error ? err.message : String(err));
+    }
+  };
 
   const unskip = async () => {
     try {
@@ -80,24 +76,17 @@ export default function PlannedDetailScreen() {
     }
   };
 
-  const remove = () =>
-    Alert.alert('Delete this plan?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.remove(id);
-            await cancelFor(id);
-            void invalidate.plans(qc);
-            router.back();
-          } catch (err) {
-            Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
-          }
-        },
-      },
-    ]);
+  const remove = async () => {
+    if (!(await confirm({ title: 'Delete this plan?', message: 'Its reminders are cancelled too.', actionLabel: 'Delete' }))) return;
+    try {
+      await api.remove(id);
+      await cancelFor(id);
+      void invalidate.plans(qc);
+      router.back();
+    } catch (err) {
+      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+    }
+  };
 
   const confirmComplete = async (values: CompleteValues) => {
     if (!plan) return;

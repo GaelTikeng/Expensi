@@ -21,6 +21,7 @@ const base: ImportItemDto = {
   reviewState: 'pending',
   editedByUser: false,
   possibleDuplicateOf: null,
+  expenseId: null,
 };
 
 describe('reviewItems', () => {
@@ -30,7 +31,7 @@ describe('reviewItems', () => {
     expect(r.defaultSelected).toBe(true);
   });
   it('never pre-ticks a likely duplicate and explains why', () => {
-    const [r] = reviewItems([{ ...base, possibleDuplicateOf: { id: 'x', description: 'Riz marché' } }]);
+    const [r] = reviewItems([{ ...base, possibleDuplicateOf: { id: 'x', description: 'Riz marché', amountMinor: 5000, currency: 'XAF', occurredOn: '2026-10-01', payee: null, categoryId: null, source: 'manual' } }]);
     expect(r.defaultSelected).toBe(false);
     expect(r.severity).toBe('verify');
     expect(r.reason).toMatch(/duplicate/);

@@ -55,13 +55,3 @@ export async function pickPdf(): Promise<LocalFile[]> {
     kind: 'pdf' as const,
   }));
 }
-
-/** Simple chooser; swap for an action sheet when a UI kit is adopted. */
-export function chooseSource(onPicked: (files: LocalFile[]) => void) {
-  Alert.alert('Add proof', undefined, [
-    { text: 'Take photo', onPress: async () => { const f = await pickFromCamera(); if (f) onPicked([f]); } },
-    { text: 'Choose photo', onPress: async () => onPicked(await pickFromLibrary()) },
-    { text: 'Choose PDF', onPress: async () => onPicked(await pickPdf()) },
-    { text: 'Cancel', style: 'cancel' },
-  ]);
-}

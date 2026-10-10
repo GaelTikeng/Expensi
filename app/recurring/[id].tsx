@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
 import { FORM_LAYOUTS, FormSkeleton } from '@/src/components/skeletons';
+import { useActionSheets } from '@/src/components/action-sheet';
 import { Icon } from '@/src/components/ui/icon';
 import { Text } from '@/src/components/ui/text';
 
@@ -25,28 +26,27 @@ export default function RecurringDetailScreen() {
   const { categories, loading: catLoading } = useCategories();
   const { profile, currencies, loading: meLoading } = useMe();
   const [submitting, setSubmitting] = useState(false);
+  const { confirm } = useActionSheets();
 
   const list = useRecurringList();
   const charge = list.data?.items.find((c) => c.id === id) ?? null;
   const error = errorMessage(list.error) ?? (list.data && !charge ? 'Fixed charge not found' : null);
 
-  const remove = () =>
-    Alert.alert('Delete this fixed charge?', 'Future unpaid plans for it are removed; past payments stay in your expenses.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.remove(id);
-            void invalidate.plans(qc);
-            router.back();
-          } catch (err) {
-            Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
-          }
-        },
-      },
-    ]);
+  const remove = async () => {
+    const ok = await confirm({
+      title: 'Delete this fixed charge?',
+      message: 'Future unpaid plans for it are removed; past payments stay in your expenses.',
+      actionLabel: 'Delete',
+    });
+    if (!ok) return;
+    try {
+      await api.remove(id);
+      void invalidate.plans(qc);
+      router.back();
+    } catch (err) {
+      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+    }
+  };
 
   if (error) {
     return (

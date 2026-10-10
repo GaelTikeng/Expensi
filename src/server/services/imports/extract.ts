@@ -21,7 +21,13 @@ export interface ExtractionOutcome {
 
 type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
-export const EXTRACT_MAX_TOKENS = 8192;
+// Reasoning tokens count against this (CLAUDE.md §2). A 37-row sheet used
+// 8 096 on 2026-10-10, so 8 192 was one row from a cut-off; the model accepts
+// 32 768 but 16 384 keeps a bound on a runaway reasoning chain.
+export const EXTRACT_MAX_TOKENS = 16384;
+
+/** One extraction call can legitimately run 1–3 min; never let the SDK retry it. */
+const EXTRACT_TIMEOUT_MS = 8 * 60_000;
 
 function userMessage(source: ParsedSource, filename: string | null): Msg {
   const name = filename ? ` (file: ${filename})` : '';
@@ -85,7 +91,7 @@ export async function runExtraction(
     messages: [{ role: 'system', content: system }, userMessage(source, opts.filename)],
     tools: [RECORD_EXPENSE_LINES_TOOL as unknown as OpenAI.Chat.Completions.ChatCompletionTool],
     tool_choice: { type: 'function', function: { name: RECORD_EXPENSE_LINES_TOOL.function.name } },
-  });
+  }, { timeout: EXTRACT_TIMEOUT_MS, maxRetries: 0 });
   const latencyMs = Date.now() - started;
 
   const choice = completion.choices[0];

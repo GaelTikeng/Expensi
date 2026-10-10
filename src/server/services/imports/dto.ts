@@ -1,9 +1,9 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, notInArray, or } from 'drizzle-orm';
 
 import { reconcileAgainstTotal, type ExtractedLine } from '@/src/ai/extraction-contract';
 import type { Db } from '../../db/client';
 import { expenses, type Import, type ImportItem } from '../../db/schema';
-import type { ImportDetailResponse, ImportDto, ImportItemDto } from '@/src/lib/schemas/import';
+import type { DuplicateCandidate, ImportDetailResponse, ImportDto, ImportItemDto } from '@/src/lib/schemas/import';
 
 export function importToDto(i: Import & { itemCount?: number }): ImportDto {
   return {
@@ -33,18 +33,40 @@ export function importToDto(i: Import & { itemCount?: number }): ImportDto {
 /**
  * F3.9 duplicate detection: an existing live expense with the same amount on
  * the same day is a likely duplicate. Computed, never stored, so it stays
- * accurate as the ledger changes.
+ * accurate as the ledger changes. Expenses created from this very import are
+ * excluded, otherwise every committed line would match itself.
  */
-async function findDuplicates(db: Db, userId: string, items: ImportItem[]): Promise<Map<string, { id: string; description: string }>> {
+async function findDuplicates(db: Db, userId: string, items: ImportItem[]): Promise<Map<string, DuplicateCandidate>> {
   const candidates = items.filter((i) => i.amountMinor != null && i.occurredOn);
   if (candidates.length === 0) return new Map();
   const pairs = candidates.map((i) => and(eq(expenses.amountMinor, i.amountMinor!), eq(expenses.occurredOn, i.occurredOn!)));
   const rows = await db
-    .select({ id: expenses.id, description: expenses.description, amountMinor: expenses.amountMinor, occurredOn: expenses.occurredOn })
+    .select({
+      id: expenses.id,
+      description: expenses.description,
+      amountMinor: expenses.amountMinor,
+      currency: expenses.currency,
+      occurredOn: expenses.occurredOn,
+      payee: expenses.payee,
+      categoryId: expenses.categoryId,
+      source: expenses.source,
+      importItemId: expenses.importItemId,
+    })
     .from(expenses)
-    .where(and(eq(expenses.userId, userId), isNull(expenses.deletedAt), or(...pairs)));
-  const byKey = new Map(rows.map((r) => [`${r.amountMinor}|${r.occurredOn}`, { id: r.id, description: r.description }]));
-  const out = new Map<string, { id: string; description: string }>();
+    .where(
+      and(
+        eq(expenses.userId, userId),
+        isNull(expenses.deletedAt),
+        or(isNull(expenses.importItemId), notInArray(expenses.importItemId, items.map((i) => i.id))),
+        or(...pairs),
+      ),
+    );
+  const byKey = new Map<string, DuplicateCandidate>();
+  for (const r of rows) {
+    const key = `${r.amountMinor}|${r.occurredOn}`;
+    if (!byKey.has(key)) byKey.set(key, { id: r.id, description: r.description, amountMinor: r.amountMinor, currency: r.currency, occurredOn: r.occurredOn, payee: r.payee, categoryId: r.categoryId, source: r.source });
+  }
+  const out = new Map<string, DuplicateCandidate>();
   for (const i of candidates) {
     const hit = byKey.get(`${i.amountMinor}|${i.occurredOn}`);
     if (hit) out.set(i.id, hit);
@@ -52,8 +74,18 @@ async function findDuplicates(db: Db, userId: string, items: ImportItem[]): Prom
   return out;
 }
 
+/** Which expense each committed line became (empty before commit). */
+async function findCreatedExpenses(db: Db, userId: string, items: ImportItem[]): Promise<Map<string, string>> {
+  if (items.length === 0) return new Map();
+  const rows = await db
+    .select({ id: expenses.id, importItemId: expenses.importItemId })
+    .from(expenses)
+    .where(and(eq(expenses.userId, userId), isNull(expenses.deletedAt), inArray(expenses.importItemId, items.map((i) => i.id))));
+  return new Map(rows.filter((r) => r.importItemId).map((r) => [r.importItemId!, r.id]));
+}
+
 export async function buildDetail(db: Db, userId: string, imp: Import, items: ImportItem[]): Promise<ImportDetailResponse> {
-  const dupes = await findDuplicates(db, userId, items);
+  const [dupes, created] = await Promise.all([findDuplicates(db, userId, items), findCreatedExpenses(db, userId, items)]);
   const itemDtos: ImportItemDto[] = items.map((i) => ({
     id: i.id,
     importId: i.importId,
@@ -72,6 +104,7 @@ export async function buildDetail(db: Db, userId: string, imp: Import, items: Im
     reviewState: i.reviewState,
     editedByUser: i.editedByUser,
     possibleDuplicateOf: dupes.get(i.id) ?? null,
+    expenseId: created.get(i.id) ?? null,
   }));
 
   const asLines: ExtractedLine[] = items.map((i) => ({

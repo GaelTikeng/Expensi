@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, View } from 'react-native';
 
 import { loadingA11y, SkeletonLine } from '@/src/components/skeletons';
+import { useActionSheets } from '@/src/components/action-sheet';
 import { Button } from '@/src/components/ui/button';
 import { Icon } from '@/src/components/ui/icon';
 import { Separator } from '@/src/components/ui/separator';
@@ -16,6 +17,8 @@ import { makeCurrencyLookup } from '@/src/features/expenses/money-utils';
 import { importsApi } from '@/src/features/imports/api';
 import { ImportItemRow } from '@/src/features/imports/ImportItemRow';
 import { ItemEditModal } from '@/src/features/imports/ItemEditModal';
+import { DuplicateSheet, type DuplicatePair } from '@/src/features/imports/DuplicateSheet';
+import { expensesApi } from '@/src/features/expenses/api';
 import { committableIds, reviewItems } from '@/src/features/imports/review-utils';
 import { useMe } from '@/src/features/settings/useMe';
 import { formatMoney } from '@/src/lib/money';
@@ -31,26 +34,45 @@ export default function ImportReviewScreen() {
   const { getToken } = useAuth();
   const qc = useQueryClient();
   const api = useMemo(() => importsApi(getToken), [getToken]);
+  const expenses = useMemo(() => expensesApi(getToken), [getToken]);
   const { categories, byId: categoryById } = useCategories();
   const { currencies } = useMe();
   const lookup = useMemo(() => makeCurrencyLookup(currencies), [currencies]);
 
-  const query = useQuery({ queryKey: keys.imports.detail(id), queryFn: () => api.get(id) });
+  const query = useQuery({
+    queryKey: keys.imports.detail(id),
+    queryFn: () => api.get(id),
+    // While the server is processing, poll: if the phone's request drops
+    // (mobile fetch gives up after a minute or two), the server carries on
+    // and the row flips to review / failed on its own.
+    refetchInterval: (q) => (q.state.data?.import.status === 'processing' ? 5000 : false),
+  });
   const detail = query.data ?? null;
   const setDetail = useCallback((d: ImportDetailResponse) => qc.setQueryData(keys.imports.detail(id), d), [qc, id]);
   // The AI step (F3.5–F3.7) as a mutation: its pending/error state drives the screen.
-  const { mutate: run, isPending: processing, error: processError } = useMutation({
+  const { mutate: run, isPending: requestInFlight, error: processError } = useMutation({
     mutationFn: () => api.process(id),
     onSuccess: setDetail,
   });
-  const error = errorMessage(query.error) ?? errorMessage(processError);
+  const processing = requestInFlight || detail?.import.status === 'processing';
+  const error = errorMessage(query.error);
+  // A dropped request shows as an error while the row still says processing.
+  const lostConnection = Boolean(processError) && !requestInFlight && detail?.import.status === 'processing';
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<ImportItemDto | null>(null);
+  const [comparing, setComparing] = useState<DuplicatePair | null>(null);
+  const { confirm } = useActionSheets();
+  const [resolving, setResolving] = useState(false);
+  // Lines the user chose to import despite the duplicate warning.
+  const [acceptedDuplicates, setAcceptedDuplicates] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [committing, setCommitting] = useState(false);
   const initialised = useRef(false);
 
-  const reviewed = useMemo(() => (detail ? reviewItems(detail.items) : []), [detail]);
+  const reviewed = useMemo(
+    () => (detail ? reviewItems(detail.items.map((i) => (acceptedDuplicates.has(i.id) ? { ...i, possibleDuplicateOf: null } : i))) : []),
+    [detail, acceptedDuplicates],
+  );
 
   // Apply default ticks once, when staged rows first arrive.
   useEffect(() => {
@@ -92,33 +114,49 @@ export default function ImportReviewScreen() {
     }
   };
 
+  // F3.14: resolve a duplicate by deleting one of the two expenses.
+  const deleteExpense = async (expenseId: string, keepLineTicked: boolean) => {
+    if (!comparing) return;
+    setResolving(true);
+    try {
+      await expenses.remove(expenseId);
+      void invalidate.expenses(qc);
+      await query.refetch();
+      if (keepLineTicked) setSelected((s) => new Set(s).add(comparing.item.id));
+      setComparing(null);
+    } catch (err) {
+      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+    } finally {
+      setResolving(false);
+    }
+  };
+  const confirmDelete = async (what: string, expenseId: string, keepLineTicked: boolean) => {
+    if (await confirm({ title: `Delete ${what}?`, message: 'This cannot be undone.', actionLabel: 'Delete' })) await deleteExpense(expenseId, keepLineTicked);
+  };
+
   const ids = committableIds(reviewed, selected);
   const skipped = [...selected].filter((s) => !ids.includes(s)).length;
 
-  const commit = () =>
-    Alert.alert(
-      `Add ${ids.length} expense${ids.length === 1 ? '' : 's'}?`,
-      skipped > 0 ? `${skipped} ticked line${skipped > 1 ? 's are' : ' is'} missing an amount or date and will be skipped.` : undefined,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: async () => {
-            setCommitting(true);
-            try {
-              const res = await api.commit(id, ids);
-              void invalidate.expenses(qc);
-              void invalidate.imports(qc);
-              Alert.alert('Done', `${res.created} expense${res.created === 1 ? '' : 's'} added.`, [{ text: 'OK', onPress: () => router.back() }]);
-            } catch (err) {
-              Alert.alert('Could not commit', err instanceof Error ? err.message : String(err));
-            } finally {
-              setCommitting(false);
-            }
-          },
-        },
-      ],
-    );
+  const commit = async () => {
+    const ok = await confirm({
+      title: `Add ${ids.length} expense${ids.length === 1 ? '' : 's'}?`,
+      message: skipped > 0 ? `${skipped} ticked line${skipped > 1 ? 's are' : ' is'} missing an amount or date and will be skipped.` : undefined,
+      actionLabel: `Add ${ids.length === 1 ? 'it' : 'them'}`,
+      destructive: false,
+    });
+    if (!ok) return;
+    setCommitting(true);
+    try {
+      const res = await api.commit(id, ids);
+      void invalidate.expenses(qc);
+      void invalidate.imports(qc);
+      Alert.alert('Done', `${res.created} expense${res.created === 1 ? '' : 's'} added.`, [{ text: 'OK', onPress: () => router.back() }]);
+    } catch (err) {
+      Alert.alert('Could not commit', err instanceof Error ? err.message : String(err));
+    } finally {
+      setCommitting(false);
+    }
+  };
 
   if (error && !detail) {
     return (
@@ -130,14 +168,22 @@ export default function ImportReviewScreen() {
       </View>
     );
   }
-  // The AI step takes 10 to 40 seconds and keeps its explanatory spinner; the
-  // plain fetch before it gets a skeleton of the review list.
+  // The AI step takes one to three minutes and keeps its explanatory spinner;
+  // the plain fetch before it gets a skeleton of the review list.
   if (processing) {
     return (
       <View className="bg-background flex-1 items-center justify-center gap-2.5 p-6">
         <ActivityIndicator color={theme.mutedForeground} />
         <Text className="text-muted-foreground text-[15px]">Reading your file with AI…</Text>
-        <Text className="text-muted-foreground text-xs">This usually takes 10 to 40 seconds.</Text>
+        <Text className="text-muted-foreground text-xs">This usually takes one to three minutes. You can leave and come back.</Text>
+        {lostConnection ? (
+          <>
+            <Text className="text-muted-foreground mt-3 text-center text-xs">The connection dropped, but the server is still working; this screen checks every few seconds.</Text>
+            <Button variant="outline" size="sm" className="border-primary" onPress={() => run()}>
+              <Text className="text-primary">Restart the reading</Text>
+            </Button>
+          </>
+        ) : null}
       </View>
     );
   }
@@ -219,6 +265,7 @@ export default function ImportReviewScreen() {
             categoryName={r.item.categoryId ? categoryById.get(r.item.categoryId)?.name : undefined}
             onToggle={() => !readOnly && toggle(r.item.id)}
             onEdit={() => !readOnly && setEditing(r.item)}
+            onCompare={r.item.possibleDuplicateOf ? () => setComparing({ item: r.item, existing: r.item.possibleDuplicateOf! }) : undefined}
           />
         )}
       />
@@ -236,6 +283,34 @@ export default function ImportReviewScreen() {
       ) : null}
 
       <ItemEditModal item={editing} currency={currency} categories={categories} saving={saving} onSave={saveEdit} onClose={() => setEditing(null)} />
+      <DuplicateSheet
+        pair={comparing}
+        currency={currency}
+        categoryName={(cid) => (cid ? categoryById.get(cid)?.name : undefined)}
+        committed={readOnly}
+        busy={resolving}
+        onSkip={() => {
+          if (comparing) setSelected((s) => {
+            const n = new Set(s);
+            n.delete(comparing.item.id);
+            return n;
+          });
+          setComparing(null);
+        }}
+        onKeepBoth={() => {
+          if (comparing) {
+            setAcceptedDuplicates((s) => new Set(s).add(comparing.item.id));
+            setSelected((s) => new Set(s).add(comparing.item.id));
+          }
+          setComparing(null);
+        }}
+        onDeleteExisting={() => comparing && confirmDelete('the saved expense', comparing.existing.id, !readOnly)}
+        onDeleteThis={() => {
+          if (!comparing?.item.expenseId) return Alert.alert('Not found', 'This line has no saved expense to delete.');
+          confirmDelete('this expense', comparing.item.expenseId, false);
+        }}
+        onClose={() => setComparing(null)}
+      />
     </View>
   );
 }

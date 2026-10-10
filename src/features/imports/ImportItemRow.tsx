@@ -21,6 +21,7 @@ export const ImportItemRow = memo(function ImportItemRow({
   categoryName,
   onToggle,
   onEdit,
+  onCompare,
 }: {
   reviewed: ReviewedItem;
   selected: boolean;
@@ -28,6 +29,8 @@ export const ImportItemRow = memo(function ImportItemRow({
   categoryName?: string;
   onToggle: () => void;
   onEdit: () => void;
+  /** Present when the line looks like an existing expense (F3.14). */
+  onCompare?: () => void;
 }) {
   const { item, severity, reason } = reviewed;
   const blocked = severity === 'blocked';
@@ -60,9 +63,17 @@ export const ImportItemRow = memo(function ImportItemRow({
           {item.editedByUser ? ' · edited' : ''}
         </Text>
         {reason && !(severity === 'ok') ? (
-          <Text className={cn('ml-3.5 text-xs', SEVERITY_TEXT[severity])} numberOfLines={2}>
-            {reason}
-          </Text>
+          item.possibleDuplicateOf && onCompare ? (
+            <Pressable onPress={onCompare} hitSlop={6} accessibilityRole="button">
+              <Text className={cn('ml-3.5 text-xs', SEVERITY_TEXT[severity])} numberOfLines={2}>
+                {reason} · <Text className="text-primary text-xs font-semibold">Compare</Text>
+              </Text>
+            </Pressable>
+          ) : (
+            <Text className={cn('ml-3.5 text-xs', SEVERITY_TEXT[severity])} numberOfLines={2}>
+              {reason}
+            </Text>
+          )
         ) : null}
         {item.rawText && item.description && item.rawText !== item.description ? (
           <Text className="text-muted-foreground ml-3.5 text-[11px] italic" numberOfLines={1}>

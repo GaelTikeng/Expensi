@@ -102,7 +102,21 @@ export interface ImportItemDto {
   reviewState: ReviewState;
   editedByUser: boolean;
   /** Existing expense with the same amount and date, if any (computed). */
-  possibleDuplicateOf: { id: string; description: string } | null;
+  possibleDuplicateOf: DuplicateCandidate | null;
+  /** The expense this line became, once the import is committed. */
+  expenseId: string | null;
+}
+
+/** Enough of a ledger expense to compare it with a staged line (F3.14). */
+export interface DuplicateCandidate {
+  id: string;
+  description: string;
+  amountMinor: number;
+  currency: string;
+  occurredOn: string;
+  payee: string | null;
+  categoryId: string | null;
+  source: 'manual' | 'import' | 'planned' | 'recurring';
 }
 
 export interface ImportDetailResponse {

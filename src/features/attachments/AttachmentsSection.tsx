@@ -1,19 +1,23 @@
 import { useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
+import { useActionSheets } from '@/src/components/action-sheet';
+
 import { TileStripSkeleton } from '@/src/components/skeletons';
 import { Text } from '@/src/components/ui/text';
 
 import type { AttachmentDto } from '@/src/lib/schemas/attachment';
 import { ImageViewerModal, openAttachment } from './AttachmentViewer';
 import { AddTile, FileTile } from './FileTile';
-import { chooseSource } from './pick';
+import { useChooseSource } from './useChooseSource';
 import { useAttachments } from './useAttachments';
 
 /** F2b.5 / F2b.6 for an existing expense: strip of proofs with add, view, delete. */
 export function AttachmentsSection({ expenseId }: { expenseId: string }) {
   const { items, uploading, queued, loading, error, add, remove, api } = useAttachments(expenseId);
   const [viewer, setViewer] = useState<{ attachment: AttachmentDto; url: string } | null>(null);
+  const chooseSource = useChooseSource();
+  const { confirm } = useActionSheets();
 
   const open = async (a: AttachmentDto) => {
     try {
@@ -24,11 +28,9 @@ export function AttachmentsSection({ expenseId }: { expenseId: string }) {
     }
   };
 
-  const confirmRemove = (a: AttachmentDto) =>
-    Alert.alert('Remove this proof?', a.originalFilename ?? undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => remove(a.id) },
-    ]);
+  const confirmRemove = async (a: AttachmentDto) => {
+    if (await confirm({ title: 'Remove this proof?', message: a.originalFilename ?? undefined, actionLabel: 'Remove' })) void remove(a.id);
+  };
 
   return (
     <View className="bg-card border-border gap-2 rounded-lg border p-3">

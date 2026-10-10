@@ -1,5 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
 
 import { putWithRetry } from '@/src/features/attachments/upload';
 import { newId } from '@/src/features/expenses/ids';
@@ -27,7 +28,12 @@ export async function pickImportFile(): Promise<PickedImport | null> {
   const res = await DocumentPicker.getDocumentAsync({
     type: [...IMPORT_MIME_TYPES, 'application/octet-stream'],
     multiple: false,
-    copyToCacheDirectory: true,
+    // Android: keep the content:// reference. The picker's own copy lands in
+    // the host app's cache, which Expo Go does not let this project read
+    // ("isn't readable"); a content:// URI is readable and we stage it
+    // ourselves. iOS needs the copy, since the picked URL is only valid while
+    // the picker is open.
+    copyToCacheDirectory: Platform.OS !== 'android',
   });
   if (res.canceled || !res.assets[0]) return null;
   const a = res.assets[0];
@@ -47,6 +53,25 @@ export async function pickImportFile(): Promise<PickedImport | null> {
   return { uri: a.uri, name: a.name, mimeType, sizeBytes };
 }
 
+const STAGE_DIR = `${FileSystem.cacheDirectory}imports/`;
+
+/**
+ * Copy the picked file into this project's own cache, as attachments do, so
+ * the upload task reads a path it is allowed to read (content:// on Android,
+ * the picker's copy on iOS).
+ */
+async function stageForUpload(file: PickedImport, id: string): Promise<string> {
+  await FileSystem.makeDirectoryAsync(STAGE_DIR, { intermediates: true }).catch(() => undefined);
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'bin';
+  const dest = `${STAGE_DIR}${id}.${ext}`;
+  try {
+    await FileSystem.copyAsync({ from: file.uri, to: dest });
+  } catch (err) {
+    throw new Error(`Could not read the chosen file (${err instanceof Error ? err.message : String(err)})`);
+  }
+  return dest;
+}
+
 /** Presign → PUT → register. Returns the new import row (status `queued`). */
 export async function uploadImportFile(
   file: PickedImport,
@@ -55,7 +80,13 @@ export async function uploadImportFile(
 ): Promise<ImportDto> {
   const api = importsApi(getToken);
   const id = newId();
-  const presigned = await api.presign({ id, mimeType: file.mimeType, sizeBytes: file.sizeBytes, originalFilename: file.name });
-  await putWithRetry(presigned.uploadUrl, { uri: file.uri, mimeType: file.mimeType }, onProgress);
-  return api.create({ id, storageKey: presigned.key, mimeType: file.mimeType, sizeBytes: file.sizeBytes, originalFilename: file.name });
+  const staged = await stageForUpload(file, id);
+  try {
+    const presigned = await api.presign({ id, mimeType: file.mimeType, sizeBytes: file.sizeBytes, originalFilename: file.name });
+    await putWithRetry(presigned.uploadUrl, { uri: staged, mimeType: file.mimeType }, onProgress);
+    return await api.create({ id, storageKey: presigned.key, mimeType: file.mimeType, sizeBytes: file.sizeBytes, originalFilename: file.name });
+  } finally {
+    // The server has the bytes (or the upload failed); either way the copy is no longer needed.
+    void FileSystem.deleteAsync(staged, { idempotent: true }).catch(() => undefined);
+  }
 }

@@ -12,6 +12,7 @@ import { ActivityIndicator, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 
+import { ActionSheetHost } from '@/src/components/action-sheet';
 import { queryClient } from '@/src/lib/query';
 import { initSentry, setSentryUser } from '@/src/lib/sentry';
 import { NAV_THEME, useThemeColors } from '@/src/lib/theme';
@@ -101,12 +102,14 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider value={scheme === 'dark' ? NAV_THEME.dark : NAV_THEME.light}>
-            <RootNavigator />
-            <StatusBar style="auto" />
-            {/* Dialogs, selects and menus from src/components/ui render here. */}
-            <PortalHost />
-          </ThemeProvider>
+          <ActionSheetHost>
+            <ThemeProvider value={scheme === 'dark' ? NAV_THEME.dark : NAV_THEME.light}>
+              <RootNavigator />
+              <StatusBar style="auto" />
+              {/* Dialogs, selects and menus from src/components/ui render here. */}
+              <PortalHost />
+            </ThemeProvider>
+          </ActionSheetHost>
         </QueryClientProvider>
       </ClerkProvider>
     </GestureHandlerRootView>

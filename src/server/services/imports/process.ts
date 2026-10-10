@@ -114,5 +114,6 @@ function friendlyReason(err: unknown): string {
     return 'This PDF has no selectable text and the AI provider does not accept scanned PDFs yet. Export a text PDF or photograph the pages.';
   }
   if (/context|too long|maximum.*tokens/i.test(msg)) return 'The file is too large for one pass. Split it and try again.';
+  if (/timed out|timeout/i.test(msg)) return 'The AI took too long to answer. Try again; if it keeps happening, split the file.';
   return msg.slice(0, 500);
 }
