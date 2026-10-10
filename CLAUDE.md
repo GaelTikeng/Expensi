@@ -220,6 +220,7 @@ expense-app/
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
 ├── tests/e2e/api.e2e.test.ts          end-to-end API test incl. S3 uploads (pnpm test:e2e, E2E_BASE_URL)
 ├── scripts/db-init.mjs                one-time pgcrypto setup
+├── scripts/check-migrations.mjs       E13 drift guard (pnpm db:check)
 ├── docs/                              NEON_NOTES, S3_SETUP, DEPLOY, PRIVACY_POLICY
 └── assets/                            icons from the Expo template (replace later)
 ```
@@ -399,12 +400,12 @@ Set up 2026-10-10. One runner, four projects; `pnpm test` is the fast default.
 - [ ] F12.6 UI end-to-end on a device (Detox, which also runs on Jest) once the dev build is installed on the phone
 
 ### E13 — Schema migrations discipline
-Registered 2026-10-10 (owner request). Every change to `src/server/db/schema.ts`
-ships with its migration in the same commit.
-- [ ] F13.1 Convention (§5.6 made explicit): touch `schema.ts` → `pnpm db:generate` (new SQL file + `meta/_journal.json` + snapshot) → read the SQL → `pnpm db:migrate` against the direct URL → commit schema, migration and journal together. Never hand-edit a shipped migration; fix forward with a new one
-- [ ] F13.2 Drift guard in CI: a `migrations` step runs `drizzle-kit generate` into a scratch folder and fails when it would produce a file (schema changed without a migration); also `drizzle-kit check` for journal conflicts
-- [ ] F13.3 Integration setup already applies the migrations folder to the test branch; add one test asserting the journal and the folder agree (every journal entry has its SQL file and vice versa)
-- [ ] F13.4 `docs/NEON_NOTES.md` section "Changing the schema" with the exact commands and the rollback stance (forward-only)
+Built 2026-10-10. Every change to `src/server/db/schema.ts` ships with its
+migration in the same commit, and CI proves it.
+- [x] F13.1 Convention (§5.6 made explicit): touch `schema.ts` → `pnpm db:generate` (new SQL file + `meta/_journal.json` + snapshot) → read the SQL → `pnpm db:migrate` against the direct URL → commit schema, migration and journal together. Never hand-edit a shipped migration; fix forward with a new one
+- [x] F13.2 Drift guard: `pnpm db:check` (`scripts/check-migrations.mjs`) copies the migrations to `.drift-check/`, runs `drizzle-kit check` then `drizzle-kit generate` against the copy, and fails printing the SQL that is missing when the schema changed without a migration. Runs in the CI `check` job; needs no database
+- [x] F13.3 `src/server/db/migrations.test.ts`: every journal entry has its SQL file and snapshot, every SQL file is in the journal, entries are sequential and chronological (unit project). The integration setup applies the folder to the test branch on every run
+- [x] F13.4 `docs/NEON_NOTES.md` § "Changing the schema": commands in order, forward-only rule, rename prompt caveat
 
 ### E14 — Internationalisation (English, French)
 Registered 2026-10-10. Library: **react-i18next** (+ `i18next`, `expo-localization`); register them in §2 when installed.
