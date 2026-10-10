@@ -10,6 +10,11 @@ xpens-ia is published by Nyota Ltd. Contact: privacy@nyota.ltd.
   Clerk. We never see your password.
 - **Your expense data**: amounts, dates, descriptions, payees, categories,
   notes, planned expenses and fixed charges you enter.
+- **Location** (optional): when you turn on "Save my location" for an expense,
+  the GPS position at that moment and a short place name are stored with that
+  expense. It is never shared, never sent to the AI provider, and is excluded
+  from exports. Turn the switch off at any time; the position is deleted with
+  the expense or the account.
 - **Files you attach or import**: receipt photos, PDFs, and spreadsheets you
   choose to upload.
 - **Technical data**: crash reports and performance data when you opt in to

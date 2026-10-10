@@ -17,6 +17,8 @@ import type { CategoryDto } from '@/src/lib/schemas/category';
 import { expenseInputSchema, type ExpenseInput } from '@/src/lib/schemas/expense';
 import { AmountInput } from './AmountInput';
 import { DateField } from './DateField';
+import { LocationField } from '@/src/features/location/LocationField';
+import type { ExpensePlace } from '@/src/features/location/capture';
 import { newId } from './ids';
 
 export type ExpenseFormValues = Omit<ExpenseInput, 'id'> & { id?: string };
@@ -58,6 +60,11 @@ export function ExpenseForm({
   const [categoryId, setCategoryId] = useState<string | null>(initial?.categoryId ?? null);
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [isEstimated, setIsEstimated] = useState(initial?.isEstimated ?? false);
+  const [place, setPlace] = useState<ExpensePlace | null>(
+    initial?.latitude != null && initial?.longitude != null
+      ? { latitude: initial.latitude, longitude: initial.longitude, locationLabel: initial.locationLabel ?? null }
+      : null,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const currencyInfo = useMemo<CurrencyInfo>(
@@ -77,6 +84,9 @@ export function ExpenseForm({
       categoryId,
       notes: notes.trim() || null,
       isEstimated,
+      latitude: place?.latitude ?? null,
+      longitude: place?.longitude ?? null,
+      locationLabel: place?.locationLabel ?? null,
     };
     const parsed = expenseInputSchema.safeParse(candidate);
     if (!parsed.success) {
@@ -134,6 +144,7 @@ export function ExpenseForm({
           description="Flagged in totals until you confirm the exact figure."
           right={<Switch checked={isEstimated} onCheckedChange={setIsEstimated} />}
         />
+        <LocationField value={place} onChange={setPlace} isNew={!initial?.id} />
       </Group>
 
       <FormField label="Notes" error={errors.notes}>

@@ -10,6 +10,7 @@ import { useActionSheets } from '@/src/components/action-sheet';
 import { Icon } from '@/src/components/ui/icon';
 import { Text } from '@/src/components/ui/text';
 import { AttachmentsSection } from '@/src/features/attachments/AttachmentsSection';
+import { LocationMap } from '@/src/features/location/LocationMap';
 import { expensesApi } from '@/src/features/expenses/api';
 import { ExpenseForm } from '@/src/features/expenses/ExpenseForm';
 import { useCategories } from '@/src/features/expenses/useCategories';
@@ -86,7 +87,14 @@ export default function ExpenseDetailScreen() {
         defaultCurrency={profile.defaultCurrency}
         submitLabel="Save changes"
         submitting={submitting}
-        extra={<AttachmentsSection expenseId={expense.id} />}
+        extra={
+          <>
+            {expense.latitude != null && expense.longitude != null ? (
+              <LocationMap place={{ latitude: expense.latitude, longitude: expense.longitude, locationLabel: expense.locationLabel }} />
+            ) : null}
+            <AttachmentsSection expenseId={expense.id} />
+          </>
+        }
         onSubmit={async (values) => {
           setSubmitting(true);
           try {

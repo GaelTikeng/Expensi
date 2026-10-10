@@ -8,7 +8,7 @@ import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, LogBox, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 
@@ -19,6 +19,15 @@ import { initSentry, setSentryUser } from '@/src/lib/sentry';
 import { NAV_THEME, useThemeColors } from '@/src/lib/theme';
 
 initSentry();
+
+// Expo Router's forked NavigationContainer sets state when the initial-link
+// promise resolves before its first commit on Android (expo/expo#49378,
+// expo/expo#50282; still present in expo-router 57.0.25). The update is a
+// no-op and the warning exists only in development builds, so keep it out of
+// the red box until the upstream fix lands.
+if (__DEV__ && Platform.OS === 'android') {
+  LogBox.ignoreLogs([/Can't perform a React state update on a component that hasn't mounted yet/]);
+}
 
 // react-native-gesture-handler 2.32 (pinned by Expo SDK 57) reads and writes
 // shared values during render inside ReanimatedSwipeable (ExpenseRow), which

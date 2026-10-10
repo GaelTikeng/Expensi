@@ -49,6 +49,7 @@ the design must not hard-code that. iOS + Android, public app.
 | Tests | **Jest 29** with four projects (`jest.config.js`): unit (Node), components (`jest-expo` + `@testing-library/react-native` 14, `test-renderer`), integration (route handlers on the Neon test branch), e2e (HTTP against a running server) | see E12 and §7 |
 | UI / styling | **NativeWind 4.2** (Tailwind CSS **v3**) + **React Native Reusables** components copied into `src/components/ui/` (`@rn-primitives/*`, `class-variance-authority`, `tailwind-merge` v2, `lucide-react-native` + `react-native-svg`); `@react-native-community/datetimepicker`; `react-native-gesture-handler` + `react-native-reanimated` (swipe rows) | see D13. Category glyphs stay on `@expo/vector-icons` Ionicons (stored in DB) |
 | Action sheets | `src/components/action-sheet.tsx` (`ActionSheetHost` at the root, `useActionSheets().confirm/show`): iOS uses the system sheet via `@expo/react-native-action-sheet`; Android and web draw our own sheet over an `expo-blur` backdrop (NativeWindUI Action Sheet pattern) | every in-place choice (delete, skip, add proof, commit) is a sheet; plain messages stay `Alert` |
+| Location | **`expo-location`** (one foreground fix + reverse geocode) and **`react-native-maps`** (static map in the expense detail; web shows a link instead via `LocationMap.web.tsx`) | E16. Android dev/store builds need `android.config.googleMaps.apiKey` in `app.json`; Expo Go has its own key |
 | Export | `xlsx` (SheetJS, already present) for spreadsheets, **`pdf-lib`** for the PDF statement (pure JS, standard fonts), **`expo-sharing`** to hand the file to the share sheet | `src/server/services/export/*`, `app/api/expenses/export+api.ts`, `src/features/export/*`; see E10 |
 | Client cache | **TanStack Query 5** (`@tanstack/react-query`) | `src/lib/query.ts`: `queryClient`, `keys`, `invalidate`, `useRefetchOnFocus`; see D15 |
 | Native builds | **EAS Build**, project `@gaeltikeng/xpens-ia`; `expo-dev-client`; pnpm pinned to **9.15.2** in every `eas.json` profile | EAS defaults to pnpm 11, which ignores `package.json#pnpm`; see `docs/DEPLOY.md` |
@@ -211,6 +212,7 @@ expense-app/
 │   │   ├── export/                    api, download (share sheet / browser download)
 │   │   ├── planned/                   api, usePlanned, reminders, PlannedForm, RecurringForm, CompleteSheet, PlanningView, FixedChargesView
 │   │   ├── notifications/             permissions, schedule (recaps + planned), setup hook, prefs toggles
+│   │   ├── location/                  capture (permission, fix, geocode), LocationField, LocationMap(.web)
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
 │   │   ├── settings/                  useMe (profile + currencies), OptionPicker
 │   │   ├── account/                   AccountScreen (E17)
@@ -358,7 +360,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 
 ### E7 — Store compliance and ops
 - [~] F7.1 Privacy policy draft `docs/PRIVACY_POLICY.md` (AI processing, S3 region, deletion) + in-app summary `app/privacy.tsx` linked from Settings. **Still to do: legal review and hosting at a public URL for the store listings**
-- [x] F7.2 Permission strings in `app.json`: camera + photo library (`infoPlist`, plugin props), Android `CAMERA`, `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`; notifications use the runtime rationale flow (F5.4); document picker needs none
+- [x] F7.2 Permission strings in `app.json`: camera + photo library (`infoPlist`, plugin props), location when in use (E16), Android `CAMERA`, `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `ACCESS_COARSE/FINE_LOCATION`; notifications use the runtime rationale flow (F5.4); document picker needs none
 - [~] F7.3 EAS linked (`@gaeltikeng/xpens-ia`, owner in `app.json`); Android development build working (pnpm pinned to 9.15.2, `expo-dev-client`); runbook `docs/DEPLOY.md`. **Still to do:** iOS dev build, API routes deploy (`eas deploy`), set `EXPO_PUBLIC_API_URL` for preview/production
 - [~] F7.4 Neon project is in `eu-central-1` ✓. **Choose the same region when deploying the API routes** (`docs/DEPLOY.md` §1)
 - [~] F7.5 Client: `@sentry/react-native` + Expo plugin, `src/lib/sentry.ts` (`initSentry`, `setSentryUser`, `reportError`), enabled only when `EXPO_PUBLIC_SENTRY_DSN` is set; user id attached after sign-in. **API routes still log to console only** (`withAuth` catch-all); add a server DSN later
@@ -423,12 +425,12 @@ Built 2026-10-10.
 - [x] F15.4 Tests: `tests/integration/me.test.ts` covers profile fields, validation, avatar presign → upload → confirm → replace → remove, key outside the prefix; `src/components/avatar.test.tsx` covers initials and picture. (Form component test: pending, the screen needs the picker mocked)
 
 ### E16 — Expense location
-Registered 2026-10-10. Optional GPS position on an expense, shown on a map in the detail.
-- [ ] F16.1 Migration: `expenses.latitude`, `expenses.longitude` (double precision, nullable), `expenses.location_label` (reverse-geocoded, nullable). Zod schemas and DTO updated
-- [ ] F16.2 Capture: a "Save my location" toggle in the expense form (default off, remembered in prefs). On save, `expo-location` current position with the permission rationale flow like notifications; reverse geocode to a short label when available; works offline (coordinates only)
-- [ ] F16.3 Display: a small map in the expense detail when coordinates exist, with the label and a tap-through to the system maps app. Library decision pending: `react-native-maps` works in Expo Go; `expo-maps` needs the dev build. Web shows a static map image or the label only
-- [ ] F16.4 Privacy: location never sent to the AI, excluded from exports by default (optional column), purged with the account; permission strings in `app.json`; privacy policy updated
-- [ ] F16.5 Tests: integration for create/patch with coordinates and validation of ranges; component test for the toggle
+Built 2026-10-10. Optional GPS position on an expense, shown on a map in the detail.
+- [x] F16.1 Migration `0003_goofy_colonel_america`: `expenses.latitude`, `longitude` (double precision), `location_label` (varchar 200), all nullable; `expenseInputSchema` / patch validate ranges and "both coordinates or neither"; `ExpenseDto` carries the three fields
+- [x] F16.2 `src/features/location/LocationField.tsx` in the expense form: "Save my location" switch (remembered in device prefs; a new expense captures on open when it was on), rationale → system prompt → Settings flow (`capture.ts#ensureLocationPermission`), one balanced-accuracy fix with a 12 s timeout, reverse-geocoded label "Bastos, Yaoundé" (`formatPlace`), coordinates only when offline or on web
+- [x] F16.3 `LocationMap.tsx`: 160 px lite-mode `react-native-maps` view with a pin and the label, tap opens the maps app (`maps:` / `geo:` / Google Maps on web); `LocationMap.web.tsx` shows the label as a link. Shown in the expense detail above the proofs when coordinates exist
+- [x] F16.4 Privacy: coordinates never reach the model or the export files (integration test), deleted with the expense or the account; `expo-location` plugin + `NSLocationWhenInUseUsageDescription` + Android coarse/fine permissions in `app.json`; privacy policy (doc and in-app) updated
+- [x] F16.5 `tests/integration/location.test.ts` (store/return, ranges, lone coordinate, removal, export exclusion); `src/features/location/location.test.tsx` (label formatting, maps URLs, the switch's capture and clear)
 
 ### E17 — Account hub (replaces the Settings tab)
 Built 2026-10-10 (first cut), modelled on the screenshots provided (name, phone/email and avatar header; grouped rows; sign out; version footer).
@@ -484,6 +486,12 @@ printable statement.
   open their own screens (currency, timezone, appearance, reminders, AI
   usage); Preferences separated from Account; sign out now asks first, like
   account deletion.
+- 2026-10-10 — **Expense location (E16).** Optional "Save my location" on
+  the expense form (remembered), position + place name stored with the
+  expense (migration 0003), map with a pin in the detail, link on web.
+  Never exported or sent to the AI. The known Expo Router Android
+  "state update on a component that hasn't mounted" warning is hidden in
+  development (expo/expo#49378).
 - 2026-10-10 — **Account hub and profile (E17, E15).** Settings tab replaced
   by `/account` (opened from the avatar on Home): profile header, account
   settings incl. appearance override, reminders, data, legal, sign out, delete.

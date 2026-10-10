@@ -12,9 +12,11 @@ export interface DevicePrefs {
   recapReminderTime: string;
   /** E17: colour scheme override; "system" follows the device. */
   appearance: 'system' | 'light' | 'dark';
+  /** E16: capture the GPS position when creating an expense. */
+  saveLocation: boolean;
 }
 
-const DEFAULTS: DevicePrefs = { weeklyRecapReminder: false, monthlyRecapReminder: false, recapReminderTime: '09:00', appearance: 'system' };
+const DEFAULTS: DevicePrefs = { weeklyRecapReminder: false, monthlyRecapReminder: false, recapReminderTime: '09:00', appearance: 'system', saveLocation: false };
 const PATH = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}device-prefs.json`;
 
 let cache: DevicePrefs | null = null;
