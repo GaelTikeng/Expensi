@@ -2,7 +2,7 @@ name: CI
 
 # Runs on every pull request and on every push to main (a merged PR is a push
 # to main). Three jobs:
-# - check:       typecheck, lint, unit + component tests. No secrets.
+# - check:       typecheck, lint, migration drift guard, unit + component tests. No secrets.
 # - build:       the app bundles for Android, iOS and web (catches Metro and
 #                import errors the type checker cannot). No secrets.
 # - integration: API route handlers against the Neon test branch. Needs the
@@ -40,6 +40,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
+      - run: pnpm db:check
       - run: pnpm test
 
   build:

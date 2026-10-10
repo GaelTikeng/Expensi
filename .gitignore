@@ -42,3 +42,6 @@ pnpm-debug.*
 
 # tests
 coverage/
+
+# scratch copy used by scripts/check-migrations.mjs
+.drift-check/
