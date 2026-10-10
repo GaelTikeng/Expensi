@@ -6,17 +6,10 @@ import { apiFetch } from '@/src/lib/api';
 import { CURRENCIES, type CurrencyOption } from '@/src/lib/currencies';
 import { errorMessage, keys, REFERENCE_STALE } from '@/src/lib/query';
 
-export type { CurrencyOption };
+import type { MePatchBody, MeProfile } from '@/src/lib/schemas/profile';
 
-export interface MeProfile {
-  id: string;
-  email: string | null;
-  displayName: string | null;
-  defaultCurrency: string;
-  timezone: string;
-}
-
-export type MePatch = Partial<Pick<MeProfile, 'defaultCurrency' | 'timezone'>>;
+export type { CurrencyOption, MeProfile };
+export type MePatch = MePatchBody;
 
 /**
  * Profile from the cache (D15) plus the fixed currency list (D14). Preference
@@ -38,7 +31,8 @@ export function useMe() {
     onMutate: async (patch) => {
       await qc.cancelQueries({ queryKey: keys.me });
       const previous = qc.getQueryData<MeProfile>(keys.me);
-      if (previous) qc.setQueryData<MeProfile>(keys.me, { ...previous, ...patch });
+      // avatarKey/avatarUrl are server-derived; the optimistic copy only applies the plain fields.
+      if (previous) qc.setQueryData<MeProfile>(keys.me, { ...previous, ...patch, avatarKey: patch.avatarKey === undefined ? previous.avatarKey : patch.avatarKey, avatarUrl: patch.avatarKey === null ? null : previous.avatarUrl });
       return { previous };
     },
     onError: (_err, _patch, ctx) => {

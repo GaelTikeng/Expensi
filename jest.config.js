@@ -31,6 +31,8 @@ const expoJs = expoPreset.transform['\\.[jt]sx?$'];
 if (!expoJs) throw new Error('jest-expo preset changed shape: no [jt]sx? transform found');
 const native = {
   ...expoPreset,
+  // Reanimated 4 under Jest: worklets resolve to their JS fallback instead of the native module.
+  resolver: 'react-native-worklets/jest/resolver.js',
   transform: { ...expoPreset.transform, '^.+\\.mjs$': expoJs },
   transformIgnorePatterns: [TRANSFORM_IN_NODE_MODULES],
   moduleNameMapper: { ...(expoPreset.moduleNameMapper ?? {}), ...moduleNameMapper },

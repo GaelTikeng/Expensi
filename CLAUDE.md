@@ -173,7 +173,9 @@ expense-app/
 ├── app/                               expo-router
 │   ├── _layout.tsx                    ClerkProvider + Stack.Protected route guards
 │   ├── (auth)/sign-in.tsx             email-code sign-in-or-up + Google SSO
-│   ├── (tabs)/                        home, expenses, plan, recaps, settings
+│   ├── (tabs)/                        home, expenses, plan, recaps
+│   ├── account/index.tsx, profile.tsx E17 hub (re-exports src/features/account), E15 personal information
+│   ├── settings.tsx                   redirect → /account
 │   ├── expense/new.tsx, [id].tsx      create modal, detail/edit
 │   ├── import/index.tsx, [id].tsx     history + upload, review
 │   ├── planned/new, [id], month       plan create / detail / month list
@@ -181,7 +183,8 @@ expense-app/
 │   ├── recurring/new, [id]            fixed charge create / edit
 │   └── api/                           Expo API Routes (server-only)
 │       ├── health+api.ts              liveness, no server imports
-│       ├── me+api.ts                  GET profile, PATCH prefs, DELETE account
+│       ├── me+api.ts                  GET profile, PATCH prefs + profile, DELETE account
+│       ├── me/avatar+api.ts           E15 avatar presign
 │       ├── expenses/export+api.ts     E10 PDF / XLSX / summary
 │       └── webhooks/clerk+api.ts      Clerk user.* events (verifyWebhook)
 ├── src/
@@ -209,8 +212,10 @@ expense-app/
 │   │   ├── planned/                   api, usePlanned, reminders, PlannedForm, RecurringForm, CompleteSheet, PlanningView, FixedChargesView
 │   │   ├── notifications/             permissions, schedule (recaps + planned), setup hook, prefs toggles
 │   │   ├── auth/                      useEmailCodeAuth, useGoogleAuth, useWarmUpBrowser, errors
-│   │   └── settings/                  useMe (profile + currencies), OptionPicker
-│   └── lib/                           api, query (cache), currencies, money, dates (+periods), uuid, prefs, timezones, schemas/
+│   │   ├── settings/                  useMe (profile + currencies), OptionPicker
+│   │   ├── account/                   AccountScreen (E17)
+│   │   └── profile/                   avatar upload (E15)
+│   └── lib/                           api, query (cache), currencies, appearance, money, dates (+periods), uuid, prefs, timezones, schemas/
 ├── eas.json                           build profiles
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
 ├── tests/e2e/api.e2e.test.ts          end-to-end API test incl. S3 uploads (pnpm test:e2e, E2E_BASE_URL)
@@ -282,7 +287,7 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F1.1 Clerk provider + secure token cache — `app/_layout.tsx`. Migrated from `@clerk/clerk-expo` to `@clerk/expo` 4.x on 2026-10-04
 - [x] F1.2 Sign-in-or-up — `app/(auth)/sign-in.tsx` → `src/features/auth/ClerkAuthScreen{,.web}.tsx`: Clerk `<SignIn withSignUp />` on web, native `AuthView` in dev/store builds, `CustomSignIn` (email code + Google) in Expo Go. **Open issue:** the Clerk instance requires a password at sign-up but only allows email-code sign-in, so `CustomSignIn` cannot finish a new sign-up; turn the password requirement off in the Clerk dashboard (or collect a password there). Google redirect for native: `xpensia://sso-callback`
 - [x] F1.3 API middleware `withAuth()` — `src/server/auth/clerk.ts`; smoke route `app/api/me+api.ts`
-- [x] F1.4 Settings: currency, timezone (curated list `src/lib/timezones.ts`), sign out — `app/(tabs)/settings.tsx`, `src/features/settings/*`, `PATCH /api/me` (`GET /api/currencies` removed with D14)
+- [x] F1.4 Preferences: currency, timezone (curated list `src/lib/timezones.ts`), sign out — now in the account hub (E17, `src/features/account/AccountScreen.tsx`), `src/features/settings/*`, `PATCH /api/me`
 - [x] F1.5 Clerk webhook (`user.created/updated/deleted`) — `app/api/webhooks/clerk+api.ts`, `src/server/services/account.ts`. Needs `CLERK_WEBHOOK_SIGNING_SECRET` and the endpoint registered in Clerk
 - [x] F1.6 In-app delete account — `DELETE /api/me` purges S3 prefix + DB rows, then deletes the Clerk user
 
@@ -411,11 +416,11 @@ Registered 2026-10-10. Library: **react-i18next** (+ `i18next`, `expo-localizati
 - [ ] F14.5 Tests: a unit test that `en.json` and `fr.json` have identical key sets; component tests run in both languages for one screen
 
 ### E15 — Profile and avatar
-Registered 2026-10-10.
-- [ ] F15.1 Avatar from the identity provider: Clerk exposes Google's picture as `user.imageUrl`; show it wherever the user is represented (home header, account hub). Sync `image_url` + `display_name` into `users` via the existing Clerk webhook (`user.updated`) and on sign-in
-- [ ] F15.2 Editable profile screen "Personal information": display name, phone (optional), email read-only, avatar change (camera / library, resized, uploaded to S3 under `users/{id}/avatar.jpg`, served through a presigned URL like proofs). Migration: `users.phone`, `users.avatar_key`, `users.image_url`
-- [ ] F15.3 `PATCH /api/me` accepts the new fields; `useMe` optimistic update; cache invalidation of the header
-- [ ] F15.4 Tests: integration for PATCH + avatar presign/confirm; component test for the edit form
+Built 2026-10-10.
+- [x] F15.1 Avatar from the identity provider: `users.image_url` filled from Clerk (`hasImage`/`imageUrl`) on first sign-in and by the `user.created/updated` webhook; `src/components/avatar.tsx` shows the custom photo, else the provider picture, else initials. `display_name` is set only when empty so an in-app edit is never overwritten
+- [x] F15.2 `app/account/profile.tsx`: name, phone (optional), email read-only, photo via action sheet (camera / library / remove). `src/features/profile/avatar.ts` resizes to 512 px JPEG, `POST /api/me/avatar` presigns a fresh key `users/{id}/avatar/{uuid}.jpg`, the client PUTs then `PATCH /api/me { avatarKey }` (server HEADs the object, drops the previous one; `null` removes). Migration `0002_fresh_molly_hayes`: `users.image_url`, `avatar_key`, `phone`
+- [x] F15.3 `PATCH /api/me` body is `mePatchSchema` (`src/lib/schemas/profile.ts`: currency, timezone, push token, displayName, phone, avatarKey); `GET /api/me` returns `MeProfile` with `imageUrl`, `avatarKey`, `avatarUrl` (15-min presigned); `useMe` shares the types and keeps the optimistic update
+- [x] F15.4 Tests: `tests/integration/me.test.ts` covers profile fields, validation, avatar presign → upload → confirm → replace → remove, key outside the prefix; `src/components/avatar.test.tsx` covers initials and picture. (Form component test: pending, the screen needs the picker mocked)
 
 ### E16 — Expense location
 Registered 2026-10-10. Optional GPS position on an expense, shown on a map in the detail.
@@ -426,11 +431,11 @@ Registered 2026-10-10. Optional GPS position on an expense, shown on a map in th
 - [ ] F16.5 Tests: integration for create/patch with coordinates and validation of ranges; component test for the toggle
 
 ### E17 — Account hub (replaces the Settings tab)
-Registered 2026-10-10, modelled on the screenshots provided (name, phone/email and avatar header; grouped rows; sign out; version footer).
-- [ ] F17.1 Home header: "Hello, {name}" replaced by the user's avatar (E15) at the top right; tapping opens `/account`
-- [ ] F17.2 `app/account.tsx`: header (avatar, display name, phone or email); **Account settings**: Personal information (E15), Language (E14), Appearance (system / light / dark — removes the hard-pinned scheme choice from F9.5), Reminders (today's toggles), Security & sign-in (passkeys / password later); **Data**: Export expenses, AI usage this month; **Help**: FAQ (static), Contact; **Legal**: Privacy policy, Terms of service; **Sign out**; **Delete account**; footer with app version from `expo-constants`
-- [ ] F17.3 Remove the Settings tab from the tab bar (four tabs: Home, Expenses, Plan, Recaps); redirect `/settings` to `/account`
-- [ ] F17.4 Tests: component test for the hub rendering every section and the sign-out action; e2e step unchanged (settings routes kept server-side)
+Built 2026-10-10 (first cut), modelled on the screenshots provided (name, phone/email and avatar header; grouped rows; sign out; version footer).
+- [x] F17.1 Home header: today's date on the left, the avatar on the right opening `/account`; the greeting is gone
+- [~] F17.2 `src/features/account/AccountScreen.tsx` (route `app/account/index.tsx`): header (avatar, name, phone or email, opens the profile); **Account settings**: Personal information, Currency, Timezone, Appearance (system / light / dark, stored in device prefs, `src/lib/appearance.ts`); **Reminders**; **Data**: Export expenses, AI usage; **Legal**: Privacy policy; Sign out; Delete account (action-sheet confirmation); version footer. **Still to add:** Language (with E14), Security & sign-in, Help (FAQ, Contact) and Terms once there is content
+- [x] F17.3 Settings tab removed (four tabs); `app/settings.tsx` redirects to `/account`
+- [x] F17.4 `src/features/account/AccountScreen.test.tsx`: header, every section, usage figures, navigation to profile and export
 
 ### E10 — Export expenses (PDF / XLSX)
 Built 2026-10-10. Download the ledger for a date range as a spreadsheet or a
@@ -475,9 +480,11 @@ printable statement.
 
 ## 8. Changelog
 
-- 2026-10-10 — **Migrations discipline (E13).** `pnpm db:check` fails when
-  the schema changed without a migration (prints the missing SQL); journal
-  consistency unit test; CI runs the check; Neon notes document the routine.
+- 2026-10-10 — **Account hub and profile (E17, E15).** Settings tab replaced
+  by `/account` (opened from the avatar on Home): profile header, account
+  settings incl. appearance override, reminders, data, legal, sign out, delete.
+  Personal information screen with name, phone and photo; provider picture
+  synced from Clerk; custom avatar via presigned upload. Migration 0002.
 - 2026-10-10 — Backlog: registered E13 (migrations discipline), E14 (i18n
   EN/FR with react-i18next), E15 (profile and avatar), E16 (expense
   location), E17 (account hub replacing the Settings tab).

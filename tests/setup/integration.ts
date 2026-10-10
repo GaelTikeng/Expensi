@@ -22,6 +22,8 @@ jest.mock('@clerk/backend', () => ({
         id,
         fullName: `Test ${id}`,
         primaryEmailAddress: { emailAddress: `${id}@example.com` },
+        hasImage: true,
+        imageUrl: `https://img.clerk.test/${id}.png`,
       }),
       deleteUser: async () => undefined,
     },

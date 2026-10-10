@@ -40,6 +40,7 @@ export async function POST(request: Request) {
         clerkUserId: evt.data.id,
         email: primary?.email_address ?? null,
         displayName: fullName || null,
+        imageUrl: evt.data.has_image ? evt.data.image_url : null,
       });
       break;
     }

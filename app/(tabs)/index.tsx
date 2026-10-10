@@ -1,9 +1,9 @@
-import { useUser } from '@clerk/expo';
 import { router } from 'expo-router';
 import { CloudUpload, Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { Avatar } from '@/src/components/avatar';
 import { loadingA11y, SkeletonLine } from '@/src/components/skeletons';
 import { TabScreen } from '@/src/components/tab-screen';
 import { Icon } from '@/src/components/ui/icon';
@@ -20,10 +20,9 @@ import { cn } from '@/src/lib/utils';
 
 /** F4.5: today / this week / this month at a glance, charts, and the import shortcut. */
 export default function HomeScreen() {
-  const { user } = useUser();
-  const name = user?.firstName ?? user?.primaryEmailAddress?.emailAddress?.split('@')[0] ?? 'there';
   const { overview, loading, error } = useRecapOverview();
-  const { currencies } = useMe();
+  const { currencies, profile } = useMe();
+  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   const lookup = useMemo(() => makeCurrencyLookup(currencies), [currencies]);
 
   // Changes made elsewhere (new expense, completed plan) refresh the tiles in the background.
@@ -34,9 +33,12 @@ export default function HomeScreen() {
   return (
     <TabScreen>
       <ScrollView className="flex-1" contentContainerClassName="gap-3 p-4 pb-24">
-        <Text variant="h3" className="mb-1 font-bold">
-          Hello, {name}
-        </Text>
+        <View className="mb-1 flex-row items-center justify-between">
+          <Text className="text-muted-foreground text-[13px] font-medium uppercase tracking-wide">{today}</Text>
+          <Pressable onPress={() => router.push('/account')} accessibilityLabel="Account" hitSlop={8} className="active:opacity-80">
+            <Avatar uri={profile?.avatarUrl ?? profile?.imageUrl} name={profile?.displayName ?? profile?.email} size={40} />
+          </Pressable>
+        </View>
 
         {loading && !overview ? (
           <TilesSkeleton />
