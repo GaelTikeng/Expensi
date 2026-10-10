@@ -1,50 +1,45 @@
 import { useAuth } from '@clerk/expo';
-import { useQuery } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
+import { Bell, ChartColumn, Clock, Coins, Download, FileText, LogOut, Palette, Trash2, UserRound } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { useActionSheets } from '@/src/components/action-sheet';
 import { Avatar } from '@/src/components/avatar';
-import { Group, GroupRow } from '@/src/components/group';
-import { GroupSkeleton, loadingA11y, SkeletonLine } from '@/src/components/skeletons';
-import { Icon } from '@/src/components/ui/icon';
-import { Progress } from '@/src/components/ui/progress';
+import { MenuGroup, MenuRow } from '@/src/components/menu';
+import { loadingA11y, SkeletonLine } from '@/src/components/skeletons';
 import { Skeleton } from '@/src/components/ui/skeleton';
-import { Switch } from '@/src/components/ui/switch';
 import { Text } from '@/src/components/ui/text';
 import { useRecapReminders } from '@/src/features/notifications/useRecapReminders';
-import { OptionPicker } from '@/src/features/settings/OptionPicker';
 import { useMe } from '@/src/features/settings/useMe';
-import { apiFetch } from '@/src/lib/api';
-import { APPEARANCE_OPTIONS, useAppearance, type Appearance } from '@/src/lib/appearance';
+import { APPEARANCE_OPTIONS, useAppearance } from '@/src/lib/appearance';
 import { keys, useRefetchOnFocus } from '@/src/lib/query';
-import { TIMEZONES } from '@/src/lib/timezones';
-
-interface Usage {
-  extract: { used: number; limit: number };
-  narrative: { used: number; limit: number };
-}
 
 /**
- * E17 account hub: who you are, how the app behaves, your data, the legal
- * pages, and the way out. Replaces the former Settings tab.
+ * E17 account hub: a menu. Every row opens its own screen; nothing is edited
+ * in place here. Sign out and account deletion both ask first.
  */
 export default function AccountScreen() {
-  const { signOut, getToken } = useAuth();
+  const { signOut } = useAuth();
   const me = useMe();
   const reminders = useRecapReminders();
-  const { appearance, setAppearance } = useAppearance();
+  const { appearance } = useAppearance();
   const { confirm } = useActionSheets();
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const usage = useQuery({ queryKey: keys.usage, queryFn: () => apiFetch<Usage>('/api/usage', getToken) }).data ?? null;
-  useRefetchOnFocus(keys.usage);
   useRefetchOnFocus(keys.me);
 
-  const deleteAccount = async () => {
+  const confirmSignOut = async () => {
+    const ok = await confirm({
+      title: 'Sign out?',
+      message: 'You can sign back in at any time with your email or Google.',
+      actionLabel: 'Sign out',
+    });
+    if (ok) await signOut();
+  };
+
+  const confirmDelete = async () => {
     const ok = await confirm({
       title: 'Delete your account?',
       message: 'This permanently removes your expenses, plans, imports and attachments. It cannot be undone.',
@@ -65,118 +60,95 @@ export default function AccountScreen() {
   if (me.loading && !me.profile) return <AccountSkeleton />;
 
   const p = me.profile;
-  const remindersOff = !reminders.prefs || !reminders.supported;
   const version = Constants.expoConfig?.version ?? '';
+  const remindersValue = !reminders.supported
+    ? 'Unavailable'
+    : [reminders.prefs?.weeklyRecapReminder && 'Weekly', reminders.prefs?.monthlyRecapReminder && 'Monthly'].filter(Boolean).join(', ') || 'Off';
 
   return (
-    <ScrollView className="bg-background flex-1" contentContainerClassName="gap-2 p-4 pb-12">
-      <Pressable className="active:bg-accent -mx-1 flex-row items-center gap-4 rounded-lg px-1 py-3" onPress={() => router.push('/account/profile')}>
-        <Avatar uri={p?.avatarUrl ?? p?.imageUrl} name={p?.displayName ?? p?.email} size={64} />
-        <View className="flex-1 gap-0.5">
-          <Text className="text-xl font-bold" numberOfLines={1}>
-            {p?.displayName ?? p?.email ?? 'Your account'}
+    <ScrollView className="bg-background flex-1" contentContainerClassName="p-4 pb-12">
+      <View className="flex-row items-center gap-4 pb-2 pt-4">
+        <View className="flex-1 gap-1">
+          <Text className="text-2xl font-extrabold" numberOfLines={2}>
+            {p?.displayName ?? 'Your account'}
           </Text>
-          <Text className="text-muted-foreground text-[13px]" numberOfLines={1}>
+          <Text className="text-muted-foreground text-[15px]" numberOfLines={1}>
             {p?.phone ?? p?.email ?? ''}
           </Text>
         </View>
-        <Icon as={ChevronRight} className="text-muted-foreground size-5" />
-      </Pressable>
+        <Avatar uri={p?.avatarUrl ?? p?.imageUrl} name={p?.displayName ?? p?.email} size={72} />
+      </View>
 
-      <Group title="Account settings" footer={me.error ? <Text className="text-destructive ml-1 text-[13px]">{me.error}</Text> : undefined}>
-        <GroupRow label="Personal information" description="Name, phone, photo" onPress={() => router.push('/account/profile')} />
-        <OptionPicker
-          label="Currency"
-          value={p?.defaultCurrency ?? 'XAF'}
-          options={me.currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.name}` }))}
-          onChange={(code) => me.update({ defaultCurrency: code as never })}
-          disabled={me.saving}
+      <MenuGroup title="Account" footer={me.error ? <Text className="text-destructive ml-1 text-[13px]">{me.error}</Text> : undefined}>
+        <MenuRow icon={UserRound} label="Personal information" onPress={() => router.push('/account/profile')} />
+      </MenuGroup>
+
+      <MenuGroup title="Preferences">
+        <MenuRow icon={Coins} label="Currency" value={p?.defaultCurrency} onPress={() => router.push('/account/currency')} />
+        <MenuRow icon={Clock} label="Timezone" value={cityOf(p?.timezone)} onPress={() => router.push('/account/timezone')} />
+        <MenuRow
+          icon={Palette}
+          label="Appearance"
+          value={APPEARANCE_OPTIONS.find((o) => o.value === appearance)?.label}
+          onPress={() => router.push('/account/appearance')}
         />
-        <OptionPicker
-          label="Timezone"
-          value={p?.timezone ?? 'Africa/Douala'}
-          options={TIMEZONES.map((tz) => ({ value: tz, label: tz.replace('_', ' ') }))}
-          onChange={(tz) => me.update({ timezone: tz })}
-          disabled={me.saving}
-        />
-        <OptionPicker label="Appearance" value={appearance} options={APPEARANCE_OPTIONS} onChange={(v) => void setAppearance(v as Appearance)} />
-      </Group>
+      </MenuGroup>
 
-      <Group
-        title="Reminders"
-        footer={
-          reminders.unavailableReason === 'web'
-            ? 'Reminders are available in the mobile app.'
-            : reminders.unavailableReason === 'expo-go-android'
-              ? 'Reminders need the full app build. Expo Go on Android does not include notifications.'
-              : undefined
-        }
-      >
-        <GroupRow
-          label="Weekly recap"
-          description="Every Monday morning"
-          disabled={remindersOff}
-          right={<Switch checked={reminders.prefs?.weeklyRecapReminder ?? false} onCheckedChange={(v) => void reminders.setWeekly(v)} disabled={remindersOff} />}
-        />
-        <GroupRow
-          label="Monthly recap"
-          description="On the 1st of each month"
-          disabled={remindersOff}
-          right={<Switch checked={reminders.prefs?.monthlyRecapReminder ?? false} onCheckedChange={(v) => void reminders.setMonthly(v)} disabled={remindersOff} />}
-        />
-      </Group>
+      <MenuGroup title="Notifications">
+        <MenuRow icon={Bell} label="Reminders" value={remindersValue} onPress={() => router.push('/account/reminders')} />
+      </MenuGroup>
 
-      <Group title="Data">
-        <GroupRow label="Export expenses" description="PDF statement or Excel file for a period" onPress={() => router.push('/export')} />
-        <UsageRow label="File imports this month" used={usage?.extract.used} limit={usage?.extract.limit} />
-        <UsageRow label="Recap summaries this month" used={usage?.narrative.used} limit={usage?.narrative.limit} />
-      </Group>
+      <MenuGroup title="Data">
+        <MenuRow icon={Download} label="Export expenses" onPress={() => router.push('/export')} />
+        <MenuRow icon={ChartColumn} label="AI usage" onPress={() => router.push('/account/usage')} />
+      </MenuGroup>
 
-      <Group title="Legal">
-        <GroupRow label="Privacy policy" onPress={() => router.push('/privacy')} />
-      </Group>
+      <MenuGroup title="Legal">
+        <MenuRow icon={FileText} label="Privacy policy" onPress={() => router.push('/privacy')} />
+      </MenuGroup>
 
-      <Group footer={deleteError ? <Text className="text-destructive ml-1 text-[13px]">{deleteError}</Text> : undefined}>
-        <GroupRow label="Sign out" onPress={() => signOut()} />
-        <GroupRow label={deleting ? 'Deleting…' : 'Delete account'} destructive disabled={deleting} onPress={() => void deleteAccount()} />
-      </Group>
+      <MenuGroup footer={deleteError ? <Text className="text-destructive ml-1 text-[13px]">{deleteError}</Text> : undefined}>
+        <MenuRow icon={LogOut} label="Sign out" tone="muted" onPress={() => void confirmSignOut()} disabled={deleting} />
+        <MenuRow icon={Trash2} label={deleting ? 'Deleting…' : 'Delete account'} tone="destructive" onPress={() => void confirmDelete()} disabled={deleting} />
+      </MenuGroup>
 
-      <Text className="text-muted-foreground mt-4 text-center text-xs">
+      <Text className="text-muted-foreground mt-6 text-center text-xs">
         xpens-ia{version ? ` · version ${version}` : ''}
       </Text>
     </ScrollView>
   );
 }
 
-function UsageRow({ label, used, limit }: { label: string; used?: number; limit?: number }) {
-  const pct = used != null && limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-  return (
-    <View className="gap-2 px-4 py-3">
-      <View className="flex-row justify-between">
-        <Text className="text-[15px]">{label}</Text>
-        <Text className="text-muted-foreground text-[15px]">{used != null && limit != null ? `${used} / ${limit}` : '…'}</Text>
-      </View>
-      <Progress value={pct} className="h-1.5" />
-    </View>
-  );
+/** "Africa/Douala" → "Douala". */
+function cityOf(tz: string | undefined): string | undefined {
+  return tz?.split('/').pop()?.replace(/_/g, ' ');
 }
 
-/** Mirrors the header and the groups while the profile loads. */
+/** Mirrors the header and the menu groups while the profile loads. */
 function AccountSkeleton() {
-  return (
-    <View className="bg-background flex-1 gap-2 p-4" {...loadingA11y}>
-      <View className="flex-row items-center gap-4 py-3">
-        <Skeleton className="size-16 rounded-full" />
-        <View className="flex-1 gap-2.5">
-          <SkeletonLine className="h-5 w-40" />
-          <SkeletonLine className="w-32" />
-        </View>
+  const group = (rows: number, key: number) => (
+    <View key={key} className="gap-2">
+      <SkeletonLine className="ml-1 mt-5 h-4 w-28" />
+      <View className="bg-card border-border overflow-hidden rounded-xl border">
+        {Array.from({ length: rows }, (_, i) => (
+          <View key={i} className="min-h-14 flex-row items-center gap-3 px-4 py-2.5">
+            <Skeleton className="size-9 rounded-lg" />
+            <SkeletonLine className="h-3.5 w-36" />
+          </View>
+        ))}
       </View>
-      <GroupSkeleton title rows={4} descriptions={[0]} />
-      <GroupSkeleton title rows={2} descriptions={[0, 1]} />
-      <GroupSkeleton title rows={3} descriptions={[0]} />
-      <GroupSkeleton title rows={1} />
-      <GroupSkeleton rows={2} />
+    </View>
+  );
+  return (
+    <View className="bg-background flex-1 p-4" {...loadingA11y}>
+      <View className="flex-row items-center gap-4 pb-2 pt-4">
+        <View className="flex-1 gap-2.5">
+          <SkeletonLine className="h-6 w-48" />
+          <SkeletonLine className="h-3.5 w-36" />
+        </View>
+        <Skeleton className="size-[72px] rounded-full" />
+      </View>
+      {[1, 3, 1, 2].map((rows, i) => group(rows, i))}
     </View>
   );
 }
