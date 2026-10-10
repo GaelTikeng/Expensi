@@ -1,12 +1,32 @@
 name: CI
 
+# Runs on every pull request and on every push to main (a merged PR is a push
+# to main). Three jobs:
+# - check:       typecheck, lint, unit + component tests. No secrets.
+# - build:       the app bundles for Android, iOS and web (catches Metro and
+#                import errors the type checker cannot). No secrets.
+# - integration: API route handlers against the Neon test branch. Needs the
+#                DATABASE_URL_TEST repository secret, so it runs on pushes to
+#                main and on PRs opened from this repository (GitHub withholds
+#                secrets from fork PRs). Serialised: the suites truncate the
+#                shared test branch.
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
+
+# A new push to the same PR cancels the run in progress for it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The app refuses to boot without a publishable key; bundling only needs a value.
+  EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_placeholder
 
 jobs:
   check:
+    name: Typecheck, lint, tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,3 +41,49 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+
+  build:
+    name: Bundle (android, ios, web)
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec expo export --platform android --platform ios --platform web --output-dir dist
+        env:
+          CI: 1
+          EXPO_NO_TELEMETRY: 1
+
+  integration:
+    name: Integration (Neon test branch)
+    needs: check
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    # Only one integration run at a time, across all branches: they share one database.
+    concurrency:
+      group: integration-db
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:integration
+        env:
+          # Only the test URL: tests/setup/integration-env.ts refuses to run when
+          # DATABASE_URL and DATABASE_URL_TEST point at the same database.
+          DATABASE_URL_TEST: ${{ secrets.DATABASE_URL_TEST }}
+          TENSORX_API_KEY: test
+          CLERK_SECRET_KEY: sk_test_placeholder

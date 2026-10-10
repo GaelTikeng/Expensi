@@ -46,6 +46,7 @@ the design must not hard-code that. iOS + Android, public app.
 | Push / reminders | `expo-notifications` local scheduling + Expo Push for server-triggered | see D4 |
 | File parsing | SheetJS (`xlsx`) for Excel/CSV, `pdf-parse` for text PDFs, multimodal TensorX model for scanned PDFs | |
 | Observability | `@sentry/react-native` (client, DSN-gated); server routes log via `console` | server Sentry pending |
+| Tests | **Jest 29** with four projects (`jest.config.js`): unit (Node), components (`jest-expo` + `@testing-library/react-native` 14, `test-renderer`), integration (route handlers on the Neon test branch), e2e (HTTP against a running server) | see E12 and §7 |
 | UI / styling | **NativeWind 4.2** (Tailwind CSS **v3**) + **React Native Reusables** components copied into `src/components/ui/` (`@rn-primitives/*`, `class-variance-authority`, `tailwind-merge` v2, `lucide-react-native` + `react-native-svg`); `@react-native-community/datetimepicker`; `react-native-gesture-handler` + `react-native-reanimated` (swipe rows) | see D13. Category glyphs stay on `@expo/vector-icons` Ionicons (stored in DB) |
 | Action sheets | `src/components/action-sheet.tsx` (`ActionSheetHost` at the root, `useActionSheets().confirm/show`): iOS uses the system sheet via `@expo/react-native-action-sheet`; Android and web draw our own sheet over an `expo-blur` backdrop (NativeWindUI Action Sheet pattern) | every in-place choice (delete, skip, add proof, commit) is a sheet; plain messages stay `Alert` |
 | Export | `xlsx` (SheetJS, already present) for spreadsheets, **`pdf-lib`** for the PDF statement (pure JS, standard fonts), **`expo-sharing`** to hand the file to the share sheet | `src/server/services/export/*`, `app/api/expenses/export+api.ts`, `src/features/export/*`; see E10 |
@@ -165,7 +166,8 @@ expense-app/
 ├── package.json                       pnpm scripts: typecheck, lint, test, db:*
 ├── drizzle.config.ts                  Postgres; schema → src/server/db/migrations
 ├── eslint.config.js                   expo flat config + no client→server imports
-├── vitest.config.mts
+├── jest.config.js                     four projects: unit, components, integration, e2e
+├── tests/                             setup/ (env, mocks), helpers/ (call, resetDb), integration/, e2e/
 ├── .env.example                       every variable, client and server
 ├── .github/workflows/ci.yml           install, typecheck, lint, test
 ├── app/                               expo-router
@@ -211,7 +213,7 @@ expense-app/
 │   └── lib/                           api, query (cache), currencies, money, dates (+periods), uuid, prefs, timezones, schemas/
 ├── eas.json                           build profiles
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
-├── scripts/e2e-api.mjs                end-to-end API test incl. S3 uploads (pnpm test:e2e, E2E_BASE_URL)
+├── tests/e2e/api.e2e.test.ts          end-to-end API test incl. S3 uploads (pnpm test:e2e, E2E_BASE_URL)
 ├── scripts/db-init.mjs                one-time pgcrypto setup
 ├── docs/                              NEON_NOTES, S3_SETUP, DEPLOY, PRIVACY_POLICY
 └── assets/                            icons from the Expo template (replace later)
@@ -235,8 +237,10 @@ All v2 screens exist; see §6 for what each still lacks.
    `users.timezone`.
 5. Locale: `.` and thin space are thousands separators, `,` is decimal; numeric dates
    DD/MM; default currency XAF; default timezone Africa/Douala. Overridable per user.
-6. Migrations: `drizzle-kit generate`, read the SQL, then `drizzle-kit migrate` against
-   the **direct** Neon URL. Never edit a shipped migration.
+6. Migrations (E13): any change to `src/server/db/schema.ts` → `pnpm db:generate`
+   (new SQL file + journal + snapshot) → read the SQL → `pnpm db:migrate` against the
+   **direct** Neon URL → commit schema, migration and journal together. Never edit a
+   shipped migration; fix forward with a new one.
 7. AI model IDs live in one `MODELS` constant. TensorX model ids are verified against
    `GET /v1/models` before release.
 8. Every AI call records model, tokens and latency to `ai_usage` and to the owning
@@ -266,8 +270,8 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F0.6 First migration applied to Neon (PostgreSQL 18, `eu-central-1`) on 2026-10-04: 11 tables, 8 enums. Prep script `scripts/db-init.mjs` (pgcrypto) then `pnpm db:migrate` against `DIRECT_URL`
 - [-] F0.7 Currencies seeded via `pnpm db:seed` — replaced by the constant in `src/lib/currencies.ts` (D14, 2026-10-10); table dropped in migration 0001
 - [x] F0.8 Repository layer — `src/server/repositories/` (`UserScopedRepository`, `UsersRepository`, `ExpensesRepository`, `createRepositories()`)
-- [x] F0.9 `pnpm typecheck` / `lint` / `test`, ESLint client→server import ban, GitHub Actions CI
-- [x] F0.10 Tests — `src/ai/extraction-contract.test.ts` (12), `src/lib/money.test.ts` (6)
+- [x] F0.9 `pnpm typecheck` / `lint` / `test`, ESLint client→server import ban, GitHub Actions CI (unit + components on every push; integration on `main` with `DATABASE_URL_TEST`)
+- [x] F0.10 Unit tests — `src/**/*.test.ts` (61 on Jest since 2026-10-10; Vitest removed)
 - [x] F0.11 README rewritten; SQLite draft, `api/`, `SETUP.md`, babel/metro configs deleted; Neon notes moved to `docs/`
 - [x] F0.12 S3 bucket `xpens-ia-files` (general purpose, `eu-central-1`, public access blocked, SSE-S3) created 2026-10-10 with the CORS rule and the `xpens-ia-api` IAM user scoped to `users/*` (`docs/S3_SETUP.md`). Verified by `pnpm test:e2e`: presign → PUT → confirm → view → delete, and the account purge
 - [x] F0.13 `src/server/storage/s3.ts`: `buildObjectKey`, `presignPut`, `presignGet`, `headObject`, `deleteObject`, `deletePrefix`, MIME/size constants
@@ -380,6 +384,53 @@ Never delete a row; mark `[-]` with a reason. Name the owning file(s) when done.
 - [x] F11.5 Profile and categories prefetched in the tabs layout, so forms open without a loading state after the first seconds of a session
 - [x] F11.6 Currencies hardcoded (D14): `src/lib/currencies.ts`; `/api/currencies`, `ReferenceRepository`, `seed.ts` and `db:seed` removed; zod schemas validate codes against the list; migration `0001_strong_nova.sql` applied to Neon 2026-10-10
 
+### E12 — Testing (Jest)
+Set up 2026-10-10. One runner, four projects; `pnpm test` is the fast default.
+- [x] F12.1 Jest + `jest-expo` configured in `jest.config.js`: Node projects (unit, integration, e2e) transform with `babel-jest`; only the component project uses the React Native preset (its global `fetch` stub breaks real HTTP clients). `.mjs` packages (icons) transformed. Vitest removed; the 61 unit tests migrated unchanged
+- [x] F12.2 Component tests with `@testing-library/react-native` 14 (`test-renderer`): `ExpenseForm` (validation, parsing, edit mode), `DuplicateSheet` (both modes, busy), `ImportItemRow` (tick, Compare), `HomeStats` (cards, tap, empty state). Setup in `tests/setup/components.ts`: Reanimated and gesture-handler mocks, Clerk / expo-router / blur / action-sheet / date-picker stubs
+- [x] F12.3 Integration tests in `tests/integration/`: `me`, `expenses` (+ export), `planned` (+ fixed charges), `recaps` (+ narrative, quota), `imports` (presign → process → duplicates → commit, failure + retry), `attachments` (upload, mismatch, purge). `tests/setup/integration.ts` mocks `@clerk/backend` (`x-test-user` header), S3 (in-memory store) and the model (`mockModelReply`), runs migrations on the test branch; `tests/setup/integration-env.ts` refuses to run without `DATABASE_URL_TEST` or against `DATABASE_URL`
+- [x] F12.4 E2E ported from `scripts/e2e-api.mjs` to `tests/e2e/api.e2e.test.ts` (13 steps, real Clerk / Neon / TensorX / S3), run with `E2E_BASE_URL=… pnpm test:e2e`
+- [x] F12.5 CI (`.github/workflows/ci.yml`) on every PR and every push to `main`: `check` (typecheck, lint, unit + components), `build` (`expo export` for android, ios, web with a placeholder publishable key), `integration` (route handlers on the Neon test branch; pushes to main and same-repo PRs, serialised through the `integration-db` concurrency group; needs the `DATABASE_URL_TEST` repository secret). Superseded runs on the same ref are cancelled
+- [ ] F12.6 UI end-to-end on a device (Detox, which also runs on Jest) once the dev build is installed on the phone
+
+### E13 — Schema migrations discipline
+Registered 2026-10-10 (owner request). Every change to `src/server/db/schema.ts`
+ships with its migration in the same commit.
+- [ ] F13.1 Convention (§5.6 made explicit): touch `schema.ts` → `pnpm db:generate` (new SQL file + `meta/_journal.json` + snapshot) → read the SQL → `pnpm db:migrate` against the direct URL → commit schema, migration and journal together. Never hand-edit a shipped migration; fix forward with a new one
+- [ ] F13.2 Drift guard in CI: a `migrations` step runs `drizzle-kit generate` into a scratch folder and fails when it would produce a file (schema changed without a migration); also `drizzle-kit check` for journal conflicts
+- [ ] F13.3 Integration setup already applies the migrations folder to the test branch; add one test asserting the journal and the folder agree (every journal entry has its SQL file and vice versa)
+- [ ] F13.4 `docs/NEON_NOTES.md` section "Changing the schema" with the exact commands and the rollback stance (forward-only)
+
+### E14 — Internationalisation (English, French)
+Registered 2026-10-10. Library: **react-i18next** (+ `i18next`, `expo-localization`); register them in §2 when installed.
+- [ ] F14.1 Setup: `src/i18n/` with `en.json` and `fr.json` namespaces (common, expenses, plan, recaps, imports, settings, errors), initialised before the root layout; device locale via `expo-localization`, override stored in prefs; language row in the account hub (E17)
+- [ ] F14.2 Extract every user-facing string from screens and components (`t('…')`), including alerts, action sheets, skeleton a11y labels, form validation messages (zod messages mapped by key, not text)
+- [ ] F14.3 Server strings: API routes return codes only (`invalid_body`, `too_many_rows`…); the client maps codes to translated messages. Model-facing prompts stay English; the recap narrative is requested in the user's language
+- [ ] F14.4 Locale-aware formatting through one helper: dates (`formatDDMMYYYY` already DD/MM), money (`formatMoney` locale arg), relative day labels, month names
+- [ ] F14.5 Tests: a unit test that `en.json` and `fr.json` have identical key sets; component tests run in both languages for one screen
+
+### E15 — Profile and avatar
+Registered 2026-10-10.
+- [ ] F15.1 Avatar from the identity provider: Clerk exposes Google's picture as `user.imageUrl`; show it wherever the user is represented (home header, account hub). Sync `image_url` + `display_name` into `users` via the existing Clerk webhook (`user.updated`) and on sign-in
+- [ ] F15.2 Editable profile screen "Personal information": display name, phone (optional), email read-only, avatar change (camera / library, resized, uploaded to S3 under `users/{id}/avatar.jpg`, served through a presigned URL like proofs). Migration: `users.phone`, `users.avatar_key`, `users.image_url`
+- [ ] F15.3 `PATCH /api/me` accepts the new fields; `useMe` optimistic update; cache invalidation of the header
+- [ ] F15.4 Tests: integration for PATCH + avatar presign/confirm; component test for the edit form
+
+### E16 — Expense location
+Registered 2026-10-10. Optional GPS position on an expense, shown on a map in the detail.
+- [ ] F16.1 Migration: `expenses.latitude`, `expenses.longitude` (double precision, nullable), `expenses.location_label` (reverse-geocoded, nullable). Zod schemas and DTO updated
+- [ ] F16.2 Capture: a "Save my location" toggle in the expense form (default off, remembered in prefs). On save, `expo-location` current position with the permission rationale flow like notifications; reverse geocode to a short label when available; works offline (coordinates only)
+- [ ] F16.3 Display: a small map in the expense detail when coordinates exist, with the label and a tap-through to the system maps app. Library decision pending: `react-native-maps` works in Expo Go; `expo-maps` needs the dev build. Web shows a static map image or the label only
+- [ ] F16.4 Privacy: location never sent to the AI, excluded from exports by default (optional column), purged with the account; permission strings in `app.json`; privacy policy updated
+- [ ] F16.5 Tests: integration for create/patch with coordinates and validation of ranges; component test for the toggle
+
+### E17 — Account hub (replaces the Settings tab)
+Registered 2026-10-10, modelled on the screenshots provided (name, phone/email and avatar header; grouped rows; sign out; version footer).
+- [ ] F17.1 Home header: "Hello, {name}" replaced by the user's avatar (E15) at the top right; tapping opens `/account`
+- [ ] F17.2 `app/account.tsx`: header (avatar, display name, phone or email); **Account settings**: Personal information (E15), Language (E14), Appearance (system / light / dark — removes the hard-pinned scheme choice from F9.5), Reminders (today's toggles), Security & sign-in (passkeys / password later); **Data**: Export expenses, AI usage this month; **Help**: FAQ (static), Contact; **Legal**: Privacy policy, Terms of service; **Sign out**; **Delete account**; footer with app version from `expo-constants`
+- [ ] F17.3 Remove the Settings tab from the tab bar (four tabs: Home, Expenses, Plan, Recaps); redirect `/settings` to `/account`
+- [ ] F17.4 Tests: component test for the hub rendering every section and the sign-out action; e2e step unchanged (settings routes kept server-side)
+
 ### E10 — Export expenses (PDF / XLSX)
 Built 2026-10-10. Download the ledger for a date range as a spreadsheet or a
 printable statement.
@@ -405,8 +456,13 @@ printable statement.
 - Client data fetching goes through TanStack Query (D15): add a key under
   `keys` in `src/lib/query.ts`, read with `useQuery`, and call the matching
   `invalidate.*` after every write. No ad-hoc `useEffect` + `useState` fetches.
-- Pure client logic that gets unit-tested must not import `@clerk/expo` or
-  `react-native`; vitest runs in Node (see `src/features/auth/errors.ts`).
+- Tests (E12): unit tests live next to the code as `*.test.ts` (Node, no
+  native imports); component tests as `*.test.tsx` (Testing Library 14: `await
+  render`, `await fireEvent`); integration tests in `tests/integration/` call
+  route handlers through `tests/helpers/api.ts#call` with `x-test-user` as the
+  Clerk id and reset the test branch with `resetDb()` in `beforeEach`; the e2e
+  suite in `tests/e2e/` needs a running server. Every API route change comes
+  with an integration test; every new screen with a component test.
 - UI: build with `src/components/ui/*` and Tailwind classes (D13). Add a missing
   primitive with the Reusables CLI instead of hand-rolling it. Import
   notifications only through `src/features/notifications/module.ts`
@@ -418,6 +474,20 @@ printable statement.
 
 ## 8. Changelog
 
+- 2026-10-10 — Backlog: registered E13 (migrations discipline), E14 (i18n
+  EN/FR with react-i18next), E15 (profile and avatar), E16 (expense
+  location), E17 (account hub replacing the Settings tab).
+- 2026-10-10 — **camelCase everywhere in our own identifiers.** The AI
+  extraction contract (tool name `recordExpenseLines`, fields `lineKind`,
+  `amountMinor`, `detectedCurrency`, …) and its consumers renamed from
+  snake_case. What stays snake_case by necessity: SQL column names in the
+  schema, Postgres enum values (`struck_through`, `pdf_text`), API error codes
+  on the wire (`not_found`), and third-party fields (OpenAI `max_tokens`,
+  SheetJS `sheet_to_json`, Clerk).
+- 2026-10-10 — **Testing on Jest (E12).** Four projects (unit, components,
+  integration, e2e), Vitest removed, 61 unit tests migrated, 12 component
+  tests, 6 integration suites against a Neon test branch, the e2e script
+  ported to Jest, CI split into check + integration.
 - 2026-10-10 — **Export to PDF / Excel (E10).** Range presets or custom
   dates, live preview, PDF statement or two-sheet spreadsheet, delivered via
   the share sheet on the phone and as a download on web. 8 unit tests, 4 e2e

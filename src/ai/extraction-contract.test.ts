@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import {
   CONFIDENCE_REVIEW_THRESHOLD,
   classifyLine,
@@ -8,36 +6,36 @@ import {
 } from './extraction-contract';
 
 const base: ExtractedLine = {
-  line_index: 0,
-  raw_text: 'Riz 5.000',
-  line_kind: 'expense',
-  amount_minor: 5000,
-  occurred_on: '2026-10-01',
+  lineIndex: 0,
+  rawText: 'Riz 5.000',
+  lineKind: 'expense',
+  amountMinor: 5000,
+  occurredOn: '2026-10-01',
   confidence: 0.95,
 };
 
 describe('classifyLine', () => {
   it('blocks totals and never pre-selects them', () => {
-    const r = classifyLine({ ...base, line_kind: 'total', raw_text: 'TOTAL 25.000', amount_minor: 25000 });
+    const r = classifyLine({ ...base, lineKind: 'total', rawText: 'TOTAL 25.000', amountMinor: 25000 });
     expect(r.severity).toBe('blocked');
     expect(r.defaultSelected).toBe(false);
   });
 
   it('blocks struck-through, header, subtotal, illegible lines', () => {
     for (const kind of ['struck_through', 'header', 'subtotal', 'illegible'] as const) {
-      expect(classifyLine({ ...base, line_kind: kind }).severity).toBe('blocked');
+      expect(classifyLine({ ...base, lineKind: kind }).severity).toBe('blocked');
     }
   });
 
   it('blocks a missing amount and surfaces the ambiguity note', () => {
-    const r = classifyLine({ ...base, amount_minor: undefined, ambiguity_note: 'digit unclear' });
+    const r = classifyLine({ ...base, amountMinor: undefined, ambiguityNote: 'digit unclear' });
     expect(r.severity).toBe('blocked');
     expect(r.reason).toBe('digit unclear');
   });
 
   it('blocks zero or negative amounts', () => {
-    expect(classifyLine({ ...base, amount_minor: 0 }).severity).toBe('blocked');
-    expect(classifyLine({ ...base, amount_minor: -5 }).severity).toBe('blocked');
+    expect(classifyLine({ ...base, amountMinor: 0 }).severity).toBe('blocked');
+    expect(classifyLine({ ...base, amountMinor: -5 }).severity).toBe('blocked');
   });
 
   it('asks for verification, unticked, below the confidence threshold', () => {
@@ -51,7 +49,7 @@ describe('classifyLine', () => {
   });
 
   it('asks for a date but keeps the line ticked when only the date is missing', () => {
-    const r = classifyLine({ ...base, occurred_on: undefined });
+    const r = classifyLine({ ...base, occurredOn: undefined });
     expect(r.severity).toBe('verify');
     expect(r.defaultSelected).toBe(true);
   });
@@ -63,10 +61,10 @@ describe('classifyLine', () => {
 
 describe('reconcileAgainstTotal', () => {
   const lines: ExtractedLine[] = [
-    { ...base, line_index: 0, amount_minor: 5000 },
-    { ...base, line_index: 1, amount_minor: 7500 },
-    { ...base, line_index: 2, line_kind: 'struck_through', amount_minor: 99999 },
-    { ...base, line_index: 3, line_kind: 'total', amount_minor: 12500 },
+    { ...base, lineIndex: 0, amountMinor: 5000 },
+    { ...base, lineIndex: 1, amountMinor: 7500 },
+    { ...base, lineIndex: 2, lineKind: 'struck_through', amountMinor: 99999 },
+    { ...base, lineIndex: 3, lineKind: 'total', amountMinor: 12500 },
   ];
 
   it('sums only expense lines and compares to the stated total', () => {
@@ -78,7 +76,7 @@ describe('reconcileAgainstTotal', () => {
   });
 
   it('reports a discrepancy when the written total disagrees', () => {
-    const r = reconcileAgainstTotal([...lines.slice(0, 3), { ...lines[3], amount_minor: 13000 }]);
+    const r = reconcileAgainstTotal([...lines.slice(0, 3), { ...lines[3], amountMinor: 13000 }]);
     expect(r.discrepancyMinor).toBe(500);
   });
 

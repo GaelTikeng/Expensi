@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { isUuid, uuidv7 } from './uuid';
 
 const bytes = (fill: number) => new Uint8Array(10).fill(fill);

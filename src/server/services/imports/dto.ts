@@ -108,10 +108,10 @@ export async function buildDetail(db: Db, userId: string, imp: Import, items: Im
   }));
 
   const asLines: ExtractedLine[] = items.map((i) => ({
-    line_index: i.lineIndex,
-    raw_text: i.rawText,
-    line_kind: i.lineKind,
-    amount_minor: i.amountMinor ?? undefined,
+    lineIndex: i.lineIndex,
+    rawText: i.rawText,
+    lineKind: i.lineKind,
+    amountMinor: i.amountMinor ?? undefined,
   }));
 
   return { import: importToDto(imp), items: itemDtos, reconciliation: reconcileAgainstTotal(asLines) };

@@ -43,7 +43,7 @@ const schema = z.object({
 
 export type Env = z.infer<typeof schema>;
 
-function load(): Env {
+function loadSecretes(): Env {
   // `.env` files often carry `KEY=` placeholders; treat empty as unset.
   const raw = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== ''));
   const parsed = schema.safeParse(raw);
@@ -54,4 +54,4 @@ function load(): Env {
   return parsed.data;
 }
 
-export const env: Env = load();
+export const env: Env = loadSecretes();

@@ -45,32 +45,32 @@ export async function processImport(repos: Repositories, user: User, imp: Import
     await logUsage({ userId: user.id, operation: 'extract', inputTokens: outcome.inputTokens, outputTokens: outcome.outputTokens });
 
     const currency =
-      outcome.result.detected_currency && outcome.result.detected_currency !== 'UNKNOWN'
-        ? outcome.result.detected_currency.slice(0, 3).toUpperCase()
+      outcome.result.detectedCurrency && outcome.result.detectedCurrency !== 'UNKNOWN'
+        ? outcome.result.detectedCurrency.slice(0, 3).toUpperCase()
         : user.defaultCurrency;
     const byName = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]));
 
     const rows = outcome.result.lines.map((l, i) => {
-      const guess = l.category_guess?.trim() ?? null;
+      const guess = l.categoryGuess?.trim() ?? null;
       const categoryId = guess ? (byName.get(guess.toLowerCase()) ?? fuzzyCategory(guess, byName)) : null;
       return {
         id: undefined,
-        lineIndex: Number.isFinite(l.line_index) ? l.line_index : i,
-        rawText: l.raw_text || l.description || '',
-        amountMinor: l.amount_minor != null && l.amount_minor > 0 ? l.amount_minor : null,
+        lineIndex: Number.isFinite(l.lineIndex) ? l.lineIndex : i,
+        rawText: l.rawText || l.description || '',
+        amountMinor: l.amountMinor != null && l.amountMinor > 0 ? l.amountMinor : null,
         currency,
-        occurredOn: l.occurred_on && isValidISODate(l.occurred_on) ? l.occurred_on : null,
+        occurredOn: l.occurredOn && isValidISODate(l.occurredOn) ? l.occurredOn : null,
         description: l.description?.trim() || null,
         payee: l.payee?.trim() || null,
         categoryGuess: guess,
         categoryId,
         confidence: l.confidence ?? null,
-        ambiguityNote: l.ambiguity_note?.trim() || null,
-        lineKind: l.line_kind,
+        ambiguityNote: l.ambiguityNote?.trim() || null,
+        lineKind: l.lineKind,
         reviewState: 'pending' as const,
       };
     });
-    // Guard against duplicate line_index values from a sloppy model.
+    // Guard against duplicate lineIndex values from a sloppy model.
     const seen = new Set<number>();
     for (const r of rows) {
       while (seen.has(r.lineIndex)) r.lineIndex++;
@@ -86,9 +86,9 @@ export async function processImport(repos: Repositories, user: User, imp: Import
       inputTokens: outcome.inputTokens,
       outputTokens: outcome.outputTokens,
       latencyMs: outcome.latencyMs,
-      detectedCurrency: outcome.result.detected_currency,
-      detectedLanguage: outcome.result.detected_language ?? null,
-      documentQuality: outcome.result.document_quality,
+      detectedCurrency: outcome.result.detectedCurrency,
+      detectedLanguage: outcome.result.detectedLanguage ?? null,
+      documentQuality: outcome.result.documentQuality,
     });
     return updated!;
   } catch (err) {
