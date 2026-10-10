@@ -82,6 +82,11 @@ function RootNavigator() {
         <Stack.Screen name="recurring/[id]" options={{ title: 'Fixed charge' }} />
         <Stack.Screen name="account/index" options={{ title: 'Account' }} />
         <Stack.Screen name="account/profile" options={{ title: 'Personal information' }} />
+        <Stack.Screen name="account/currency" options={{ title: 'Currency' }} />
+        <Stack.Screen name="account/timezone" options={{ title: 'Timezone' }} />
+        <Stack.Screen name="account/appearance" options={{ title: 'Appearance' }} />
+        <Stack.Screen name="account/reminders" options={{ title: 'Reminders' }} />
+        <Stack.Screen name="account/usage" options={{ title: 'AI usage' }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="export" options={{ title: 'Export expenses' }} />
         <Stack.Screen name="privacy" options={{ title: 'Privacy' }} />

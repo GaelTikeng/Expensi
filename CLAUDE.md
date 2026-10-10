@@ -435,9 +435,9 @@ Built 2026-10-10. Optional GPS position on an expense, shown on a map in the det
 ### E17 — Account hub (replaces the Settings tab)
 Built 2026-10-10 (first cut), modelled on the screenshots provided (name, phone/email and avatar header; grouped rows; sign out; version footer).
 - [x] F17.1 Home header: today's date on the left, the avatar on the right opening `/account`; the greeting is gone
-- [~] F17.2 `src/features/account/AccountScreen.tsx` (route `app/account/index.tsx`): header (avatar, name, phone or email, opens the profile); **Account settings**: Personal information, Currency, Timezone, Appearance (system / light / dark, stored in device prefs, `src/lib/appearance.ts`); **Reminders**; **Data**: Export expenses, AI usage; **Legal**: Privacy policy; Sign out; Delete account (action-sheet confirmation); version footer. **Still to add:** Language (with E14), Security & sign-in, Help (FAQ, Contact) and Terms once there is content
+- [~] F17.2 `src/features/account/AccountScreen.tsx` (route `app/account/index.tsx`) is a menu (2026-10-10 redesign after owner feedback): header (name, phone or email, photo); groups of `MenuRow`s (`src/components/menu.tsx`: icon tile, label, short value, chevron), each opening its own screen — **Account**: Personal information; **Preferences**: Currency, Timezone, Appearance (`app/account/{currency,timezone,appearance}.tsx` via `ChoiceList`); **Notifications**: Reminders (`app/account/reminders.tsx`); **Data**: Export expenses, AI usage (`app/account/usage.tsx`); **Legal**: Privacy policy; then Sign out and Delete account, both confirmed with the action sheet; version footer. **Still to add:** Language (with E14), Security & sign-in, Help (FAQ, Contact) and Terms once there is content
 - [x] F17.3 Settings tab removed (four tabs); `app/settings.tsx` redirects to `/account`
-- [x] F17.4 `src/features/account/AccountScreen.test.tsx`: header, every section, usage figures, navigation to profile and export
+- [x] F17.4 `src/features/account/AccountScreen.test.tsx`: header, groups, short values, no in-place controls, one route per row, sign-out and delete confirmations (cancel and accept)
 
 ### E10 — Export expenses (PDF / XLSX)
 Built 2026-10-10. Download the ledger for a date range as a spreadsheet or a
@@ -482,6 +482,10 @@ printable statement.
 
 ## 8. Changelog
 
+- 2026-10-10 — **Account hub redesigned as a menu.** Rows with icon tiles
+  open their own screens (currency, timezone, appearance, reminders, AI
+  usage); Preferences separated from Account; sign out now asks first, like
+  account deletion.
 - 2026-10-10 — **Expense location (E16).** Optional "Save my location" on
   the expense form (remembered), position + place name stored with the
   expense (migration 0003), map with a pin in the detail, link on web.
