@@ -15,6 +15,7 @@ import {
   bigint,
   boolean,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -271,6 +272,11 @@ export const expenses = pgTable(
 
     source: expenseSourceEnum('source').notNull().default('manual'),
     isEstimated: boolean('is_estimated').notNull().default(false),
+    /** E16: where the expense was made, if the user chose to record it. */
+    latitude: doublePrecision('latitude'),
+    longitude: doublePrecision('longitude'),
+    /** Reverse-geocoded, e.g. "Bastos, Yaoundé"; null when offline. */
+    locationLabel: varchar('location_label', { length: 200 }),
 
     /** Audit trail back to the staged row this expense was promoted from. */
     importItemId: uuid('import_item_id').references(() => importItems.id, {

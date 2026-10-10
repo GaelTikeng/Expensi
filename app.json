@@ -13,7 +13,8 @@
       "bundleIdentifier": "ltd.nyota.xpensia",
       "infoPlist": {
         "NSCameraUsageDescription": "Take a photo of a receipt to attach it as proof of an expense.",
-        "NSPhotoLibraryUsageDescription": "Choose a receipt photo to attach it as proof of an expense."
+        "NSPhotoLibraryUsageDescription": "Choose a receipt photo to attach it as proof of an expense.",
+        "NSLocationWhenInUseUsageDescription": "xpens-ia saves where an expense was made, only when you turn on \"Save my location\"."
       }
     },
     "android": {
@@ -29,7 +30,9 @@
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -69,7 +72,13 @@
         }
       ],
       "@clerk/expo",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "xpens-ia saves where an expense was made, only when you turn on \"Save my location\"."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

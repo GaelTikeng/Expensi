@@ -28,6 +28,17 @@ jest.mock('expo-router', () => {
 
 jest.mock('expo-blur', () => ({ BlurView: require('react-native').View }));
 jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
+jest.mock('react-native-maps', () => {
+  const { View } = require('react-native');
+  return { __esModule: true, default: View, Marker: View };
+});
+jest.mock('expo-location', () => ({
+  Accuracy: { Balanced: 3 },
+  getForegroundPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
+  requestForegroundPermissionsAsync: jest.fn(async () => ({ granted: true, canAskAgain: true })),
+  getCurrentPositionAsync: jest.fn(async () => ({ coords: { latitude: 3.8886, longitude: 11.5174 } })),
+  reverseGeocodeAsync: jest.fn(async () => [{ district: 'Bastos', city: 'Yaoundé' }]),
+}));
 jest.mock('@expo/react-native-action-sheet', () => ({
   ActionSheetProvider: ({ children }: { children: React.ReactNode }) => children,
   useActionSheet: () => ({ showActionSheetWithOptions: jest.fn() }),
