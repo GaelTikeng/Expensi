@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { Separator } from '@/src/components/ui/separator';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { cn } from '@/src/lib/utils';
+import { t } from '@/src/i18n';
 
 /**
  * Placeholders that mirror the real layouts while data loads, built on the
@@ -13,7 +14,14 @@ import { cn } from '@/src/lib/utils';
  */
 
 /** Spread on the root of a skeleton so screen readers announce one "Loading". */
-export const loadingA11y = { accessible: true, accessibilityLabel: 'Loading', accessibilityState: { busy: true } } as const;
+export const loadingA11y = {
+  accessible: true,
+  // A getter, so each spread reads the label in the current language.
+  get accessibilityLabel() {
+    return t('common.loading');
+  },
+  accessibilityState: { busy: true },
+} as const;
 
 // Rotating widths so stacked rows do not look like a barcode.
 const TITLE_W = ['w-2/5', 'w-1/2', 'w-1/3', 'w-3/5', 'w-[45%]'];

@@ -13,9 +13,11 @@ import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import { errorMessage, keys, useRefetchOnFocus } from '@/src/lib/query';
 import { cn } from '@/src/lib/utils';
 import { useRecurringList } from './usePlanned';
+import { useTranslation } from 'react-i18next';
 
 /** F6.4: fixed charges with this month's paid / unpaid state and the monthly total. */
 export function FixedChargesView({ lookup }: { lookup: (code: string) => CurrencyInfo }) {
+  const { t } = useTranslation();
   const query = useRecurringList();
   const items = query.data?.items ?? null;
   const periodStart = query.data?.periodStart ?? null;
@@ -29,12 +31,12 @@ export function FixedChargesView({ lookup }: { lookup: (code: string) => Currenc
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-2 p-4 pb-[100px]">
       <View className="bg-card border-border gap-0.5 rounded-lg border p-4">
-        <Text className="text-muted-foreground text-xs uppercase">{periodStart ? formatMonthLabel(periodStart) : 'This month'} · fixed charges</Text>
+        <Text className="text-muted-foreground text-xs uppercase">{t('fixed.header', { period: periodStart ? formatMonthLabel(periodStart) : t('fixed.thisMonth') })}</Text>
         {items ? <Text className="text-2xl font-bold">{active.length ? total : '—'}</Text> : <SkeletonLine className="my-2 h-6 w-36" />}
         {!items ? <SkeletonLine className="w-20" /> : null}
         {active.length ? (
           <Text className="text-muted-foreground text-xs">
-            {paid} of {active.length} paid
+            {t('fixed.paidOf', { paid, total: active.length })}
           </Text>
         ) : null}
       </View>
@@ -44,7 +46,7 @@ export function FixedChargesView({ lookup }: { lookup: (code: string) => Currenc
         onPress={() => router.push('/recurring/new')}
       >
         <Icon as={CirclePlus} className="text-primary size-5" />
-        <Text className="text-primary font-semibold">Add a fixed charge</Text>
+        <Text className="text-primary font-semibold">{t('fixed.add')}</Text>
       </Pressable>
 
       {error ? <Text className="text-destructive">{error}</Text> : null}
@@ -63,7 +65,7 @@ export function FixedChargesView({ lookup }: { lookup: (code: string) => Currenc
         </View>
       ) : null}
       {items && items.length === 0 ? (
-        <Text className="text-muted-foreground p-4 text-center">Rent, subscriptions, school fees… anything you pay every month.</Text>
+        <Text className="text-muted-foreground p-4 text-center">{t('fixed.empty')}</Text>
       ) : null}
 
       {items?.map((c) => {
@@ -92,16 +94,17 @@ export function FixedChargesView({ lookup }: { lookup: (code: string) => Currenc
             <View className="flex-1">
               <Text className={cn('text-[15px] font-medium', !c.isActive && 'text-muted-foreground')}>{c.name}</Text>
               <Text className="text-muted-foreground text-xs">
-                Day {c.dayOfMonth} · {c.reminderTime}
+                {t('fixed.day', { n: c.dayOfMonth })} · {c.reminderTime}
                 {c.payee ? ` · ${c.payee}` : ''}
-                {!c.isActive ? ' · inactive' : status === 'done' ? ' · paid' : status === 'skipped' ? ' · skipped' : ' · due'}
+                {' · '}
+                {t(status === 'inactive' ? 'fixed.status.inactive' : status === 'done' ? 'fixed.status.done' : status === 'skipped' ? 'fixed.status.skipped' : 'fixed.status.due')}
               </Text>
             </View>
             <Text className="text-[15px] font-semibold">{formatMoney(c.amountMinor, lookup(c.currency))}</Text>
           </Pressable>
         );
       })}
-      {items && items.length > 0 ? <Text className="text-muted-foreground text-center text-[11px]">{'Tap to edit · hold to open this month\u2019s payment'}</Text> : null}
+      {items && items.length > 0 ? <Text className="text-muted-foreground text-center text-[11px]">{t('fixed.hint')}</Text> : null}
     </ScrollView>
   );
 }

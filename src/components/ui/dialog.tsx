@@ -7,6 +7,7 @@ import * as React from 'react';
 import { Platform, Text, View, type GestureResponderEvent, type ViewProps } from 'react-native';
 import { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens';
+import { t } from '@/src/i18n';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -95,7 +96,7 @@ function DialogContent({
               as={X}
               className={cn('text-accent-foreground web:pointer-events-none size-4 shrink-0')}
             />
-            <Text className="sr-only">Close</Text>
+            <Text className="sr-only">{t('common.close')}</Text>
           </DialogPrimitive.Close>
         </DialogPrimitive.Content>
       </DialogOverlay>

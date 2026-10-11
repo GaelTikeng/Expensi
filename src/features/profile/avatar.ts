@@ -5,6 +5,7 @@ import { putWithRetry } from '@/src/features/attachments/upload';
 import type { LocalFile } from '@/src/features/attachments/pick';
 import { apiFetch } from '@/src/lib/api';
 import { MAX_AVATAR_BYTES, type AvatarPresignResponse } from '@/src/lib/schemas/profile';
+import { t } from '@/src/i18n';
 
 type GetToken = () => Promise<string | null>;
 
@@ -23,8 +24,8 @@ export async function uploadAvatar(file: LocalFile, getToken: GetToken): Promise
 
   const info = await FileSystem.getInfoAsync(out.uri);
   const sizeBytes = info.exists && 'size' in info ? info.size : 0;
-  if (sizeBytes <= 0) throw new Error('Could not read the photo');
-  if (sizeBytes > MAX_AVATAR_BYTES) throw new Error('The photo is too large');
+  if (sizeBytes <= 0) throw new Error(t('avatar.unreadable'));
+  if (sizeBytes > MAX_AVATAR_BYTES) throw new Error(t('avatar.tooLarge'));
 
   const presigned = await apiFetch<AvatarPresignResponse>('/api/me/avatar', getToken, { method: 'POST', body: JSON.stringify({ sizeBytes }) });
   await putWithRetry(presigned.uploadUrl, { uri: out.uri, mimeType: 'image/jpeg' });

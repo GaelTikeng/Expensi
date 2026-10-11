@@ -18,9 +18,9 @@ export async function call<T = any>(
   handler: Handler,
   method: string,
   path: string,
-  opts: { body?: unknown; user?: string | null; params?: Record<string, string> } = {},
+  opts: { body?: unknown; user?: string | null; params?: Record<string, string>; headers?: Record<string, string> } = {},
 ): Promise<ApiResult<T>> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...opts.headers };
   const user = opts.user === undefined ? TEST_USER : opts.user;
   if (user) headers['x-test-user'] = user;
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
@@ -43,6 +43,14 @@ export function mockModelReply(reply: unknown): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mod = require('@/src/server/ai/client') as { __aiQueue: unknown[] };
   mod.__aiQueue.push(reply);
+}
+
+/** The system prompt of the most recent model call. */
+export function lastSystemPrompt(): string {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require('@/src/server/ai/client') as { __aiRequests: { messages: { role: string; content: string }[] }[] };
+  const last = mod.__aiRequests[mod.__aiRequests.length - 1];
+  return last?.messages.find((m) => m.role === 'system')?.content ?? '';
 }
 
 /** A tool-call reply carrying the extraction result, as TensorX returns it. */

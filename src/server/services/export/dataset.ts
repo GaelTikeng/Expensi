@@ -1,5 +1,6 @@
 import { currencyInfo } from '@/src/lib/currencies';
 import { formatMoney } from '@/src/lib/money';
+import { i18n, type Language } from '@/src/i18n';
 
 /** The subset of an expense row the exporters need; structural so tests can build it by hand. */
 export interface ExportableExpense {
@@ -37,6 +38,7 @@ export interface ExportCategoryTotal extends ExportTotal {
 }
 
 export interface ExportDataset {
+  language: Language;
   from: string;
   to: string;
   owner: string;
@@ -46,8 +48,6 @@ export interface ExportDataset {
   /** Per category within each currency, largest first. */
   byCategory: ExportCategoryTotal[];
 }
-
-const UNCATEGORISED = 'Uncategorised';
 
 /**
  * E10 F10.1: turns raw rows into what both the spreadsheet and the PDF print.
@@ -60,7 +60,10 @@ export function buildDataset(input: {
   expenses: ExportableExpense[];
   categories: { id: string; name: string }[];
   now?: Date;
+  language?: Language;
 }): ExportDataset {
+  const language = input.language ?? 'en';
+  const uncategorised = i18n.getFixedT(language)('exportFile.uncategorised');
   const names = new Map(input.categories.map((c) => [c.id, c.name]));
   const rows: ExportRow[] = input.expenses.map((e) => ({
     date: e.occurredOn,
@@ -82,7 +85,7 @@ export function buildDataset(input: {
     cur.count += 1;
     byCurrency.set(r.currency, cur);
 
-    const category = r.category ?? UNCATEGORISED;
+    const category = r.category ?? uncategorised;
     const key = `${r.currency}|${category}`;
     const cat = byCategory.get(key) ?? { currency: r.currency, category, totalMinor: 0, count: 0 };
     cat.totalMinor += r.amountMinor;
@@ -92,6 +95,7 @@ export function buildDataset(input: {
 
   const currencyOrder = [...byCurrency.values()].sort((a, b) => b.count - a.count).map((c) => c.currency);
   return {
+    language,
     from: input.from,
     to: input.to,
     owner: input.owner,

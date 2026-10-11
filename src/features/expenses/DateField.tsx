@@ -5,6 +5,7 @@ import { Platform, View } from 'react-native';
 import { Button } from '@/src/components/ui/button';
 import { Text } from '@/src/components/ui/text';
 import { addDays, parseISODate, relativeDayLabel, toISODate, todayISO, type ISODate } from '@/src/lib/dates';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Calendar-date picker with Today / Yesterday shortcuts. iOS renders the
@@ -22,6 +23,7 @@ export function DateField({
   /** When true, a "Clear" chip is offered. */
   nullable?: boolean;
 }) {
+  const { t } = useTranslation();
   const [showAndroid, setShowAndroid] = useState(false);
   const today = todayISO();
   const yesterday = addDays(today, -1);
@@ -49,15 +51,15 @@ export function DateField({
           />
         ) : (
           <Button variant="secondary" size="sm" onPress={() => setShowAndroid(true)}>
-            <Text>{value ? relativeDayLabel(value) : 'Pick a date'}</Text>
+            <Text>{value ? relativeDayLabel(value) : t('dateField.pickDate')}</Text>
           </Button>
         )}
       </View>
 
       <View className="flex-row gap-2">
-        <Chip label="Today" active={value === today} onPress={() => onChange(today)} />
-        <Chip label="Yesterday" active={value === yesterday} onPress={() => onChange(yesterday)} />
-        {nullable ? <Chip label="Clear" active={value === null} onPress={() => onChange(null)} /> : null}
+        <Chip label={t('dateField.today')} active={value === today} onPress={() => onChange(today)} />
+        <Chip label={t('dateField.yesterday')} active={value === yesterday} onPress={() => onChange(yesterday)} />
+        {nullable ? <Chip label={t('dateField.clear')} active={value === null} onPress={() => onChange(null)} /> : null}
       </View>
 
       {showAndroid && Platform.OS === 'android' ? (

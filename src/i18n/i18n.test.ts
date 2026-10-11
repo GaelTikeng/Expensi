@@ -1,7 +1,9 @@
 import de from './locales/de.json';
 import en from './locales/en.json';
 import fr from './locales/fr.json';
+import { apiErrorText } from './api-errors';
 import { i18n, LANGUAGES, pluralKey, t } from './index';
+import { languageFromHeader, requestLanguage } from './languages';
 
 /** Every leaf key as a dotted path, plus the interpolation variables it uses. */
 function leaves(obj: object, prefix = ''): Map<string, string[]> {
@@ -62,5 +64,41 @@ describe('runtime', () => {
     await i18n.changeLanguage('de');
     expect(t(pluralKey('home.items', 1), { n: 1 })).toBe('1 Ausgabe');
     expect(t(pluralKey('home.items', 3), { n: 3 })).toBe('3 Ausgaben');
+  });
+});
+
+describe('request language (server side)', () => {
+  it('reads the first supported language from Accept-Language, by weight', () => {
+    expect(languageFromHeader('fr-CM,fr;q=0.9,en;q=0.8')).toBe('fr');
+    expect(languageFromHeader('sw;q=1, de-DE;q=0.7, en;q=0.5')).toBe('de');
+    expect(languageFromHeader('en;q=0.2, fr;q=0.9')).toBe('fr');
+    expect(languageFromHeader('sw, ln')).toBeNull();
+    expect(languageFromHeader(null)).toBeNull();
+  });
+
+  it('prefers the saved choice, then the header, then English', () => {
+    expect(requestLanguage('de', 'fr')).toBe('de');
+    expect(requestLanguage(null, 'fr-FR')).toBe('fr');
+    expect(requestLanguage(null, 'sw')).toBe('en');
+    expect(requestLanguage('xx', undefined)).toBe('en');
+  });
+
+  it('picks plural forms for an explicit language', () => {
+    expect(pluralKey('exportFile.count', 0, 'fr')).toBe('exportFile.count_one');
+    expect(pluralKey('exportFile.count', 0, 'de')).toBe('exportFile.count_other');
+  });
+});
+
+describe('API error text', () => {
+  afterEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
+  it('words known codes in the current language and falls back for the rest', async () => {
+    expect(apiErrorText(409, 'category_exists')).toBe('A category with this name already exists.');
+    expect(apiErrorText(400, 'some_new_code')).toBe('Something went wrong (400). Please try again.');
+    expect(apiErrorText(401, null)).toBe('Your session has expired. Sign in again.');
+    await i18n.changeLanguage('fr');
+    expect(apiErrorText(404, 'not_found')).toBe('Cet élément n’existe plus.');
   });
 });

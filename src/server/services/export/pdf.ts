@@ -2,6 +2,7 @@ import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from 'pdf
 
 import { formatDDMMYYYY } from '@/src/lib/dates';
 import { money, type ExportDataset } from './dataset';
+import { i18n, pluralKey } from '@/src/i18n';
 
 // A4 in points.
 const PAGE_W = 595.28;
@@ -35,8 +36,10 @@ function fit(text: string, font: PDFFont, size: number, width: number): string {
 
 /** E10 F10.3: a printable statement — header, table with repeated column titles, totals, page numbers. */
 export async function buildPdf(ds: ExportDataset): Promise<Uint8Array> {
+  const t = i18n.getFixedT(ds.language);
+  const plural = (base: 'exportFile.count' | 'exportFile.inCurrency', n: number) => pluralKey(base, n, ds.language);
   const doc = await PDFDocument.create();
-  doc.setTitle(`xpens-ia expenses ${ds.from} to ${ds.to}`);
+  doc.setTitle(t('exportFile.docTitle', { from: ds.from, to: ds.to }));
   doc.setCreator('xpens-ia');
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -55,11 +58,11 @@ export async function buildPdf(ds: ExportDataset): Promise<Uint8Array> {
     text(p, s, xRight - f.widthOfTextAtSize(safe(s), size), yy, { font: f, size });
 
   const tableHeader = () => {
-    text(page, 'Date', x0, y, { font: bold, color: MUTED });
-    text(page, 'Description', xDesc, y, { font: bold, color: MUTED });
-    text(page, 'Paid to', xPayee, y, { font: bold, color: MUTED });
-    text(page, 'Category', xCat, y, { font: bold, color: MUTED });
-    right(page, 'Amount', xAmountRight, y, bold);
+    text(page, t('exportFile.date'), x0, y, { font: bold, color: MUTED });
+    text(page, t('exportFile.description'), xDesc, y, { font: bold, color: MUTED });
+    text(page, t('exportFile.payee'), xPayee, y, { font: bold, color: MUTED });
+    text(page, t('exportFile.category'), xCat, y, { font: bold, color: MUTED });
+    right(page, t('exportFile.amount'), xAmountRight, y, bold);
     y -= 6;
     page.drawLine({ start: { x: x0, y }, end: { x: xAmountRight, y }, thickness: 0.6, color: RULE });
     y -= LINE;
@@ -74,11 +77,13 @@ export async function buildPdf(ds: ExportDataset): Promise<Uint8Array> {
   };
 
   // Header.
-  text(page, 'Expenses', x0, y - 8, { size: 20, font: bold });
+  text(page, t('exportFile.title'), x0, y - 8, { size: 20, font: bold });
   y -= 30;
   text(page, ds.owner, x0, y, { size: 10, color: MUTED });
   y -= LINE;
-  text(page, `${formatDDMMYYYY(ds.from)} - ${formatDDMMYYYY(ds.to)}  ·  ${ds.rows.length} expense${ds.rows.length === 1 ? '' : 's'}  ·  generated ${formatDDMMYYYY(ds.generatedAt.toISOString().slice(0, 10))}`, x0, y, { size: 10, color: MUTED });
+  const count = t(plural('exportFile.count', ds.rows.length), { n: ds.rows.length });
+  const generated = t('exportFile.generatedOn', { date: formatDDMMYYYY(ds.generatedAt.toISOString().slice(0, 10)) });
+  text(page, `${formatDDMMYYYY(ds.from)} - ${formatDDMMYYYY(ds.to)}  ·  ${count}  ·  ${generated}`, x0, y, { size: 10, color: MUTED });
   y -= LINE * 1.8;
   tableHeader();
 
@@ -86,14 +91,14 @@ export async function buildPdf(ds: ExportDataset): Promise<Uint8Array> {
   for (const r of ds.rows) {
     ensure(LINE);
     text(page, formatDDMMYYYY(r.date), x0, y);
-    text(page, fit(r.description + (r.estimated ? ' (est.)' : ''), font, BODY, DESC_W - 6), xDesc, y);
+    text(page, fit(r.description + (r.estimated ? ` ${t('exportFile.est')}` : ''), font, BODY, DESC_W - 6), xDesc, y);
     text(page, fit(r.payee ?? '', font, BODY, COLS.payee - 6), xPayee, y);
     text(page, fit(r.category ?? '', font, BODY, COLS.category - 6), xCat, y);
     right(page, money(r.amountMinor, r.currency), xAmountRight, y);
     y -= LINE;
   }
   if (ds.rows.length === 0) {
-    text(page, 'No expenses in this period.', x0, y, { color: MUTED });
+    text(page, t('exportFile.none'), x0, y, { color: MUTED });
     y -= LINE;
   }
 
@@ -102,24 +107,24 @@ export async function buildPdf(ds: ExportDataset): Promise<Uint8Array> {
   y -= 4;
   page.drawLine({ start: { x: x0, y: y + 10 }, end: { x: xAmountRight, y: y + 10 }, thickness: 0.6, color: RULE });
   y -= 6;
-  text(page, 'Totals', x0, y, { font: bold, size: 11 });
+  text(page, t('exportFile.totals'), x0, y, { font: bold, size: 11 });
   y -= LINE;
-  for (const t of ds.byCurrency) {
+  for (const total of ds.byCurrency) {
     ensure(LINE);
-    text(page, `${t.count} expense${t.count === 1 ? '' : 's'} in ${t.currency}`, x0, y);
-    right(page, money(t.totalMinor, t.currency), xAmountRight, y, bold);
+    text(page, t(plural('exportFile.inCurrency', total.count), { n: total.count, currency: total.currency }), x0, y);
+    right(page, money(total.totalMinor, total.currency), xAmountRight, y, bold);
     y -= LINE;
   }
   if (ds.byCategory.length) {
     ensure(LINE * 2);
     y -= 4;
-    text(page, 'By category', x0, y, { font: bold, size: 11 });
+    text(page, t('exportFile.byCategory'), x0, y, { font: bold, size: 11 });
     y -= LINE;
-    for (const t of ds.byCategory) {
+    for (const cat of ds.byCategory) {
       ensure(LINE);
-      text(page, fit(`${t.category}${ds.byCurrency.length > 1 ? ` (${t.currency})` : ''}`, font, BODY, DESC_W + COLS.date), x0, y);
-      text(page, `${t.count}`, xCat, y, { color: MUTED });
-      right(page, money(t.totalMinor, t.currency), xAmountRight, y);
+      text(page, fit(`${cat.category}${ds.byCurrency.length > 1 ? ` (${cat.currency})` : ''}`, font, BODY, DESC_W + COLS.date), x0, y);
+      text(page, `${cat.count}`, xCat, y, { color: MUTED });
+      right(page, money(cat.totalMinor, cat.currency), xAmountRight, y);
       y -= LINE;
     }
   }
@@ -127,7 +132,7 @@ export async function buildPdf(ds: ExportDataset): Promise<Uint8Array> {
   // Footer with page numbers, once the count is known.
   const pages = doc.getPages();
   pages.forEach((p, i) => {
-    const label = `xpens-ia  ·  page ${i + 1} of ${pages.length}`;
+    const label = safe(`xpens-ia  ·  ${t('exportFile.page', { n: i + 1, total: pages.length })}`);
     p.drawText(label, { x: PAGE_W - MARGIN - font.widthOfTextAtSize(label, 8), y: MARGIN - 18, size: 8, font, color: MUTED });
   });
 

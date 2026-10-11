@@ -20,15 +20,14 @@ import { formatMoney } from '@/src/lib/money';
 import { keys, useRefetchOnFocus } from '@/src/lib/query';
 import { useThemeColors } from '@/src/lib/theme';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { pluralKey } from '@/src/i18n';
 
-const PERIODS: { key: RecapPeriod; label: string }[] = [
-  { key: 'day', label: 'Day' },
-  { key: 'week', label: 'Week' },
-  { key: 'month', label: 'Month' },
-];
+const PERIODS: RecapPeriod[] = ['day', 'week', 'month'];
 
 /** F4.4: period switcher, headline, charts, breakdowns, AI narrative. */
 export default function RecapsScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ period?: string; start?: string }>();
   const [period, setPeriod] = useState<RecapPeriod>((params.period as RecapPeriod) ?? 'month');
   const [start, setStart] = useState(() => periodStart(period, params.start ?? todayISO()));
@@ -61,18 +60,18 @@ export default function RecapsScreen() {
         >
           {PERIODS.map((p) => (
             <ToggleGroupItem
-              key={p.key}
-              value={p.key}
-              aria-label={p.label}
-              className={cn('h-9 flex-1 rounded-md', period === p.key && 'bg-card shadow-sm shadow-black/5')}
+              key={p}
+              value={p}
+              aria-label={t(`recaps.periods.${p}`)}
+              className={cn('h-9 flex-1 rounded-md', period === p && 'bg-card shadow-sm shadow-black/5')}
             >
-              <Text className={cn('text-sm', period === p.key ? 'text-foreground font-semibold' : 'text-muted-foreground font-normal')}>{p.label}</Text>
+              <Text className={cn('text-sm', period === p ? 'text-foreground font-semibold' : 'text-muted-foreground font-normal')}>{t(`recaps.periods.${p}`)}</Text>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
 
         <View className="flex-row items-center justify-between px-2">
-          <Pressable onPress={() => setStart(previousPeriodStart(period, start))} hitSlop={12} accessibilityLabel="Previous period">
+          <Pressable onPress={() => setStart(previousPeriodStart(period, start))} hitSlop={12} accessibilityLabel={t('recaps.previous')}>
             <Icon as={ChevronLeft} className="text-primary" size={22} />
           </Pressable>
           <View className="items-center">
@@ -87,7 +86,7 @@ export default function RecapsScreen() {
             onPress={() => canGoForward && setStart(nextPeriodStart(period, start))}
             hitSlop={12}
             disabled={!canGoForward}
-            accessibilityLabel="Next period"
+            accessibilityLabel={t('recaps.next')}
           >
             <Icon as={ChevronRight} className={canGoForward ? 'text-primary' : 'text-muted-foreground opacity-40'} size={22} />
           </Pressable>
@@ -102,21 +101,23 @@ export default function RecapsScreen() {
             <Card className={CARD}>
               <Text className="text-[32px] font-bold leading-10">{formatMoney(s.totalMinor, currency)}</Text>
               <Text className={SUB}>
-                {s.count} expense{s.count === 1 ? '' : 's'}
-                {s.estimatedCount > 0 ? ` · ${s.estimatedCount} estimated` : ''}
-                {s.withProofCount > 0 ? ` · ${s.withProofCount} with proof` : ''}
+                {[
+                  t(pluralKey('recaps.count', s.count), { n: s.count }),
+                  ...(s.estimatedCount > 0 ? [t(pluralKey('recaps.estimated', s.estimatedCount), { n: s.estimatedCount })] : []),
+                  ...(s.withProofCount > 0 ? [t(pluralKey('recaps.withProof', s.withProofCount), { n: s.withProofCount })] : []),
+                ].join(' · ')}
               </Text>
               <Delta deltaMinor={s.previous.deltaMinor} deltaPct={s.previous.deltaPct} currency={currency} period={period} />
               {s.otherCurrencies.length > 0 ? (
                 <Text className={SUB}>
-                  Also: {s.otherCurrencies.map((o) => `${formatMoney(o.totalMinor, lookup(o.currency))} (${o.count})`).join(', ')}
+                  {t('recaps.also', { list: s.otherCurrencies.map((o) => `${formatMoney(o.totalMinor, lookup(o.currency))} (${o.count})`).join(', ') })}
                 </Text>
               ) : null}
             </Card>
 
             {period !== 'day' ? (
               <Card className={CARD}>
-                <CardLabel>By day</CardLabel>
+                <CardLabel>{t('recaps.byDay')}</CardLabel>
                 <DayColumns days={s.byDay} currency={currency} />
               </Card>
             ) : null}
@@ -135,31 +136,31 @@ export default function RecapsScreen() {
 
             {s.byCategory.length > 0 ? (
               <Card className={CARD}>
-                <CardLabel>By category</CardLabel>
+                <CardLabel>{t('recaps.byCategory')}</CardLabel>
                 <CategoryBars rows={s.byCategory} currency={currency} />
               </Card>
             ) : (
               <Card className={CARD}>
-                <Text className={SUB}>Nothing recorded in this period.</Text>
+                <Text className={SUB}>{t('recaps.nothing')}</Text>
               </Card>
             )}
 
             {s.fixedMinor > 0 ? (
               <Card className={CARD}>
-                <CardLabel>Fixed vs variable</CardLabel>
+                <CardLabel>{t('recaps.fixedVsVariable')}</CardLabel>
                 <View className="h-2.5 flex-row overflow-hidden rounded-full">
                   <View className="bg-warning" style={{ flex: Math.max(s.fixedMinor, 1) }} />
                   <View className="bg-primary" style={{ flex: Math.max(s.variableMinor, 1) }} />
                 </View>
                 <Text className={SUB}>
-                  Fixed charges {formatMoney(s.fixedMinor, currency)} · everything else {formatMoney(s.variableMinor, currency)}
+                  {t('recaps.fixedLine', { fixed: formatMoney(s.fixedMinor, currency), variable: formatMoney(s.variableMinor, currency) })}
                 </Text>
               </Card>
             ) : null}
 
             {s.byPayee.length > 0 ? (
               <Card className={CARD}>
-                <CardLabel>Top payees</CardLabel>
+                <CardLabel>{t('recaps.topPayees')}</CardLabel>
                 {s.byPayee.map((p) => (
                   <View key={p.payee} className={LINE}>
                     <Text className="shrink text-sm" numberOfLines={1}>
@@ -173,7 +174,7 @@ export default function RecapsScreen() {
 
             {s.largest.length > 0 ? (
               <Card className={CARD}>
-                <CardLabel>Largest</CardLabel>
+                <CardLabel>{t('recaps.largest')}</CardLabel>
                 {s.largest.map((e) => (
                   <View key={e.id} className={LINE}>
                     <View className="flex-1">
@@ -266,12 +267,13 @@ function SummaryCard({
   error: string | null;
   onRequest: () => void;
 }) {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const [open, setOpen] = useState(true);
   const header = (
     <View className="flex-row items-center gap-1.5">
       <Icon as={Sparkles} className="text-accent-foreground size-4" />
-      <Text className="text-accent-foreground flex-1 text-[13px] font-semibold uppercase">In short</Text>
+      <Text className="text-accent-foreground flex-1 text-[13px] font-semibold uppercase">{t('recaps.inShort')}</Text>
       {text ? <Icon as={open ? ChevronUp : ChevronDown} className="text-accent-foreground size-[18px]" /> : null}
     </View>
   );
@@ -291,15 +293,15 @@ function SummaryCard({
       ) : loading ? (
         <View className="flex-row items-center gap-2">
           <ActivityIndicator size="small" color={theme.accentForeground} />
-          <Text className={SUB}>Writing your summary…</Text>
+          <Text className={SUB}>{t('recaps.writing')}</Text>
         </View>
       ) : (
         <>
-          <Text className={SUB}>Get a short AI summary of this {period}: what moved, where the money went.</Text>
+          <Text className={SUB}>{t(`recaps.prompt.${period}`)}</Text>
           {error ? <Text className="text-destructive text-[13px]">{error}</Text> : null}
           <Button variant="outline" size="sm" className="border-accent-foreground/40 self-start bg-transparent" onPress={onRequest}>
             <Icon as={Sparkles} className="text-accent-foreground size-4" />
-            <Text className="text-accent-foreground">Summarise</Text>
+            <Text className="text-accent-foreground">{t('recaps.summarise')}</Text>
           </Button>
         </>
       )}
@@ -308,15 +310,16 @@ function SummaryCard({
 }
 
 function Delta({ deltaMinor, deltaPct, currency, period }: { deltaMinor: number; deltaPct: number | null; currency: ReturnType<ReturnType<typeof makeCurrencyLookup>>; period: RecapPeriod }) {
-  const prevLabel = period === 'day' ? 'yesterday' : period === 'week' ? 'last week' : 'last month';
-  if (deltaMinor === 0) return <Text className={SUB}>Same as {prevLabel}</Text>;
+  const { t } = useTranslation();
+  if (deltaMinor === 0) return <Text className={SUB}>{t(`recaps.same.${period}`)}</Text>;
   const up = deltaMinor > 0;
   return (
     <View className="flex-row items-center gap-1">
       <Icon as={up ? ArrowUp : ArrowDown} className={up ? 'text-destructive' : 'text-success'} size={14} />
       <Text className={cn('text-[13px]', up ? 'text-destructive' : 'text-success')}>
-        {formatMoney(Math.abs(deltaMinor), currency)}
-        {deltaPct != null ? ` (${Math.abs(deltaPct)}%)` : ''} {up ? 'more' : 'less'} than {prevLabel}
+        {t(up ? `recaps.more.${period}` : `recaps.less.${period}`, {
+          amount: `${formatMoney(Math.abs(deltaMinor), currency)}${deltaPct != null ? ` (${Math.abs(deltaPct)}%)` : ''}`,
+        })}
       </Text>
     </View>
   );

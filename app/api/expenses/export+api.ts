@@ -4,6 +4,7 @@ import { buildPdf } from '@/src/server/services/export/pdf';
 import { buildXlsx } from '@/src/server/services/export/xlsx';
 import { parseISODate } from '@/src/lib/dates';
 import { EXPORT_MAX_DAYS, EXPORT_MAX_ROWS, EXPORT_MIME, exportFilename, exportQuerySchema, type ExportSummary } from '@/src/lib/schemas/export';
+import { requestLanguage } from '@/src/i18n/languages';
 
 /**
  * E10 F10.1: the ledger for a date range as a spreadsheet or a PDF statement,
@@ -22,7 +23,14 @@ export const GET = withAuth(async (req, { user, repos }) => {
   if (truncated) return json({ error: 'too_many_rows', message: `More than ${EXPORT_MAX_ROWS} expenses; narrow the range.` }, { status: 400 });
 
   const categories = await repos.categories.list();
-  const ds = buildDataset({ from: q.from, to: q.to, owner: user.displayName ?? user.email ?? 'xpens-ia', expenses: items, categories });
+  const ds = buildDataset({
+    from: q.from,
+    to: q.to,
+    owner: user.displayName ?? user.email ?? 'xpens-ia',
+    expenses: items,
+    categories,
+    language: requestLanguage(user.language, req.headers.get('accept-language')),
+  });
 
   if (q.format === 'summary') {
     const body: ExportSummary = { count: ds.rows.length, byCurrency: ds.byCurrency };

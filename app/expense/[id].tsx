@@ -18,9 +18,11 @@ import { findCachedExpense } from '@/src/features/expenses/useExpenses';
 import { useMe } from '@/src/features/settings/useMe';
 import { errorMessage, invalidate, keys } from '@/src/lib/query';
 import { useThemeColors } from '@/src/lib/theme';
+import { useTranslation } from 'react-i18next';
 
 /** F2.7: detail + edit + delete. */
 export default function ExpenseDetailScreen() {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
@@ -41,13 +43,13 @@ export default function ExpenseDetailScreen() {
   const error = errorMessage(query.error);
 
   const confirmDelete = async () => {
-    if (!(await confirm({ title: 'Delete expense?', message: 'This cannot be undone.', actionLabel: 'Delete' }))) return;
+    if (!(await confirm({ title: t('expenses.deleteConfirm'), message: t('common.cannotBeUndone'), actionLabel: t('common.delete') }))) return;
     try {
       await api.remove(id);
       void invalidate.expenses(qc);
       router.back();
     } catch (err) {
-      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('common.couldNotDelete'), err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -66,9 +68,9 @@ export default function ExpenseDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Expense',
+          title: t('screens.expense'),
           headerRight: () => (
-            <Pressable onPress={confirmDelete} hitSlop={12} accessibilityLabel="Delete">
+            <Pressable onPress={confirmDelete} hitSlop={12} accessibilityLabel={t('common.delete')}>
               <Icon as={Trash2} size={22} color={theme.destructive} />
             </Pressable>
           ),
@@ -77,7 +79,7 @@ export default function ExpenseDetailScreen() {
       {expense.importItemId ? (
         <View className="bg-accent mx-4 mt-4 flex-row items-center gap-2 rounded-[10px] p-2.5">
           <Icon as={FileText} className="text-accent-foreground size-4" />
-          <Text className="text-accent-foreground flex-1 text-[13px]">Imported from a file. Import history arrives with E3.</Text>
+          <Text className="text-accent-foreground flex-1 text-[13px]">{t('expenses.importedBanner')}</Text>
         </View>
       ) : null}
       <ExpenseForm
@@ -85,7 +87,7 @@ export default function ExpenseDetailScreen() {
         categories={categories}
         currencies={currencies}
         defaultCurrency={profile.defaultCurrency}
-        submitLabel="Save changes"
+        submitLabel={t('common.saveChanges')}
         submitting={submitting}
         extra={
           <>
@@ -104,7 +106,7 @@ export default function ExpenseDetailScreen() {
             void invalidate.expenses(qc);
             router.back();
           } catch (err) {
-            Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
+            Alert.alert(t('common.couldNotSave'), err instanceof Error ? err.message : String(err));
           } finally {
             setSubmitting(false);
           }

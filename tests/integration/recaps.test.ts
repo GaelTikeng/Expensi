@@ -7,7 +7,9 @@ import { GET as recap } from '@/app/api/recaps+api';
 import { GET as overview } from '@/app/api/recaps/overview+api';
 import { GET as usage } from '@/app/api/usage+api';
 
-import { call, mockModelReply } from '../helpers/api';
+import { PATCH as patchMe } from '@/app/api/me+api';
+
+import { call, lastSystemPrompt, mockModelReply } from '../helpers/api';
 import { resetDb } from '../helpers/db';
 
 beforeEach(resetDb);
@@ -54,6 +56,26 @@ describe('recaps', () => {
 
     const quota = await call(usage, 'GET', '/api/usage');
     expect(quota.json.narrative.used).toBe(1);
+  });
+
+  it('writes the summary in the user\'s language and drops it when the language changes (E14)', async () => {
+    await call(create, 'POST', '/api/expenses', { body: { id: randomUUID(), amountMinor: 5000, currency: 'XAF', occurredOn: today, description: 'Riz' } });
+    const reply = (content: string) => ({ model: 'z-ai/glm-5.3', usage: { prompt_tokens: 300, completion_tokens: 120 }, choices: [{ finish_reason: 'stop', message: { content } }] });
+
+    // No saved choice: the language the app sends.
+    mockModelReply(reply('Vous avez dépensé 5 000 FCFA.'));
+    const fr = await call(recap, 'GET', `/api/recaps?period=month&start=${today}&narrative=1`, { headers: { 'accept-language': 'fr' } });
+    expect(fr.json.recap.narrativeMd).toContain('dépensé');
+    expect(lastSystemPrompt()).toContain('Write in French.');
+
+    // Saving German clears the French text; the next summary is asked for in German.
+    expect((await call(patchMe, 'PATCH', '/api/me', { body: { language: 'de' } })).status).toBe(200);
+    const cleared = await call(recap, 'GET', `/api/recaps?period=month&start=${today}&narrative=0`);
+    expect(cleared.json.recap.narrativeMd).toBeNull();
+    mockModelReply(reply('Du hast 5 000 FCFA ausgegeben.'));
+    const de = await call(recap, 'GET', `/api/recaps?period=month&start=${today}&narrative=1`, { headers: { 'accept-language': 'fr' } });
+    expect(de.json.recap.narrativeMd).toContain('ausgegeben');
+    expect(lastSystemPrompt()).toContain('Write in German.');
   });
 
   it('rejects an unknown period', async () => {

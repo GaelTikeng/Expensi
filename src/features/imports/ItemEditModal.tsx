@@ -13,16 +13,10 @@ import { OptionPicker } from '@/src/features/settings/OptionPicker';
 import type { CurrencyInfo } from '@/src/lib/money';
 import type { CategoryDto } from '@/src/lib/schemas/category';
 import type { ImportItemDto, ImportItemPatch } from '@/src/lib/schemas/import';
+import { useTranslation } from 'react-i18next';
 
 const NONE = '__none__';
-const KINDS = [
-  { value: 'expense', label: 'Expense' },
-  { value: 'total', label: 'Total (not an expense)' },
-  { value: 'subtotal', label: 'Subtotal' },
-  { value: 'header', label: 'Header / not an expense' },
-  { value: 'struck_through', label: 'Crossed out' },
-  { value: 'illegible', label: 'Illegible' },
-];
+const KINDS = ['expense', 'total', 'subtotal', 'header', 'struck_through', 'illegible'] as const;
 
 /** F3.9 inline edit for one staged row. */
 export function ItemEditModal({
@@ -62,6 +56,7 @@ function Body({
   onSave: (patch: ImportItemPatch) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [amountMinor, setAmountMinor] = useState<number | null>(item.amountMinor);
   const [occurredOn, setOccurredOn] = useState<string | null>(item.occurredOn);
   const [description, setDescription] = useState(item.description ?? '');
@@ -73,10 +68,10 @@ function Body({
     <SafeAreaView className="bg-background flex-1" edges={['top', 'bottom']}>
       <View className="border-border flex-row items-center justify-between border-b px-4 pb-3 pt-2">
         <Button variant="ghost" size="sm" onPress={onClose}>
-          <Text className="text-primary text-base">Cancel</Text>
+          <Text className="text-primary text-base">{t('common.cancel')}</Text>
         </Button>
         <Text variant="large" className="text-base">
-          Line {item.lineIndex + 1}
+          {t('imports.row.line', { n: item.lineIndex + 1 })}
         </Text>
         <Button
           variant="ghost"
@@ -93,13 +88,13 @@ function Body({
           }
           disabled={saving}
         >
-          <Text className="text-primary text-base font-semibold">{saving ? 'Saving…' : 'Save'}</Text>
+          <Text className="text-primary text-base font-semibold">{saving ? t('common.saving') : t('common.save')}</Text>
         </Button>
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="gap-3 p-4 pb-12" keyboardShouldPersistTaps="handled">
         <View className="bg-warning/10 gap-1 rounded-lg p-3">
-          <Text className="text-warning text-[11px] font-medium uppercase tracking-wide">As written</Text>
+          <Text className="text-warning text-[11px] font-medium uppercase tracking-wide">{t('imports.edit.asWritten')}</Text>
           <Text className="font-mono text-sm">{item.rawText}</Text>
           {item.ambiguityNote ? <Text className="text-warning text-xs italic">{item.ambiguityNote}</Text> : null}
         </View>
@@ -108,26 +103,26 @@ function Body({
 
         <Group>
           <View className="px-4 py-3">
-            <DateField label="Date" value={occurredOn} onChange={setOccurredOn} nullable />
+            <DateField label={t('expenseForm.date')} value={occurredOn} onChange={setOccurredOn} nullable />
           </View>
         </Group>
 
-        <FormField label="Description">
-          <Input value={description} onChangeText={setDescription} placeholder="What was it for?" />
+        <FormField label={t('expenseForm.description')}>
+          <Input value={description} onChangeText={setDescription} placeholder={t('expenseForm.descriptionPlaceholder')} />
         </FormField>
 
-        <FormField label="Paid to">
-          <Input value={payee} onChangeText={setPayee} placeholder="Optional" />
+        <FormField label={t('expenseForm.paidTo')}>
+          <Input value={payee} onChangeText={setPayee} placeholder={t('common.optional')} />
         </FormField>
 
         <Group>
           <OptionPicker
-            label="Category"
+            label={t('expenseForm.category')}
             value={categoryId ?? NONE}
-            options={[{ value: NONE, label: 'None' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+            options={[{ value: NONE, label: t('common.none') }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
             onChange={(v) => setCategoryId(v === NONE ? null : v)}
           />
-          <OptionPicker label="Line type" value={lineKind} options={KINDS} onChange={(v) => setLineKind(v as typeof lineKind)} />
+          <OptionPicker label={t('imports.edit.lineType')} value={lineKind} options={KINDS.map((k) => ({ value: k, label: t(`imports.kinds.${k}`) }))} onChange={(v) => setLineKind(v as typeof lineKind)} />
         </Group>
       </ScrollView>
     </SafeAreaView>

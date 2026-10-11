@@ -4,6 +4,7 @@ import { TextInput, View } from 'react-native';
 import { Text } from '@/src/components/ui/text';
 import { formatMoney, parseLocaleAmount, toMajor, type CurrencyInfo } from '@/src/lib/money';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Locale-aware amount field. Accepts "5.000", "5 000", "12,50"; stores minor
@@ -22,6 +23,7 @@ export function AmountInput({
   autoFocus?: boolean;
   error?: string;
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState(() => (value != null ? String(toMajor(value, currency.exponent)) : ''));
 
   const handle = (t: string) => {
@@ -44,7 +46,7 @@ export function AmountInput({
           keyboardType="decimal-pad"
           placeholder="0"
           autoFocus={autoFocus}
-          accessibilityLabel="Amount"
+          accessibilityLabel={t('expenseForm.amount')}
         />
         <Text className="text-muted-foreground ml-2 text-lg">{currency.symbol}</Text>
       </View>

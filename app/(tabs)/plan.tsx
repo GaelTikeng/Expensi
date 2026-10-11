@@ -20,11 +20,13 @@ import { useUpcomingPlanned } from '@/src/features/planned/usePlanned';
 import { invalidate, keys, useRefetchOnFocus } from '@/src/lib/query';
 import type { PlannedDto } from '@/src/lib/schemas/planned';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type Tab = 'upcoming' | 'planning' | 'fixed';
 
 /** F5.5 / F5.7 / F6.4: Upcoming · Planning · Fixed charges. */
 export default function PlanScreen() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>('upcoming');
   const { getToken } = useAuth();
   const qc = useQueryClient();
@@ -40,19 +42,19 @@ export default function PlanScreen() {
     try {
       const res = await completePlan(api, completing, values, getToken);
       setCompleting(null);
-      if (res.parked) Alert.alert('Saved', 'The receipt will upload when you are back online.');
+      if (res.parked) Alert.alert(t('common.saved'), t('common.receiptLater'));
       void invalidate.plans(qc);
       void invalidate.expenses(qc);
     } catch (err) {
-      Alert.alert('Could not complete', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('plan.couldNotComplete'), err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
   };
 
   const sections = [
-    ...(overdue.length ? [{ key: 'overdue', title: 'Overdue', data: overdue }] : []),
-    ...(upcoming.length ? [{ key: 'upcoming', title: 'Upcoming', data: upcoming }] : []),
+    ...(overdue.length ? [{ key: 'overdue', title: t('plan.overdue'), data: overdue }] : []),
+    ...(upcoming.length ? [{ key: 'upcoming', title: t('plan.upcoming'), data: upcoming }] : []),
   ];
 
   return (
@@ -67,9 +69,9 @@ export default function PlanScreen() {
       >
         {(
           [
-            ['upcoming', 'Upcoming'],
-            ['planning', 'Planning'],
-            ['fixed', 'Fixed charges'],
+            ['upcoming', t('plan.tabs.upcoming')],
+            ['planning', t('plan.tabs.planning')],
+            ['fixed', t('plan.tabs.fixed')],
           ] as const
         ).map(([k, label]) => (
           <ToggleGroupItem
@@ -120,15 +122,15 @@ export default function PlanScreen() {
             ListEmptyComponent={
               <View className="flex-1 items-center justify-center gap-2 p-8">
                 <Icon as={CalendarDays} className="text-muted-foreground size-10" />
-                <Text className="text-[17px] font-semibold">Nothing planned</Text>
+                <Text className="text-[17px] font-semibold">{t('plan.empty')}</Text>
                 <Text variant="muted" className="text-center">
-                  Plan an expense and we will remind you the day before and an hour before.
+                  {t('plan.emptyHint')}
                 </Text>
               </View>
             }
             ListFooterComponent={
               overdue.length ? (
-                <Text className="text-muted-foreground p-4 text-center text-xs">Overdue items: tap ✓ to mark paid, or open one to skip it.</Text>
+                <Text className="text-muted-foreground p-4 text-center text-xs">{t('plan.overdueHint')}</Text>
               ) : null
             }
           />
@@ -141,7 +143,7 @@ export default function PlanScreen() {
         <Pressable
           className="bg-primary absolute bottom-6 right-5 size-14 items-center justify-center rounded-full shadow-md shadow-black/20 active:bg-primary/90"
           onPress={() => router.push('/planned/new')}
-          accessibilityLabel="Plan an expense"
+          accessibilityLabel={t('plan.add')}
         >
           <Icon as={Plus} className="text-primary-foreground size-7" />
         </Pressable>

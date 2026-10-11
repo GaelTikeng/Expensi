@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Pressable, View } from 'react-native';
 
 import { Icon } from '@/src/components/ui/icon';
 import { Text } from '@/src/components/ui/text';
+import { useTranslation } from 'react-i18next';
 
 export const TILE = 84;
 
@@ -30,6 +31,7 @@ export function FileTile({
   onPress?: () => void;
   onLongPress?: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable className="bg-muted size-[84px] overflow-hidden rounded-md" onPress={onPress} onLongPress={onLongPress} delayLongPress={350}>
       {kind === 'photo' && uri ? (
@@ -51,7 +53,7 @@ export function FileTile({
       {queued ? (
         <View className="absolute inset-0 items-center justify-center gap-1 bg-black/55">
           <Icon as={CloudOff} className="size-5 text-white" />
-          <Text className="text-[11px] text-white">Waiting</Text>
+          <Text className="text-[11px] text-white">{t('attachments.waiting')}</Text>
         </View>
       ) : null}
     </Pressable>
@@ -59,14 +61,15 @@ export function FileTile({
 }
 
 export function AddTile({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
   return (
     <Pressable
       className="border-primary bg-accent size-[84px] items-center justify-center rounded-md border border-dashed active:opacity-80"
       onPress={onPress}
-      accessibilityLabel="Add proof"
+      accessibilityLabel={t('attachments.addProof')}
     >
       <Icon as={Plus} className="text-primary size-7" />
-      <Text className="text-primary text-[11px]">Add</Text>
+      <Text className="text-primary text-[11px]">{t('attachments.add')}</Text>
     </Pressable>
   );
 }

@@ -33,7 +33,7 @@ export const GET = withAuth(async (_req, { user }) => json(await profile(user)))
  * `POST /api/me/avatar` and the object must have landed; the previous custom
  * avatar is deleted best-effort. `avatarKey: null` removes the custom avatar.
  */
-export const PATCH = withAuth(async (req, { user }) => {
+export const PATCH = withAuth(async (req, { user, repos }) => {
   const body = mePatchSchema.safeParse(await readJson(req));
   if (!body.success) return json({ error: 'invalid_body', issues: body.error.issues }, { status: 400 });
   const patch = body.data;
@@ -54,6 +54,7 @@ export const PATCH = withAuth(async (req, { user }) => {
   const previousAvatar = patch.avatarKey !== undefined && user.avatarKey && user.avatarKey !== patch.avatarKey ? user.avatarKey : null;
 
   const updated = await new UsersRepository(db).updateProfile(user.id, patch);
+  if (patch.language !== undefined && patch.language !== user.language) await repos.recaps.clearNarratives();
   if (previousAvatar) await deleteObject(previousAvatar).catch(() => undefined);
   return json(await profile(updated ?? user));
 });

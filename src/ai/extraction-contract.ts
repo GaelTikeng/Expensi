@@ -239,6 +239,9 @@ export const CONFIDENCE_REVIEW_THRESHOLD = 0.85;
 
 export type ReviewSeverity = 'ok' | 'verify' | 'blocked';
 
+/** Why a line needs attention; the app words it in the user's language. */
+export type ReviewReasonCode = 'notExpense' | 'amountUnreadable' | 'invalidAmount' | 'lowConfidence' | 'noDate';
+
 /**
  * Decides how each line is presented on the review screen. Pure function, no
  * model involved — this is the safety net between extraction and the ledger.
@@ -247,13 +250,16 @@ export function classifyLine(line: ExtractedLine): {
   severity: ReviewSeverity;
   /** Pre-ticked for commit. Only ever true for clean expense lines. */
   defaultSelected: boolean;
+  /** English fallback; the model's own note when it left one. */
   reason?: string;
+  code?: ReviewReasonCode;
 } {
   if (line.lineKind !== 'expense') {
     return {
       severity: 'blocked',
       defaultSelected: false,
       reason: `Not an expense (${line.lineKind.replace('_', ' ')})`,
+      code: 'notExpense',
     };
   }
   if (line.amountMinor == null) {
@@ -261,16 +267,18 @@ export function classifyLine(line: ExtractedLine): {
       severity: 'blocked',
       defaultSelected: false,
       reason: line.ambiguityNote ?? 'Amount could not be read',
+      code: 'amountUnreadable',
     };
   }
   if (line.amountMinor <= 0) {
-    return { severity: 'blocked', defaultSelected: false, reason: 'Invalid amount' };
+    return { severity: 'blocked', defaultSelected: false, reason: 'Invalid amount', code: 'invalidAmount' };
   }
   if ((line.confidence ?? 0) < CONFIDENCE_REVIEW_THRESHOLD) {
     return {
       severity: 'verify',
       defaultSelected: false,
       reason: line.ambiguityNote ?? 'Low confidence — please check the amount',
+      code: 'lowConfidence',
     };
   }
   if (!line.occurredOn) {
@@ -278,6 +286,7 @@ export function classifyLine(line: ExtractedLine): {
       severity: 'verify',
       defaultSelected: true,
       reason: 'No date written — confirm the date',
+      code: 'noDate',
     };
   }
   return { severity: 'ok', defaultSelected: true };

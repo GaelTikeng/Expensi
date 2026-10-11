@@ -3,7 +3,31 @@
     "cancel": "Annuler",
     "save": "Enregistrer",
     "optional": "Facultatif",
-    "or": "ou"
+    "or": "ou",
+    "delete": "Supprimer",
+    "remove": "Retirer",
+    "done": "Terminé",
+    "close": "Fermer",
+    "continue": "Continuer",
+    "notNow": "Pas maintenant",
+    "openSettings": "Ouvrir les Réglages",
+    "saved": "Enregistré",
+    "couldNotSave": "Impossible d’enregistrer",
+    "couldNotDelete": "Impossible de supprimer",
+    "none": "Aucune",
+    "off": "Désactivé",
+    "cannotBeUndone": "Cette action est irréversible.",
+    "loading": "Chargement",
+    "edit": "Modifier",
+    "skip": "Passer",
+    "confirm": "Confirmer",
+    "saveChanges": "Enregistrer",
+    "receiptLater": "Le justificatif sera envoyé dès que vous serez de nouveau en ligne.",
+    "tryAgain": "Réessayer",
+    "saving": "Enregistrement…",
+    "ok": "OK",
+    "unknownError": "Erreur inconnue",
+    "dismiss": "Fermer"
   },
   "tabs": {
     "home": "Accueil",
@@ -15,7 +39,7 @@
     "newExpense": "Nouvelle dépense",
     "expense": "Dépense",
     "imports": "Imports",
-    "reviewImport": "Vérifier l'import",
+    "reviewImport": "Vérifier l’import",
     "planExpense": "Planifier une dépense",
     "plannedExpense": "Dépense planifiée",
     "month": "Mois",
@@ -28,13 +52,13 @@
     "appearance": "Apparence",
     "language": "Langue",
     "reminders": "Rappels",
-    "aiUsage": "Utilisation de l'IA",
+    "aiUsage": "Utilisation de l’IA",
     "exportExpenses": "Exporter les dépenses",
     "privacy": "Confidentialité"
   },
   "home": {
     "account": "Compte",
-    "today": "Aujourd'hui",
+    "today": "Aujourd’hui",
     "thisWeek": "Cette semaine",
     "thisMonth": "Ce mois-ci",
     "yesterday": "hier",
@@ -47,17 +71,17 @@
     "addExpense": "Ajouter une dépense"
   },
   "stats": {
-    "emptyTitle": "Rien d'enregistré ce mois-ci",
+    "emptyTitle": "Rien d’enregistré ce mois-ci",
     "emptyBody": "Ajoutez une dépense ou importez un fichier, et vos graphiques apparaîtront ici.",
     "weekByDay": "Cette semaine, jour par jour",
     "monthByCategory": "Ce mois-ci par catégorie",
     "monthVsLast": "Ce mois-ci et le mois dernier",
     "fixedVsOther": "Charges fixes et le reste",
-    "whereMoneyWent": "Où est passé l'argent",
+    "whereMoneyWent": "Où est passé l’argent",
     "fixed": "Fixes {{amount}}",
     "other": "Autres {{amount}}",
-    "soFar_one": "Jusqu'ici ({{n}} jour)",
-    "soFar_other": "Jusqu'ici ({{n}} jours)",
+    "soFar_one": "Jusqu’ici ({{n}} jour)",
+    "soFar_other": "Jusqu’ici ({{n}} jours)",
     "lastMonth": "Le mois dernier",
     "perDay": "{{amount}} par jour",
     "perDayVersus": "{{amount}} par jour contre {{previous}} le mois dernier",
@@ -87,7 +111,7 @@
       "language": "Langue",
       "reminders": "Rappels",
       "export": "Exporter les dépenses",
-      "aiUsage": "Utilisation de l'IA",
+      "aiUsage": "Utilisation de l’IA",
       "privacy": "Politique de confidentialité",
       "signOut": "Se déconnecter",
       "deleteAccount": "Supprimer le compte"
@@ -111,16 +135,16 @@
   },
   "language": {
     "system": "Comme le téléphone",
-    "footer": "S'applique à toute l'application. Enregistré sur votre compte, il vous suit sur vos autres appareils."
+    "footer": "S’applique à toute l’application. Enregistré sur votre compte, il vous suit sur vos autres appareils."
   },
   "appearance": {
     "system": "Comme le téléphone",
     "light": "Clair",
     "dark": "Sombre",
-    "footer": "S'applique à ce téléphone uniquement."
+    "footer": "S’applique à ce téléphone uniquement."
   },
   "currency": {
-    "footer": "Les nouvelles dépenses commencent dans cette devise, et les bilans et l'accueil font leurs totaux avec.",
+    "footer": "Les nouvelles dépenses commencent dans cette devise, et les bilans et l’accueil font leurs totaux avec.",
     "names": {
       "XAF": "Franc CFA (CEMAC)",
       "XOF": "Franc CFA (UEMOA)",
@@ -139,9 +163,9 @@
     "weeklyDescription": "Chaque lundi matin",
     "monthly": "Bilan mensuel",
     "monthlyDescription": "Le 1er de chaque mois",
-    "footerWeb": "Les rappels sont disponibles dans l'application mobile.",
-    "footerExpoGo": "Les rappels nécessitent la version complète de l'application. Expo Go sur Android ne prend pas en charge les notifications.",
-    "footerDefault": "Les dépenses planifiées vous rappellent toujours la veille et à l'heure prévue."
+    "footerWeb": "Les rappels sont disponibles dans l’application mobile.",
+    "footerExpoGo": "Les rappels nécessitent la version complète de l’application. Expo Go sur Android ne prend pas en charge les notifications.",
+    "footerDefault": "Les dépenses planifiées vous rappellent toujours la veille et à l’heure prévue."
   },
   "usage": {
     "group": "Ce mois-ci",
@@ -173,16 +197,546 @@
   "auth": {
     "intro": "Connectez-vous ou créez un compte avec votre e-mail.",
     "codeSent": "Nous avons envoyé un code à 6 chiffres à {{email}}.",
-    "continueWithEmail": "Continuer avec l'e-mail",
+    "continueWithEmail": "Continuer avec l’e-mail",
     "continueWithGoogle": "Continuer avec Google",
     "verify": "Vérifier",
     "useDifferentEmail": "Utiliser une autre adresse",
     "errors": {
-      "codeIncorrect": "Ce code n'est pas le bon. Vérifiez l'e-mail et réessayez.",
+      "codeIncorrect": "Ce code n’est pas le bon. Vérifiez l’e-mail et réessayez.",
       "codeExpired": "Ce code a expiré. Demandez-en un nouveau.",
       "emailInvalid": "Cette adresse e-mail ne semble pas valide.",
       "tooManyAttempts": "Trop de tentatives. Patientez une minute et réessayez.",
-      "generic": "Une erreur est survenue. Veuillez réessayer."
+      "generic": "Une erreur est survenue. Veuillez réessayer.",
+      "codeNotEnabled": "La connexion par code e-mail n’est pas activée pour ce compte.",
+      "extraStep": "La connexion demande une étape supplémentaire que l’app ne gère pas encore.",
+      "signUpIncomplete": "L’inscription demande des informations que l’app ne recueille pas encore."
+    }
+  },
+  "validation": {
+    "amount": "Le montant doit être supérieur à zéro",
+    "descriptionRequired": "La description est obligatoire",
+    "titleRequired": "Le titre est obligatoire",
+    "nameRequired": "Le nom est obligatoire",
+    "date": "Saisissez une date valide",
+    "time": "Saisissez une heure comme 09:00",
+    "dayOfMonth": "Choisissez un jour entre 1 et 31",
+    "currency": "Devise non prise en charge",
+    "invalid": "Vérifiez ce champ"
+  },
+  "dateField": {
+    "pickDate": "Choisir une date",
+    "today": "Aujourd’hui",
+    "yesterday": "Hier",
+    "clear": "Effacer"
+  },
+  "expenseForm": {
+    "amount": "Montant",
+    "currency": "Devise",
+    "description": "Description",
+    "descriptionPlaceholder": "C’était pour quoi ?",
+    "paidTo": "Payé à",
+    "paidToPlaceholder": "Commerce, personne, entreprise",
+    "category": "Catégorie",
+    "date": "Date",
+    "paidOnDifferentDay": "Payé un autre jour",
+    "paidOn": "Payé le",
+    "estimated": "Montant estimé",
+    "estimatedDescription": "Signalé dans les totaux jusqu’à ce que vous confirmiez le montant exact.",
+    "notes": "Notes",
+    "submit": "Enregistrer la dépense"
+  },
+  "expenses": {
+    "filters": {
+      "all": "Toutes",
+      "withProof": "Avec justificatif",
+      "withoutProof": "Sans justificatif"
+    },
+    "searchPlaceholder": "Rechercher une description ou un bénéficiaire",
+    "importFile": "Importer un fichier",
+    "export": "Exporter les dépenses",
+    "add": "Ajouter une dépense",
+    "deleteExpense": "Supprimer la dépense",
+    "deleteConfirm": "Supprimer la dépense ?",
+    "noMatches": "Aucun résultat",
+    "noMatchesHint": "Essayez une autre recherche.",
+    "empty": "Aucune dépense pour l’instant",
+    "emptyHint": "Touchez + pour enregistrer la première.",
+    "skippedFile": "Un fichier a été ignoré",
+    "parked_one": "{{n}} fichier sera envoyé dès que vous serez en ligne.",
+    "parked_other": "{{n}} fichiers seront envoyés dès que vous serez en ligne.",
+    "importedBanner": "Importée depuis un fichier."
+  },
+  "location": {
+    "save": "Enregistrer ma position",
+    "finding": "Recherche de votre position…",
+    "openInMaps": "Ouvrir dans Plans",
+    "allowTitle": "Autoriser la localisation ?",
+    "allowMessage": "Votre position est enregistrée avec cette dépense pour voir où elle a été faite. Elle n’est jamais partagée.",
+    "offTitle": "La localisation est désactivée",
+    "offMessage": "Activez-la dans les Réglages pour enregistrer où vous dépensez.",
+    "noFix": "Position introuvable. Réessayez à l’extérieur ou avec le Wi-Fi activé."
+  },
+  "attachments": {
+    "proof": "Justificatifs",
+    "proofOptional": "Justificatifs (facultatif)",
+    "files_one": "{{n}} fichier",
+    "files_other": "{{n}} fichiers",
+    "tapToView": "Touchez pour voir · maintenez pour retirer",
+    "uploadedAfterSave": "Envoyés après l’enregistrement · maintenez pour retirer",
+    "waiting": "En attente",
+    "add": "Ajouter",
+    "addProof": "Ajouter un justificatif",
+    "takePhoto": "Prendre une photo",
+    "choosePhoto": "Choisir une photo",
+    "choosePdf": "Choisir un PDF",
+    "couldNotOpen": "Impossible d’ouvrir le fichier",
+    "removeConfirm": "Retirer ce justificatif ?",
+    "cameraNeededTitle": "Accès à l’appareil photo requis",
+    "cameraNeededMessage": "Autorisez l’appareil photo dans les Réglages pour photographier vos reçus.",
+    "photosNeededTitle": "Accès aux photos requis",
+    "photosNeededMessage": "Autorisez l’accès aux photos dans les Réglages pour joindre vos reçus.",
+    "uploading": "Envoi du justificatif {{current}} sur {{total}}",
+    "unreadable": "Impossible de lire le fichier",
+    "tooLarge": "Le fichier dépasse 10 Mo",
+    "rejected": "Le stockage a refusé l’envoi ({{status}})",
+    "uploadFailed": "L’envoi a échoué"
+  },
+  "exportScreen": {
+    "period": "Période",
+    "presets": {
+      "thisMonth": "Ce mois-ci",
+      "lastMonth": "Le mois dernier",
+      "thisYear": "Cette année",
+      "custom": "Personnalisée"
+    },
+    "from": "Du",
+    "to": "Au",
+    "reversed": "La date de début est après la date de fin.",
+    "format": "Format",
+    "pdf": "PDF",
+    "excel": "Excel",
+    "pdfHint": "Un relevé imprimable avec les totaux par devise et par catégorie.",
+    "excelHint": "Une ligne par dépense, des montants en nombres, et une feuille Résumé.",
+    "empty": "Aucune dépense sur cette période.",
+    "count_one": "{{n}} dépense",
+    "count_other": "{{n}} dépenses",
+    "preparing": "Préparation…",
+    "exportPdf": "Exporter en PDF",
+    "exportExcel": "Exporter en Excel",
+    "failed": "Impossible d’exporter",
+    "failedStatus": "L’export a échoué ({{status}})",
+    "noSharing": "Le partage n’est pas disponible sur cet appareil."
+  },
+  "avatar": {
+    "photoOf": "Photo de {{name}}",
+    "initialsOf": "Initiales de {{name}}",
+    "photo": "Photo de profil",
+    "profile": "Profil",
+    "unreadable": "Impossible de lire la photo",
+    "tooLarge": "La photo est trop lourde"
+  },
+  "plan": {
+    "tabs": {
+      "upcoming": "À venir",
+      "planning": "Planification",
+      "fixed": "Charges fixes"
+    },
+    "overdue": "En retard",
+    "upcoming": "À venir",
+    "empty": "Rien de prévu",
+    "emptyHint": "Planifiez une dépense et nous vous le rappellerons la veille et à l’heure prévue.",
+    "overdueHint": "Éléments en retard : touchez ✓ pour les marquer payés, ou ouvrez-en un pour le passer.",
+    "add": "Planifier une dépense",
+    "couldNotComplete": "Impossible de valider",
+    "markPaid": "Marquer comme payé",
+    "monthEmpty": "Rien de prévu ce mois-ci."
+  },
+  "plannedForm": {
+    "what": "Quoi",
+    "whatPlaceholder": "ex. dîme, frais de scolarité, loyer",
+    "currency": "Devise",
+    "when": "Quand",
+    "at": "À",
+    "where": "Où",
+    "toWhom": "À qui",
+    "why": "Pourquoi",
+    "category": "Catégorie",
+    "notes": "Notes",
+    "footerExpoGo": "Les rappels (la veille et à l’heure prévue) nécessitent la version complète de l’app ; Expo Go sur Android ne peut pas afficher de notifications.",
+    "footerWeb": "Les rappels sont envoyés par l’app mobile la veille et à l’heure prévue.",
+    "footer": "Vous serez prévenu la veille et à l’heure prévue.",
+    "submit": "Enregistrer le plan",
+    "permission": "Recevez un rappel la veille et à l’heure de chaque dépense prévue."
+  },
+  "recurringForm": {
+    "name": "Nom",
+    "namePlaceholder": "ex. loyer, internet, bus scolaire",
+    "footer": "Chaque mois, une dépense prévue est créée pour cette charge, avec des rappels la veille et à l’heure prévue.",
+    "currency": "Devise",
+    "due": "Échéance",
+    "dueDay": "{{day}} du mois",
+    "reminderAt": "Rappel à",
+    "starts": "Début",
+    "hasEnd": "A une date de fin",
+    "ends": "Fin",
+    "category": "Catégorie",
+    "paidTo": "Payé à",
+    "notes": "Notes",
+    "active": "Active",
+    "activeDescription": "Une charge inactive ne crée plus de dépenses prévues.",
+    "submit": "Enregistrer la charge fixe",
+    "permission": "Recevez un rappel avant chaque échéance de charge fixe."
+  },
+  "planned": {
+    "editTitle": "Modifier le plan",
+    "skipConfirm": {
+      "title": "Passer celle-ci ?",
+      "message": "Elle reste dans votre historique comme passée."
+    },
+    "deleteConfirm": {
+      "title": "Supprimer ce plan ?",
+      "message": "Ses rappels sont aussi annulés."
+    },
+    "couldNotSkip": "Impossible de passer",
+    "couldNotRestore": "Impossible de restaurer",
+    "overdueSuffix": " · en retard",
+    "status": {
+      "done": "Payée",
+      "skipped": "Passée",
+      "fixedDue": "Charge fixe · à payer",
+      "planned": "Prévue"
+    },
+    "openExpense": "Ouvrir la dépense enregistrée",
+    "putBack": "Remettre dans le plan"
+  },
+  "planning": {
+    "previousYear": "Année précédente",
+    "nextYear": "Année suivante",
+    "stillPlanned": "Encore prévu",
+    "done": "Réglé",
+    "nothing": "Rien de prévu",
+    "planned_one": "{{n}} prévue",
+    "planned_other": "{{n}} prévues",
+    "done_one": "{{n}} réglée",
+    "done_other": "{{n}} réglées",
+    "skipped_one": "{{n}} passée",
+    "skipped_other": "{{n}} passées"
+  },
+  "fixed": {
+    "header": "{{period}} · charges fixes",
+    "thisMonth": "Ce mois-ci",
+    "paidOf": "{{paid}} sur {{total}} payées",
+    "add": "Ajouter une charge fixe",
+    "empty": "Loyer, abonnements, frais de scolarité… tout ce que vous payez chaque mois.",
+    "day": "Jour {{n}}",
+    "status": {
+      "inactive": "inactive",
+      "done": "payée",
+      "skipped": "passée",
+      "due": "à payer"
+    },
+    "hint": "Touchez pour modifier · maintenez pour ouvrir le paiement du mois",
+    "notFound": "Charge fixe introuvable",
+    "deleteConfirm": {
+      "title": "Supprimer cette charge fixe ?",
+      "message": "Ses prochains plans non payés sont supprimés ; les paiements passés restent dans vos dépenses."
+    }
+  },
+  "complete": {
+    "title": "Marquer comme payé",
+    "amountPaid": "Montant réellement payé",
+    "paidOn": "Payé le"
+  },
+  "notifications": {
+    "channelName": "Rappels",
+    "channelDescription": "Dépenses prévues et récapitulatifs",
+    "allowTitle": "Autoriser les notifications ?",
+    "offTitle": "Notifications désactivées",
+    "offMessage": "Activez-les dans les Réglages pour recevoir des rappels.",
+    "weeklyTitle": "Votre récap de la semaine est prêt",
+    "weeklyBody": "Voyez ce que vous avez dépensé la semaine dernière et comment ça se compare.",
+    "monthlyTitle": "Votre récap du mois est prêt",
+    "monthlyBody": "Le mois dernier en chiffres, avec un court résumé.",
+    "plannedTitle": "Dépense prévue",
+    "tomorrow": "Demain : {{title}} · {{amount}}",
+    "now": "Maintenant : {{title}} · {{amount}}",
+    "weeklyPermission": "Recevez chaque lundi matin un court récap de vos dépenses de la semaine passée.",
+    "monthlyPermission": "Recevez votre récap mensuel le 1er, avec un court résumé écrit."
+  },
+  "dates": {
+    "today": "Aujourd’hui",
+    "yesterday": "Hier",
+    "thisWeek": "Cette semaine",
+    "lastWeek": "Semaine dernière",
+    "weekOf": "Semaine du {{date}}",
+    "thisMonth": "Ce mois-ci"
+  },
+  "recaps": {
+    "periods": {
+      "day": "Jour",
+      "week": "Semaine",
+      "month": "Mois"
+    },
+    "previous": "Période précédente",
+    "next": "Période suivante",
+    "count_one": "{{n}} dépense",
+    "count_other": "{{n}} dépenses",
+    "estimated_one": "{{n}} estimée",
+    "estimated_other": "{{n}} estimées",
+    "withProof_one": "{{n}} avec justificatif",
+    "withProof_other": "{{n}} avec justificatif",
+    "also": "Aussi : {{list}}",
+    "byDay": "Par jour",
+    "byCategory": "Par catégorie",
+    "nothing": "Rien d’enregistré sur cette période.",
+    "fixedVsVariable": "Fixe ou variable",
+    "fixedLine": "Charges fixes {{fixed}} · tout le reste {{variable}}",
+    "topPayees": "Principaux bénéficiaires",
+    "largest": "Les plus grosses",
+    "inShort": "En bref",
+    "writing": "Rédaction du résumé…",
+    "prompt": {
+      "day": "Obtenez un court résumé IA de cette journée : ce qui a bougé, où est passé l’argent.",
+      "week": "Obtenez un court résumé IA de cette semaine : ce qui a bougé, où est passé l’argent.",
+      "month": "Obtenez un court résumé IA de ce mois : ce qui a bougé, où est passé l’argent."
+    },
+    "summarise": "Résumer",
+    "noSummary": "Aucun résumé n’a pu être rédigé. Réessayez plus tard.",
+    "same": {
+      "day": "Comme hier",
+      "week": "Comme la semaine dernière",
+      "month": "Comme le mois dernier"
+    },
+    "more": {
+      "day": "{{amount}} de plus qu’hier",
+      "week": "{{amount}} de plus que la semaine dernière",
+      "month": "{{amount}} de plus que le mois dernier"
+    },
+    "less": {
+      "day": "{{amount}} de moins qu’hier",
+      "week": "{{amount}} de moins que la semaine dernière",
+      "month": "{{amount}} de moins que le mois dernier"
+    },
+    "peak": "pic {{amount}}"
+  },
+  "imports": {
+    "status": {
+      "queued": "En attente",
+      "processing": "Traitement…",
+      "review": "Prêt à vérifier",
+      "committed": "Ajouté",
+      "failed": "Échec"
+    },
+    "failed": "Échec de l’import",
+    "uploadingPct": "Envoi {{pct}} %",
+    "importButton": "Importer un Excel, CSV ou PDF",
+    "intro": "Les lignes sont extraites par l’IA et mises de côté pour que vous les vérifiiez. Rien n’est ajouté à vos dépenses avant votre confirmation.",
+    "none": "Aucun import pour l’instant.",
+    "lines_one": "{{n}} ligne",
+    "lines_other": "{{n}} lignes",
+    "expenses_one": "{{n}} dépense",
+    "expenses_other": "{{n}} dépenses",
+    "poorQuality": "qualité médiocre",
+    "reading": "Lecture de votre fichier par l’IA…",
+    "readingHint": "Cela prend en général une à trois minutes. Vous pouvez partir et revenir.",
+    "dropped": "La connexion a été coupée, mais le serveur continue ; cet écran vérifie toutes les quelques secondes.",
+    "restart": "Relancer la lecture",
+    "couldNotRead": "Impossible de lire ce fichier",
+    "tryAgainLeft": "Réessayer ({{n}} restant(s))",
+    "uploadAgain": "Envoyez de nouveau le fichier pour réessayer.",
+    "totalMatches": "Correspond au total écrit de {{amount}}",
+    "totalMismatch": "Total écrit {{stated}} contre {{computed}} pour les lignes (écart de {{diff}}) — un chiffre a peut-être été mal lu",
+    "poorDocument": "Le document est difficile à lire. Essayez de le réexporter ou de le rescanner.",
+    "committedOn": "Ajouté le {{date}}",
+    "tickAll": "Tout cocher",
+    "untickAll": "Tout décocher",
+    "selected": "{{n}} sélectionnée(s)",
+    "addToExpenses": "Ajouter aux dépenses",
+    "deleteWhat": {
+      "saved": "Supprimer la dépense enregistrée ?",
+      "this": "Supprimer cette dépense ?"
+    },
+    "addConfirm_one": "Ajouter {{n}} dépense ?",
+    "addConfirm_other": "Ajouter {{n}} dépenses ?",
+    "skippedLines_one": "{{n}} ligne cochée n’a pas de montant ou de date et sera ignorée.",
+    "skippedLines_other": "{{n}} lignes cochées n’ont pas de montant ou de date et seront ignorées.",
+    "addIt_one": "L’ajouter",
+    "addIt_other": "Les ajouter",
+    "added_one": "{{n}} dépense ajoutée.",
+    "added_other": "{{n}} dépenses ajoutées.",
+    "couldNotCommit": "Impossible d’ajouter",
+    "notFound": "Introuvable",
+    "noSavedExpense": "Cette ligne n’a pas de dépense enregistrée à supprimer.",
+    "reasons": {
+      "duplicate": "Ressemble à un doublon de « {{description}} »",
+      "notExpense": "Pas une dépense ({{kind}})",
+      "amountUnreadable": "Le montant n’a pas pu être lu",
+      "invalidAmount": "Montant invalide",
+      "lowConfidence": "Lecture incertaine — vérifiez le montant",
+      "noDate": "Pas de date écrite — confirmez la date"
+    },
+    "kinds": {
+      "expense": "Dépense",
+      "total": "Total (pas une dépense)",
+      "subtotal": "Sous-total",
+      "header": "En-tête / pas une dépense",
+      "struck_through": "Barrée",
+      "illegible": "Illisible"
+    },
+    "kindShort": {
+      "expense": "dépense",
+      "total": "total",
+      "subtotal": "sous-total",
+      "header": "en-tête",
+      "struck_through": "barrée",
+      "illegible": "illisible"
+    },
+    "row": {
+      "notExpense": "Pas une dépense",
+      "line": "Ligne {{n}}",
+      "noDate": "Sans date",
+      "edited": "modifiée",
+      "compare": "Comparer"
+    },
+    "edit": {
+      "asWritten": "Tel qu’écrit",
+      "lineType": "Type de ligne"
+    },
+    "duplicate": {
+      "title": "Doublon possible",
+      "intro": "Même montant le même jour. Comparez les deux et choisissez l’enregistrement à garder.",
+      "inFile": "Dans ce fichier",
+      "saved": "Déjà enregistrée",
+      "fields": {
+        "description": "Description",
+        "amount": "Montant",
+        "date": "Date",
+        "payee": "Payé à",
+        "category": "Catégorie",
+        "source": "Origine"
+      },
+      "thisFile": "Ce fichier",
+      "thisFileUnsaved": "Ce fichier (pas encore enregistrée)",
+      "sources": {
+        "manual": "Saisie à la main",
+        "import": "D’un autre fichier",
+        "planned": "D’une dépense prévue",
+        "recurring": "D’une charge fixe"
+      },
+      "boldHint": "Les champs en gras diffèrent entre les deux.",
+      "open": "Ouvrir la dépense enregistrée",
+      "keepThis": "Garder celle-ci, supprimer la dépense enregistrée",
+      "keepSaved": "Garder la dépense enregistrée, supprimer celle-ci",
+      "keepBoth": "Garder les deux",
+      "skipLine": "Ignorer cette ligne",
+      "importDelete": "Importer cette ligne, supprimer la dépense enregistrée",
+      "importAnyway": "Importer quand même, garder les deux"
+    },
+    "upload": {
+      "unsupported": "Choisissez un fichier Excel, CSV ou PDF",
+      "unreadable": "Impossible de lire le fichier",
+      "tooLarge": "Le fichier dépasse 10 Mo",
+      "pickFailed": "Impossible de lire le fichier choisi ({{reason}})"
+    }
+  },
+  "apiErrors": {
+    "generic": "Une erreur s’est produite ({{status}}). Veuillez réessayer.",
+    "network": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+    "unauthenticated": "Votre session a expiré. Reconnectez-vous.",
+    "not_found": "Cet élément n’existe plus.",
+    "invalid_body": "Certaines informations ne sont pas valides. Vérifiez le formulaire et réessayez.",
+    "invalid_query": "Cette requête n’est pas valide.",
+    "empty_patch": "Rien à enregistrer.",
+    "internal_error": "Une erreur s’est produite de notre côté. Veuillez réessayer.",
+    "quota_exceeded": "Vous avez atteint la limite mensuelle des fonctions IA.",
+    "storage_not_configured": "Le stockage de fichiers n’est pas disponible pour le moment.",
+    "object_missing": "Le fichier n’est pas arrivé. Réessayez.",
+    "object_too_large": "Le fichier est trop volumineux.",
+    "content_type_mismatch": "Le type de fichier ne correspond pas.",
+    "already_uploaded": "Ce fichier a déjà été envoyé.",
+    "category_not_found": "Cette catégorie n’existe plus.",
+    "category_exists": "Une catégorie porte déjà ce nom.",
+    "expense_not_found": "Cette dépense n’existe plus.",
+    "planned_already_done": "Ce plan est déjà marqué comme payé.",
+    "import_in_progress": "Ce fichier est encore en cours de lecture.",
+    "import_attempts_exhausted": "Plus d’essais pour ce fichier. Envoyez-le de nouveau.",
+    "import_already_committed": "Cet import a déjà été ajouté à vos dépenses.",
+    "import_not_reviewable": "Cet import n’est pas prêt à être vérifié.",
+    "item_missing_amount": "Une ligne sélectionnée n’a pas de montant.",
+    "item_missing_date": "Une ligne sélectionnée n’a pas de date.",
+    "item_not_expense": "Une ligne sélectionnée n’est pas une dépense.",
+    "too_many_rows": "Trop de dépenses sur cette période. Choisissez une période plus courte.",
+    "reversed_range": "La date de début est après la date de fin.",
+    "range_too_long": "Cette période est trop longue. Choisissez une période plus courte."
+  },
+  "privacy": {
+    "intro": "Un résumé en langage clair. La politique complète est publiée via le lien de la fiche de l’app dans le store.",
+    "contact": "Contact : {{email}}",
+    "sections": {
+      "stored": {
+        "title": "Ce que nous conservons",
+        "body": "Votre e-mail (via Clerk), les dépenses, plans et charges fixes que vous saisissez, les photos de reçus, PDF ou tableurs que vous envoyez et, uniquement si vous activez « Enregistrer ma position » pour une dépense, le lieu où elle a été faite."
+      },
+      "ai": {
+        "title": "Traitement par l’IA",
+        "body": "Quand vous importez un fichier ou ouvrez un récap hebdomadaire ou mensuel, les données concernées sont envoyées à notre sous-traitant IA, TensorX (hébergé dans l’UE, sans conservation des données), pour extraire les lignes ou rédiger un court résumé. Rien n’est ajouté à vos dépenses sans votre confirmation."
+      },
+      "where": {
+        "title": "Où",
+        "body": "Base de données chez Neon et fichiers sur Amazon S3, tous deux à Francfort (eu-central-1). Les fichiers sont privés et accessibles uniquement par des liens de courte durée créés pour vous."
+      },
+      "reminders": {
+        "title": "Rappels",
+        "body": "Les rappels sont programmés sur cet appareil. Nous ne lisons pas vos notifications."
+      },
+      "controls": {
+        "title": "Vos choix",
+        "body": "Modifiez ou supprimez ce que vous voulez à tout moment. Supprimer votre compte dans les réglages efface immédiatement toutes les données et tous les fichiers."
+      },
+      "noAds": {
+        "title": "Ni publicité, ni pistage",
+        "body": "Nous ne vendons pas de données, n’affichons pas de publicité et n’utilisons pas d’identifiants publicitaires."
+      }
+    }
+  },
+  "exportFile": {
+    "title": "Dépenses",
+    "docTitle": "Dépenses xpens-ia du {{from}} au {{to}}",
+    "date": "Date",
+    "description": "Description",
+    "payee": "Payé à",
+    "category": "Catégorie",
+    "amount": "Montant",
+    "currency": "Devise",
+    "estimated": "Estimé",
+    "proofs": "Justificatifs",
+    "source": "Origine",
+    "total": "Total",
+    "expenses": "Dépenses",
+    "formatted": "Formaté",
+    "yes": "oui",
+    "no": "non",
+    "sheetExpenses": "Dépenses",
+    "sheetSummary": "Synthèse",
+    "export": "Export",
+    "owner": "Titulaire",
+    "generated": "Généré le",
+    "count_one": "{{n}} dépense",
+    "count_other": "{{n}} dépenses",
+    "generatedOn": "généré le {{date}}",
+    "est": "(estim.)",
+    "none": "Aucune dépense sur cette période.",
+    "totals": "Totaux",
+    "inCurrency_one": "{{n}} dépense en {{currency}}",
+    "inCurrency_other": "{{n}} dépenses en {{currency}}",
+    "byCategory": "Par catégorie",
+    "page": "page {{n}} sur {{total}}",
+    "uncategorised": "Sans catégorie",
+    "sources": {
+      "manual": "saisie",
+      "import": "import",
+      "planned": "prévue",
+      "recurring": "charge fixe"
     }
   }
 }

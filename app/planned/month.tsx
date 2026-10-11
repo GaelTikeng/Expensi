@@ -14,9 +14,11 @@ import { PlannedRow } from '@/src/features/planned/PlannedRow';
 import { useMe } from '@/src/features/settings/useMe';
 import { endOfMonth, formatMonthLabel } from '@/src/lib/dates';
 import { errorMessage, keys } from '@/src/lib/query';
+import { useTranslation } from 'react-i18next';
 
 /** F5.7: every plan (any status) scheduled in one month. */
 export default function PlannedMonthScreen() {
+  const { t } = useTranslation();
   const { month } = useLocalSearchParams<{ month: string }>();
   const { getToken } = useAuth();
   const api = useMemo(() => plannedApi(getToken), [getToken]);
@@ -45,7 +47,7 @@ export default function PlannedMonthScreen() {
           data={items}
           keyExtractor={(p) => p.id}
           ItemSeparatorComponent={() => <Separator className="ml-[62px]" />}
-          ListEmptyComponent={<Text className="text-muted-foreground p-6 text-center">Nothing planned this month.</Text>}
+          ListEmptyComponent={<Text className="text-muted-foreground p-6 text-center">{t('plan.monthEmpty')}</Text>}
           renderItem={({ item }) => (
             <PlannedRow item={item} currency={lookup(item.currency)} overdue={item.status === 'planned' && new Date(item.scheduledAt).getTime() < now} onPress={() => router.push(`/planned/${item.id}`)} />
           )}

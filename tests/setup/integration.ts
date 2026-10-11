@@ -64,13 +64,16 @@ jest.mock('@/src/server/storage/s3', () => {
 jest.mock('@/src/server/ai/client', () => {
   const actual = jest.requireActual('@/src/server/ai/client');
   const queue: unknown[] = [];
+  const requests: unknown[] = [];
   return {
     ...actual,
     __aiQueue: queue,
+    __aiRequests: requests,
     ai: {
       chat: {
         completions: {
-          create: async () => {
+          create: async (params: unknown) => {
+            requests.push(params);
             const next = queue.shift();
             if (!next) throw new Error('No mocked model reply queued; call mockExtraction()/mockNarrative() first');
             if (next instanceof Error) throw next;

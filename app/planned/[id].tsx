@@ -25,9 +25,12 @@ import { formatMoney } from '@/src/lib/money';
 import { errorMessage, invalidate, keys } from '@/src/lib/query';
 import type { PlannedDto } from '@/src/lib/schemas/planned';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { formatLocale } from '@/src/lib/locale';
 
 /** F5.6 / F5.8: detail with one-tap "Mark as paid", skip, edit, delete. */
 export default function PlannedDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
   const qc = useQueryClient();
@@ -57,12 +60,12 @@ export default function PlannedDetailScreen() {
   const [now] = useState(() => Date.now());
 
   const skip = async () => {
-    if (!(await confirm({ title: 'Skip this one?', message: 'It stays in your history as skipped.', actionLabel: 'Skip', destructive: false }))) return;
+    if (!(await confirm({ title: t('planned.skipConfirm.title'), message: t('planned.skipConfirm.message'), actionLabel: t('common.skip'), destructive: false }))) return;
     try {
       setPlan(await api.update(id, { status: 'skipped' }));
       await cancelFor(id);
     } catch (err) {
-      Alert.alert('Could not skip', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('planned.couldNotSkip'), err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -72,19 +75,19 @@ export default function PlannedDetailScreen() {
       setPlan(p);
       await scheduleFor(p, lookup(p.currency));
     } catch (err) {
-      Alert.alert('Could not restore', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('planned.couldNotRestore'), err instanceof Error ? err.message : String(err));
     }
   };
 
   const remove = async () => {
-    if (!(await confirm({ title: 'Delete this plan?', message: 'Its reminders are cancelled too.', actionLabel: 'Delete' }))) return;
+    if (!(await confirm({ title: t('planned.deleteConfirm.title'), message: t('planned.deleteConfirm.message'), actionLabel: t('common.delete') }))) return;
     try {
       await api.remove(id);
       await cancelFor(id);
       void invalidate.plans(qc);
       router.back();
     } catch (err) {
-      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('common.couldNotDelete'), err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -96,9 +99,9 @@ export default function PlannedDetailScreen() {
       setPlan(res.planned);
       void invalidate.expenses(qc);
       setCompleting(false);
-      if (res.parked) Alert.alert('Saved', 'The receipt will upload when you are back online.');
+      if (res.parked) Alert.alert(t('common.saved'), t('common.receiptLater'));
     } catch (err) {
-      Alert.alert('Could not complete', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('plan.couldNotComplete'), err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -120,24 +123,24 @@ export default function PlannedDetailScreen() {
   const overdue = plan.status === 'planned' && when.getTime() < now;
   const categoryName = plan.categoryId ? (categories.find((c) => c.id === plan.categoryId)?.name ?? null) : null;
   const rows: [string, string | null | undefined][] = [
-    ['Where', plan.place],
-    ['To whom', plan.payee],
-    ['Why', plan.reason],
-    ['Category', categoryName],
-    ['Notes', plan.notes],
+    [t('plannedForm.where'), plan.place],
+    [t('plannedForm.toWhom'), plan.payee],
+    [t('plannedForm.why'), plan.reason],
+    [t('plannedForm.category'), categoryName],
+    [t('plannedForm.notes'), plan.notes],
   ];
   const details = rows.filter((d): d is [string, string] => Boolean(d[1]));
 
   if (editing) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Edit plan' }} />
+        <Stack.Screen options={{ title: t('planned.editTitle') }} />
         <PlannedForm
           initial={plan}
           categories={categories}
           currencies={currencies}
           defaultCurrency={profile.defaultCurrency}
-          submitLabel="Save changes"
+          submitLabel={t('common.saveChanges')}
           submitting={submitting}
           onSubmit={async (values) => {
             setSubmitting(true);
@@ -148,7 +151,7 @@ export default function PlannedDetailScreen() {
               await scheduleFor(saved, lookup(saved.currency));
               setEditing(false);
             } catch (err) {
-              Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
+              Alert.alert(t('common.couldNotSave'), err instanceof Error ? err.message : String(err));
             } finally {
               setSubmitting(false);
             }
@@ -165,7 +168,7 @@ export default function PlannedDetailScreen() {
           title: plan.title,
           headerRight: () =>
             plan.status !== 'done' ? (
-              <Pressable onPress={remove} hitSlop={12} accessibilityLabel="Delete">
+              <Pressable onPress={remove} hitSlop={12} accessibilityLabel={t('common.delete')}>
                 <Icon as={Trash2} className="text-destructive size-[22px]" />
               </Pressable>
             ) : null,
@@ -175,8 +178,8 @@ export default function PlannedDetailScreen() {
         <View className="bg-card border-border items-center gap-1.5 rounded-lg border p-5">
           <Text className="text-[32px] font-bold leading-10">{formatMoney(plan.amountMinor, currency)}</Text>
           <Text className={cn('text-center text-sm', overdue ? 'text-warning font-semibold' : 'text-muted-foreground')}>
-            {when.toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
-            {overdue ? ' · overdue' : ''}
+            {when.toLocaleString(formatLocale() ?? 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+            {overdue ? t('planned.overdueSuffix') : ''}
           </Text>
           <Text
             className={cn(
@@ -184,14 +187,14 @@ export default function PlannedDetailScreen() {
               plan.status === 'done' ? 'text-success' : plan.status === 'skipped' ? 'text-muted-foreground' : 'text-primary',
             )}
           >
-            {plan.status === 'done' ? 'Paid' : plan.status === 'skipped' ? 'Skipped' : plan.recurringChargeId ? 'Fixed charge · due' : 'Planned'}
+            {t(plan.status === 'done' ? 'planned.status.done' : plan.status === 'skipped' ? 'planned.status.skipped' : plan.recurringChargeId ? 'planned.status.fixedDue' : 'planned.status.planned')}
           </Text>
         </View>
 
         {plan.status === 'planned' ? (
           <Button size="lg" className="bg-success active:bg-success/90 h-14" onPress={() => setCompleting(true)}>
             <Icon as={CircleCheck} className="text-success-foreground size-[22px]" />
-            <Text className="text-success-foreground text-[17px] font-bold">Mark as paid</Text>
+            <Text className="text-success-foreground text-[17px] font-bold">{t('plan.markPaid')}</Text>
           </Button>
         ) : null}
 
@@ -206,7 +209,7 @@ export default function PlannedDetailScreen() {
         {plan.status === 'done' && plan.completedExpenseId ? (
           <Button variant="link" onPress={() => router.push(`/expense/${plan.completedExpenseId}`)}>
             <Icon as={Receipt} className="text-primary size-[18px]" />
-            <Text className="text-[15px]">Open the recorded expense</Text>
+            <Text className="text-[15px]">{t('planned.openExpense')}</Text>
           </Button>
         ) : null}
 
@@ -214,15 +217,15 @@ export default function PlannedDetailScreen() {
           {plan.status === 'planned' ? (
             <>
               <Button variant="outline" size="lg" className="flex-1" onPress={() => setEditing(true)}>
-                <Text className="text-[15px]">Edit</Text>
+                <Text className="text-[15px]">{t('common.edit')}</Text>
               </Button>
               <Button variant="outline" size="lg" className="flex-1" onPress={skip}>
-                <Text className="text-[15px]">Skip</Text>
+                <Text className="text-[15px]">{t('common.skip')}</Text>
               </Button>
             </>
           ) : plan.status === 'skipped' ? (
             <Button variant="outline" size="lg" className="flex-1" onPress={unskip}>
-              <Text className="text-[15px]">Put back in plan</Text>
+              <Text className="text-[15px]">{t('planned.putBack')}</Text>
             </Button>
           ) : null}
         </View>

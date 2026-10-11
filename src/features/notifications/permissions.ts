@@ -1,6 +1,7 @@
 import { Alert, Linking, Platform } from 'react-native';
 
 import { getNotifications } from './module';
+import { t } from '@/src/i18n';
 
 export const ANDROID_CHANNEL = 'reminders';
 
@@ -9,17 +10,17 @@ export async function ensureChannel() {
   const N = getNotifications();
   if (!N || Platform.OS !== 'android') return;
   await N.setNotificationChannelAsync(ANDROID_CHANNEL, {
-    name: 'Reminders',
+    name: t('notifications.channelName'),
     importance: N.AndroidImportance.HIGH,
-    description: 'Planned expenses and spending recaps',
+    description: t('notifications.channelDescription'),
   });
 }
 
 function explain(reason: string): Promise<boolean> {
   return new Promise((resolve) => {
-    Alert.alert('Allow notifications?', reason, [
-      { text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Continue', onPress: () => resolve(true) },
+    Alert.alert(t('notifications.allowTitle'), reason, [
+      { text: t('common.notNow'), style: 'cancel', onPress: () => resolve(false) },
+      { text: t('common.continue'), onPress: () => resolve(true) },
     ]);
   });
 }
@@ -39,9 +40,9 @@ export async function ensureNotificationPermission(reason: string): Promise<bool
   if (current.granted) return true;
 
   if (!current.canAskAgain) {
-    Alert.alert('Notifications are off', 'Turn them on in Settings to get reminders.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+    Alert.alert(t('notifications.offTitle'), t('notifications.offMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.openSettings'), onPress: () => void Linking.openSettings() },
     ]);
     return false;
   }

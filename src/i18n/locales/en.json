@@ -3,7 +3,31 @@
     "cancel": "Cancel",
     "save": "Save",
     "optional": "Optional",
-    "or": "or"
+    "or": "or",
+    "delete": "Delete",
+    "remove": "Remove",
+    "done": "Done",
+    "close": "Close",
+    "continue": "Continue",
+    "notNow": "Not now",
+    "openSettings": "Open Settings",
+    "saved": "Saved",
+    "couldNotSave": "Could not save",
+    "couldNotDelete": "Could not delete",
+    "none": "None",
+    "off": "Off",
+    "cannotBeUndone": "This cannot be undone.",
+    "loading": "Loading",
+    "edit": "Edit",
+    "skip": "Skip",
+    "confirm": "Confirm",
+    "saveChanges": "Save changes",
+    "receiptLater": "The receipt will upload when you are back online.",
+    "tryAgain": "Try again",
+    "saving": "Saving…",
+    "ok": "OK",
+    "unknownError": "Unknown error",
+    "dismiss": "Dismiss"
   },
   "tabs": {
     "home": "Home",
@@ -182,7 +206,537 @@
       "codeExpired": "That code has expired. Request a new one.",
       "emailInvalid": "That does not look like a valid email address.",
       "tooManyAttempts": "Too many attempts. Wait a minute and try again.",
-      "generic": "Something went wrong. Please try again."
+      "generic": "Something went wrong. Please try again.",
+      "codeNotEnabled": "Email code sign-in is not enabled for this account.",
+      "extraStep": "Sign-in needs another step that this app does not support yet.",
+      "signUpIncomplete": "Sign-up needs more information than this app collects yet."
+    }
+  },
+  "validation": {
+    "amount": "Amount must be greater than zero",
+    "descriptionRequired": "Description is required",
+    "titleRequired": "Title is required",
+    "nameRequired": "Name is required",
+    "date": "Enter a valid date",
+    "time": "Enter a time like 09:00",
+    "dayOfMonth": "Pick a day between 1 and 31",
+    "currency": "Unsupported currency",
+    "invalid": "Check this field"
+  },
+  "dateField": {
+    "pickDate": "Pick a date",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "clear": "Clear"
+  },
+  "expenseForm": {
+    "amount": "Amount",
+    "currency": "Currency",
+    "description": "Description",
+    "descriptionPlaceholder": "What was it for?",
+    "paidTo": "Paid to",
+    "paidToPlaceholder": "Shop, person, company",
+    "category": "Category",
+    "date": "Date",
+    "paidOnDifferentDay": "Paid on a different day",
+    "paidOn": "Paid on",
+    "estimated": "Estimated amount",
+    "estimatedDescription": "Flagged in totals until you confirm the exact figure.",
+    "notes": "Notes",
+    "submit": "Save expense"
+  },
+  "expenses": {
+    "filters": {
+      "all": "All",
+      "withProof": "With proof",
+      "withoutProof": "Without proof"
+    },
+    "searchPlaceholder": "Search description or payee",
+    "importFile": "Import a file",
+    "export": "Export expenses",
+    "add": "Add expense",
+    "deleteExpense": "Delete expense",
+    "deleteConfirm": "Delete expense?",
+    "noMatches": "No matches",
+    "noMatchesHint": "Try another search.",
+    "empty": "No expenses yet",
+    "emptyHint": "Tap + to record your first one.",
+    "skippedFile": "Skipped a file",
+    "parked_one": "{{n}} file will upload when you are back online.",
+    "parked_other": "{{n}} files will upload when you are back online.",
+    "importedBanner": "Imported from a file."
+  },
+  "location": {
+    "save": "Save my location",
+    "finding": "Finding your position…",
+    "openInMaps": "Open in maps",
+    "allowTitle": "Allow location?",
+    "allowMessage": "Your position is saved with this expense so you can see where it was made. It is never shared.",
+    "offTitle": "Location is off",
+    "offMessage": "Turn it on in Settings to save where your expenses happen.",
+    "noFix": "Could not get a position. Try again outdoors or with Wi-Fi on."
+  },
+  "attachments": {
+    "proof": "Proof",
+    "proofOptional": "Proof (optional)",
+    "files_one": "{{n}} file",
+    "files_other": "{{n}} files",
+    "tapToView": "Tap to view · hold to remove",
+    "uploadedAfterSave": "Uploaded after you save · hold to remove",
+    "waiting": "Waiting",
+    "add": "Add",
+    "addProof": "Add proof",
+    "takePhoto": "Take photo",
+    "choosePhoto": "Choose photo",
+    "choosePdf": "Choose PDF",
+    "couldNotOpen": "Could not open file",
+    "removeConfirm": "Remove this proof?",
+    "cameraNeededTitle": "Camera access needed",
+    "cameraNeededMessage": "Allow camera access in Settings to photograph receipts.",
+    "photosNeededTitle": "Photo access needed",
+    "photosNeededMessage": "Allow photo access in Settings to attach receipts.",
+    "uploading": "Uploading proof {{current}} of {{total}}",
+    "unreadable": "Could not read the file",
+    "tooLarge": "File is larger than 10 MB",
+    "rejected": "Storage rejected the upload ({{status}})",
+    "uploadFailed": "Upload failed"
+  },
+  "exportScreen": {
+    "period": "Period",
+    "presets": {
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "thisYear": "This year",
+      "custom": "Custom"
+    },
+    "from": "From",
+    "to": "To",
+    "reversed": "The start date is after the end date.",
+    "format": "Format",
+    "pdf": "PDF",
+    "excel": "Excel",
+    "pdfHint": "A printable statement with totals per currency and category.",
+    "excelHint": "One row per expense, amounts as numbers, plus a Summary sheet.",
+    "empty": "No expenses in this period.",
+    "count_one": "{{n}} expense",
+    "count_other": "{{n}} expenses",
+    "preparing": "Preparing…",
+    "exportPdf": "Export PDF",
+    "exportExcel": "Export Excel",
+    "failed": "Could not export",
+    "failedStatus": "Export failed ({{status}})",
+    "noSharing": "Sharing is not available on this device."
+  },
+  "avatar": {
+    "photoOf": "{{name}}'s photo",
+    "initialsOf": "{{name}}'s initials",
+    "photo": "Profile photo",
+    "profile": "Profile",
+    "unreadable": "Could not read the photo",
+    "tooLarge": "The photo is too large"
+  },
+  "plan": {
+    "tabs": {
+      "upcoming": "Upcoming",
+      "planning": "Planning",
+      "fixed": "Fixed charges"
+    },
+    "overdue": "Overdue",
+    "upcoming": "Upcoming",
+    "empty": "Nothing planned",
+    "emptyHint": "Plan an expense and we will remind you the day before and at the time.",
+    "overdueHint": "Overdue items: tap ✓ to mark paid, or open one to skip it.",
+    "add": "Plan an expense",
+    "couldNotComplete": "Could not complete",
+    "markPaid": "Mark as paid",
+    "monthEmpty": "Nothing planned this month."
+  },
+  "plannedForm": {
+    "what": "What",
+    "whatPlaceholder": "e.g. Tithe, school fees, rent",
+    "currency": "Currency",
+    "when": "When",
+    "at": "At",
+    "where": "Where",
+    "toWhom": "To whom",
+    "why": "Why",
+    "category": "Category",
+    "notes": "Notes",
+    "footerExpoGo": "Reminders (the day before and at the time) need the full app build; Expo Go on Android cannot show notifications.",
+    "footerWeb": "Reminders are sent by the mobile app the day before and at the time.",
+    "footer": "You will be reminded the day before and at the time.",
+    "submit": "Save plan",
+    "permission": "Get reminded the day before and at the time of each planned expense."
+  },
+  "recurringForm": {
+    "name": "Name",
+    "namePlaceholder": "e.g. Rent, Internet, School bus",
+    "footer": "Each month a planned expense is created for this charge, with reminders the day before and at the time.",
+    "currency": "Currency",
+    "due": "Due",
+    "dueDay": "{{day}} of the month",
+    "reminderAt": "Reminder at",
+    "starts": "Starts",
+    "hasEnd": "Has an end date",
+    "ends": "Ends",
+    "category": "Category",
+    "paidTo": "Paid to",
+    "notes": "Notes",
+    "active": "Active",
+    "activeDescription": "Inactive charges stop creating planned expenses.",
+    "submit": "Save fixed charge",
+    "permission": "Get reminded before each fixed charge is due."
+  },
+  "planned": {
+    "editTitle": "Edit plan",
+    "skipConfirm": {
+      "title": "Skip this one?",
+      "message": "It stays in your history as skipped."
+    },
+    "deleteConfirm": {
+      "title": "Delete this plan?",
+      "message": "Its reminders are cancelled too."
+    },
+    "couldNotSkip": "Could not skip",
+    "couldNotRestore": "Could not restore",
+    "overdueSuffix": " · overdue",
+    "status": {
+      "done": "Paid",
+      "skipped": "Skipped",
+      "fixedDue": "Fixed charge · due",
+      "planned": "Planned"
+    },
+    "openExpense": "Open the recorded expense",
+    "putBack": "Put back in plan"
+  },
+  "planning": {
+    "previousYear": "Previous year",
+    "nextYear": "Next year",
+    "stillPlanned": "Still planned",
+    "done": "Done",
+    "nothing": "Nothing planned",
+    "planned_one": "{{n}} planned",
+    "planned_other": "{{n}} planned",
+    "done_one": "{{n}} done",
+    "done_other": "{{n}} done",
+    "skipped_one": "{{n}} skipped",
+    "skipped_other": "{{n}} skipped"
+  },
+  "fixed": {
+    "header": "{{period}} · fixed charges",
+    "thisMonth": "This month",
+    "paidOf": "{{paid}} of {{total}} paid",
+    "add": "Add a fixed charge",
+    "empty": "Rent, subscriptions, school fees… anything you pay every month.",
+    "day": "Day {{n}}",
+    "status": {
+      "inactive": "inactive",
+      "done": "paid",
+      "skipped": "skipped",
+      "due": "due"
+    },
+    "hint": "Tap to edit · hold to open this month’s payment",
+    "notFound": "Fixed charge not found",
+    "deleteConfirm": {
+      "title": "Delete this fixed charge?",
+      "message": "Future unpaid plans for it are removed; past payments stay in your expenses."
+    }
+  },
+  "complete": {
+    "title": "Mark as paid",
+    "amountPaid": "Amount actually paid",
+    "paidOn": "Paid on"
+  },
+  "notifications": {
+    "channelName": "Reminders",
+    "channelDescription": "Planned expenses and spending recaps",
+    "allowTitle": "Allow notifications?",
+    "offTitle": "Notifications are off",
+    "offMessage": "Turn them on in Settings to get reminders.",
+    "weeklyTitle": "Your weekly recap is ready",
+    "weeklyBody": "See what you spent last week and how it compares.",
+    "monthlyTitle": "Your monthly recap is ready",
+    "monthlyBody": "Last month in numbers, with a short summary.",
+    "plannedTitle": "Planned expense",
+    "tomorrow": "Tomorrow: {{title}} · {{amount}}",
+    "now": "Now: {{title}} · {{amount}}",
+    "weeklyPermission": "Get a short recap every Monday morning of what you spent last week.",
+    "monthlyPermission": "Get your monthly recap on the 1st, with a short written summary."
+  },
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This week",
+    "lastWeek": "Last week",
+    "weekOf": "Week of {{date}}",
+    "thisMonth": "This month"
+  },
+  "recaps": {
+    "periods": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "previous": "Previous period",
+    "next": "Next period",
+    "count_one": "{{n}} expense",
+    "count_other": "{{n}} expenses",
+    "estimated_one": "{{n}} estimated",
+    "estimated_other": "{{n}} estimated",
+    "withProof_one": "{{n}} with proof",
+    "withProof_other": "{{n}} with proof",
+    "also": "Also: {{list}}",
+    "byDay": "By day",
+    "byCategory": "By category",
+    "nothing": "Nothing recorded in this period.",
+    "fixedVsVariable": "Fixed vs variable",
+    "fixedLine": "Fixed charges {{fixed}} · everything else {{variable}}",
+    "topPayees": "Top payees",
+    "largest": "Largest",
+    "inShort": "In short",
+    "writing": "Writing your summary…",
+    "prompt": {
+      "day": "Get a short AI summary of this day: what moved, where the money went.",
+      "week": "Get a short AI summary of this week: what moved, where the money went.",
+      "month": "Get a short AI summary of this month: what moved, where the money went."
+    },
+    "summarise": "Summarise",
+    "noSummary": "No summary could be written. Try again later.",
+    "same": {
+      "day": "Same as yesterday",
+      "week": "Same as last week",
+      "month": "Same as last month"
+    },
+    "more": {
+      "day": "{{amount}} more than yesterday",
+      "week": "{{amount}} more than last week",
+      "month": "{{amount}} more than last month"
+    },
+    "less": {
+      "day": "{{amount}} less than yesterday",
+      "week": "{{amount}} less than last week",
+      "month": "{{amount}} less than last month"
+    },
+    "peak": "peak {{amount}}"
+  },
+  "imports": {
+    "status": {
+      "queued": "Waiting",
+      "processing": "Processing…",
+      "review": "Ready to review",
+      "committed": "Committed",
+      "failed": "Failed"
+    },
+    "failed": "Import failed",
+    "uploadingPct": "Uploading {{pct}}%",
+    "importButton": "Import Excel, CSV or PDF",
+    "intro": "Rows are extracted by AI and staged for your review. Nothing is added to your expenses until you confirm.",
+    "none": "No imports yet.",
+    "lines_one": "{{n}} line",
+    "lines_other": "{{n}} lines",
+    "expenses_one": "{{n}} expense",
+    "expenses_other": "{{n}} expenses",
+    "poorQuality": "poor quality",
+    "reading": "Reading your file with AI…",
+    "readingHint": "This usually takes one to three minutes. You can leave and come back.",
+    "dropped": "The connection dropped, but the server is still working; this screen checks every few seconds.",
+    "restart": "Restart the reading",
+    "couldNotRead": "Could not read this file",
+    "tryAgainLeft": "Try again ({{n}} left)",
+    "uploadAgain": "Upload the file again to retry.",
+    "totalMatches": "Matches the written total of {{amount}}",
+    "totalMismatch": "Written total {{stated}} vs lines {{computed}} (off by {{diff}}) — a digit may be misread",
+    "poorDocument": "The document is hard to read. Consider re-exporting or re-scanning it.",
+    "committedOn": "Committed on {{date}}",
+    "tickAll": "Tick all",
+    "untickAll": "Untick all",
+    "selected": "{{n}} selected",
+    "addToExpenses": "Add to expenses",
+    "deleteWhat": {
+      "saved": "Delete the saved expense?",
+      "this": "Delete this expense?"
+    },
+    "addConfirm_one": "Add {{n}} expense?",
+    "addConfirm_other": "Add {{n}} expenses?",
+    "skippedLines_one": "{{n}} ticked line is missing an amount or date and will be skipped.",
+    "skippedLines_other": "{{n}} ticked lines are missing an amount or date and will be skipped.",
+    "addIt_one": "Add it",
+    "addIt_other": "Add them",
+    "added_one": "{{n}} expense added.",
+    "added_other": "{{n}} expenses added.",
+    "couldNotCommit": "Could not commit",
+    "notFound": "Not found",
+    "noSavedExpense": "This line has no saved expense to delete.",
+    "reasons": {
+      "duplicate": "Looks like a duplicate of “{{description}}”",
+      "notExpense": "Not an expense ({{kind}})",
+      "amountUnreadable": "Amount could not be read",
+      "invalidAmount": "Invalid amount",
+      "lowConfidence": "Low confidence — please check the amount",
+      "noDate": "No date written — confirm the date"
+    },
+    "kinds": {
+      "expense": "Expense",
+      "total": "Total (not an expense)",
+      "subtotal": "Subtotal",
+      "header": "Header / not an expense",
+      "struck_through": "Crossed out",
+      "illegible": "Illegible"
+    },
+    "kindShort": {
+      "expense": "expense",
+      "total": "total",
+      "subtotal": "subtotal",
+      "header": "header",
+      "struck_through": "crossed out",
+      "illegible": "illegible"
+    },
+    "row": {
+      "notExpense": "Not an expense",
+      "line": "Line {{n}}",
+      "noDate": "No date",
+      "edited": "edited",
+      "compare": "Compare"
+    },
+    "edit": {
+      "asWritten": "As written",
+      "lineType": "Line type"
+    },
+    "duplicate": {
+      "title": "Possible duplicate",
+      "intro": "Same amount on the same day. Compare the two and decide which record to keep.",
+      "inFile": "In this file",
+      "saved": "Already saved",
+      "fields": {
+        "description": "Description",
+        "amount": "Amount",
+        "date": "Date",
+        "payee": "Paid to",
+        "category": "Category",
+        "source": "Source"
+      },
+      "thisFile": "This file",
+      "thisFileUnsaved": "This file (not saved yet)",
+      "sources": {
+        "manual": "Entered by hand",
+        "import": "From another file",
+        "planned": "From a planned expense",
+        "recurring": "From a fixed charge"
+      },
+      "boldHint": "Fields in bold differ between the two.",
+      "open": "Open the saved expense",
+      "keepThis": "Keep this one, delete the saved expense",
+      "keepSaved": "Keep the saved expense, delete this one",
+      "keepBoth": "Keep both",
+      "skipLine": "Skip this line",
+      "importDelete": "Import this line, delete the saved expense",
+      "importAnyway": "Import anyway, keep both"
+    },
+    "upload": {
+      "unsupported": "Choose an Excel, CSV or PDF file",
+      "unreadable": "Could not read the file",
+      "tooLarge": "File is larger than 10 MB",
+      "pickFailed": "Could not read the chosen file ({{reason}})"
+    }
+  },
+  "apiErrors": {
+    "generic": "Something went wrong ({{status}}). Please try again.",
+    "network": "Could not reach the server. Check your connection and try again.",
+    "unauthenticated": "Your session has expired. Sign in again.",
+    "not_found": "This item no longer exists.",
+    "invalid_body": "Some details are not valid. Check the form and try again.",
+    "invalid_query": "That request is not valid.",
+    "empty_patch": "Nothing to save.",
+    "internal_error": "Something went wrong on our side. Please try again.",
+    "quota_exceeded": "You have reached this month’s limit for AI features.",
+    "storage_not_configured": "File storage is not available right now.",
+    "object_missing": "The upload did not arrive. Try again.",
+    "object_too_large": "The file is too large.",
+    "content_type_mismatch": "The file type does not match.",
+    "already_uploaded": "This file was already uploaded.",
+    "category_not_found": "That category no longer exists.",
+    "category_exists": "A category with this name already exists.",
+    "expense_not_found": "That expense no longer exists.",
+    "planned_already_done": "This plan is already marked as paid.",
+    "import_in_progress": "This file is still being read.",
+    "import_attempts_exhausted": "No tries left for this file. Upload it again.",
+    "import_already_committed": "This import was already added to your expenses.",
+    "import_not_reviewable": "This import is not ready to review.",
+    "item_missing_amount": "A selected line has no amount.",
+    "item_missing_date": "A selected line has no date.",
+    "item_not_expense": "A selected line is not an expense.",
+    "too_many_rows": "Too many expenses in this period. Choose a shorter range.",
+    "reversed_range": "The start date is after the end date.",
+    "range_too_long": "That period is too long. Choose a shorter range."
+  },
+  "privacy": {
+    "intro": "A plain-language summary. The full policy is published at the link in the app store listing.",
+    "contact": "Contact: {{email}}",
+    "sections": {
+      "stored": {
+        "title": "What we store",
+        "body": "Your email (via Clerk), the expenses, plans and fixed charges you enter, any receipt photos, PDFs or spreadsheets you upload, and, only when you turn on “Save my location” for an expense, the place where it was made."
+      },
+      "ai": {
+        "title": "AI processing",
+        "body": "When you import a file or open a weekly/monthly recap, the relevant data is sent to our AI processor, TensorX (EU-hosted, zero data retention), to extract line items or write a short summary. Nothing is added to your expenses without your confirmation."
+      },
+      "where": {
+        "title": "Where",
+        "body": "Database on Neon and files on Amazon S3, both in Frankfurt (eu-central-1). Files are private and only reachable through short-lived links created for you."
+      },
+      "reminders": {
+        "title": "Reminders",
+        "body": "Reminders are scheduled on this device. We do not read your notifications."
+      },
+      "controls": {
+        "title": "Your controls",
+        "body": "Edit or delete anything at any time. Deleting your account in Settings removes all records and files immediately."
+      },
+      "noAds": {
+        "title": "No ads, no tracking",
+        "body": "We do not sell data, show ads, or use advertising identifiers."
+      }
+    }
+  },
+  "exportFile": {
+    "title": "Expenses",
+    "docTitle": "xpens-ia expenses {{from}} to {{to}}",
+    "date": "Date",
+    "description": "Description",
+    "payee": "Paid to",
+    "category": "Category",
+    "amount": "Amount",
+    "currency": "Currency",
+    "estimated": "Estimated",
+    "proofs": "Proofs",
+    "source": "Source",
+    "total": "Total",
+    "expenses": "Expenses",
+    "formatted": "Formatted",
+    "yes": "yes",
+    "no": "no",
+    "sheetExpenses": "Expenses",
+    "sheetSummary": "Summary",
+    "export": "Export",
+    "owner": "Owner",
+    "generated": "Generated",
+    "count_one": "{{n}} expense",
+    "count_other": "{{n}} expenses",
+    "generatedOn": "generated {{date}}",
+    "est": "(est.)",
+    "none": "No expenses in this period.",
+    "totals": "Totals",
+    "inCurrency_one": "{{n}} expense in {{currency}}",
+    "inCurrency_other": "{{n}} expenses in {{currency}}",
+    "byCategory": "By category",
+    "page": "page {{n}} of {{total}}",
+    "uncategorised": "Uncategorised",
+    "sources": {
+      "manual": "manual",
+      "import": "import",
+      "planned": "planned",
+      "recurring": "recurring"
     }
   }
 }

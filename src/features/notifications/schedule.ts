@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 import { getNotifications } from './module';
 import { ANDROID_CHANNEL } from './permissions';
+import { t } from '@/src/i18n';
 
 export const WEEKLY_RECAP_ID = 'recap-weekly';
 export const MONTHLY_RECAP_ID = 'recap-monthly';
@@ -33,7 +34,7 @@ export async function scheduleWeeklyRecap(time = '09:00') {
   const data: ReminderPayload = { url: '/(tabs)/recaps?period=week', kind: 'recap' };
   await N.scheduleNotificationAsync({
     identifier: WEEKLY_RECAP_ID,
-    content: { title: 'Your weekly recap is ready', body: 'See what you spent last week and how it compares.', data },
+    content: { title: t('notifications.weeklyTitle'), body: t('notifications.weeklyBody'), data },
     trigger: { type: N.SchedulableTriggerInputTypes.WEEKLY, weekday: 2, hour, minute, channelId: ANDROID_CHANNEL },
   });
 }
@@ -48,7 +49,7 @@ export async function scheduleMonthlyRecap(time = '09:00', now = new Date()) {
   await cancel(MONTHLY_RECAP_ID);
   const { hour, minute } = parseTime(time);
   const data: ReminderPayload = { url: '/(tabs)/recaps?period=month', kind: 'recap' };
-  const content = { title: 'Your monthly recap is ready', body: 'Last month in numbers, with a short summary.', data };
+  const content = { title: t('notifications.monthlyTitle'), body: t('notifications.monthlyBody'), data };
 
   if (Platform.OS === 'ios') {
     await N.scheduleNotificationAsync({
@@ -86,15 +87,15 @@ export async function schedulePlannedReminders(input: { id: string; title: strin
   await cancelPlannedReminders(input.id);
   const data: ReminderPayload = { url: `/planned/${input.id}`, kind: 'planned', id: input.id };
   const offsets: { suffix: string; ms: number; body: string }[] = [
-    { suffix: '24h', ms: 24 * 60 * 60 * 1000, body: `Tomorrow: ${input.title} · ${input.amountLabel}` },
-    { suffix: 'now', ms: 0, body: `Now: ${input.title} · ${input.amountLabel}` },
+    { suffix: '24h', ms: 24 * 60 * 60 * 1000, body: t('notifications.tomorrow', { title: input.title, amount: input.amountLabel }) },
+    { suffix: 'now', ms: 0, body: t('notifications.now', { title: input.title, amount: input.amountLabel }) },
   ];
   for (const o of offsets) {
     const at = new Date(input.scheduledAt.getTime() - o.ms);
     if (at <= now) continue;
     await N.scheduleNotificationAsync({
       identifier: `planned-${input.id}-${o.suffix}`,
-      content: { title: 'Planned expense', body: o.body, data },
+      content: { title: t('notifications.plannedTitle'), body: o.body, data },
       trigger: { type: N.SchedulableTriggerInputTypes.DATE, date: at, channelId: ANDROID_CHANNEL },
     });
   }

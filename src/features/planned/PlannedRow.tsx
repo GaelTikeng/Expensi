@@ -7,10 +7,12 @@ import { Text } from '@/src/components/ui/text';
 import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import type { PlannedDto } from '@/src/lib/schemas/planned';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { formatLocale } from '@/src/lib/locale';
 
 function when(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(formatLocale() ?? 'en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 export const PlannedRow = memo(function PlannedRow({
@@ -26,6 +28,7 @@ export const PlannedRow = memo(function PlannedRow({
   onPress: () => void;
   onDone?: () => void;
 }) {
+  const { t } = useTranslation();
   const done = item.status === 'done';
   const skipped = item.status === 'skipped';
   return (
@@ -56,7 +59,7 @@ export const PlannedRow = memo(function PlannedRow({
       </View>
       <Text className="text-[15px] font-semibold">{formatMoney(item.amountMinor, currency)}</Text>
       {onDone && item.status === 'planned' ? (
-        <Pressable onPress={onDone} hitSlop={10} className="ml-1" accessibilityLabel="Mark as paid">
+        <Pressable onPress={onDone} hitSlop={10} className="ml-1" accessibilityLabel={t('plan.markPaid')}>
           <Icon as={CircleCheck} className="text-success size-[26px]" />
         </Pressable>
       ) : null}

@@ -19,6 +19,8 @@ import type { CategoryDto } from '@/src/lib/schemas/category';
 import { plannedInputSchema, type PlannedDto, type PlannedInput } from '@/src/lib/schemas/planned';
 import { TimeField } from './TimeField';
 import { notificationsUnavailableReason } from '@/src/features/notifications/module';
+import { useTranslation } from 'react-i18next';
+import { fieldErrors } from '@/src/i18n/validation';
 
 const NONE = '__none__';
 
@@ -26,10 +28,10 @@ const NONE = '__none__';
 // scheduling; say so where the user expects a reminder.
 const REMINDER_FOOTER =
   notificationsUnavailableReason === 'expo-go-android'
-    ? 'Reminders (the day before and at the time) need the full app build; Expo Go on Android cannot show notifications.'
+    ? 'plannedForm.footerExpoGo'
     : notificationsUnavailableReason === 'web'
-      ? 'Reminders are sent by the mobile app the day before and at the time.'
-      : 'You will be reminded the day before and at the time.';
+      ? 'plannedForm.footerWeb'
+      : 'plannedForm.footer';
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** F5.2: when, time, where, why, how much. */
@@ -50,6 +52,7 @@ export function PlannedForm({
   submitting: boolean;
   onSubmit: (values: PlannedInput) => Promise<void> | void;
 }) {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const initialDate = initial ? new Date(initial.scheduledAt) : null;
   const [title, setTitle] = useState(initial?.title ?? '');
@@ -86,9 +89,7 @@ export function PlannedForm({
       categoryId,
     });
     if (!parsed.success) {
-      const next: Record<string, string> = {};
-      for (const i of parsed.error.issues) next[String(i.path[0])] = i.message;
-      setErrors(next);
+      setErrors(fieldErrors(parsed.error.issues));
       return;
     }
     setErrors({});
@@ -97,45 +98,45 @@ export function PlannedForm({
 
   return (
     <ScrollView className="bg-background flex-1" contentContainerClassName="gap-4 p-4 pb-12" keyboardShouldPersistTaps="handled">
-      <FormField label="What" error={errors.title}>
-        <Input value={title} onChangeText={setTitle} placeholder="e.g. Tithe, school fees, rent" autoFocus={!initial} />
+      <FormField label={t('plannedForm.what')} error={errors.title}>
+        <Input value={title} onChangeText={setTitle} placeholder={t('plannedForm.whatPlaceholder')} autoFocus={!initial} />
       </FormField>
 
       <AmountInput value={amountMinor} currency={currencyInfo} onChange={setAmountMinor} error={errors.amountMinor} />
       <Group>
-        <OptionPicker label="Currency" value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
+        <OptionPicker label={t('plannedForm.currency')} value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
       </Group>
 
-      <Group footer={REMINDER_FOOTER}>
+      <Group footer={t(REMINDER_FOOTER)}>
         <View className="px-4 py-3">
-          <DateField label="When" value={date} onChange={(d) => d && setDate(d)} />
+          <DateField label={t('plannedForm.when')} value={date} onChange={(d) => d && setDate(d)} />
         </View>
         <View className="px-4 py-3">
-          <TimeField label="At" value={time} onChange={setTime} />
+          <TimeField label={t('plannedForm.at')} value={time} onChange={setTime} />
         </View>
       </Group>
 
-      <FormField label="Where" error={errors.place}>
-        <Input value={place} onChangeText={setPlace} placeholder="Optional" />
+      <FormField label={t('plannedForm.where')} error={errors.place}>
+        <Input value={place} onChangeText={setPlace} placeholder={t('common.optional')} />
       </FormField>
-      <FormField label="To whom" error={errors.payee}>
-        <Input value={payee} onChangeText={setPayee} placeholder="Optional" />
+      <FormField label={t('plannedForm.toWhom')} error={errors.payee}>
+        <Input value={payee} onChangeText={setPayee} placeholder={t('common.optional')} />
       </FormField>
-      <FormField label="Why" error={errors.reason}>
-        <Textarea value={reason} onChangeText={setReason} placeholder="Optional" />
+      <FormField label={t('plannedForm.why')} error={errors.reason}>
+        <Textarea value={reason} onChangeText={setReason} placeholder={t('common.optional')} />
       </FormField>
 
       <Group>
         <OptionPicker
-          label="Category"
+          label={t('plannedForm.category')}
           value={categoryId ?? NONE}
-          options={[{ value: NONE, label: 'None' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+          options={[{ value: NONE, label: t('common.none') }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           onChange={(v) => setCategoryId(v === NONE ? null : v)}
         />
       </Group>
 
-      <FormField label="Notes" error={errors.notes}>
-        <Textarea value={notes} onChangeText={setNotes} placeholder="Optional" />
+      <FormField label={t('plannedForm.notes')} error={errors.notes}>
+        <Textarea value={notes} onChangeText={setNotes} placeholder={t('common.optional')} />
       </FormField>
 
       <Button size="lg" className="mt-2" disabled={submitting} onPress={submit}>

@@ -19,15 +19,17 @@ import { errorMessage, keys } from '@/src/lib/query';
 import type { ExportFormat } from '@/src/lib/schemas/export';
 import { useThemeColors } from '@/src/lib/theme';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { pluralKey } from '@/src/i18n';
 
 type Preset = 'this-month' | 'last-month' | 'this-year' | 'custom';
 
-const PRESETS: { key: Preset; label: string }[] = [
-  { key: 'this-month', label: 'This month' },
-  { key: 'last-month', label: 'Last month' },
-  { key: 'this-year', label: 'This year' },
-  { key: 'custom', label: 'Custom' },
-];
+const PRESETS = [
+  { key: 'this-month', label: 'exportScreen.presets.thisMonth' },
+  { key: 'last-month', label: 'exportScreen.presets.lastMonth' },
+  { key: 'this-year', label: 'exportScreen.presets.thisYear' },
+  { key: 'custom', label: 'exportScreen.presets.custom' },
+] as const satisfies readonly { key: Preset; label: `exportScreen.presets.${string}` }[];
 
 function presetRange(preset: Preset, today: ISODate): { from: ISODate; to: ISODate } {
   const monthStart = startOfMonth(today);
@@ -47,6 +49,7 @@ function presetRange(preset: Preset, today: ISODate): { from: ISODate; to: ISODa
 
 /** E10 F10.4: pick a range and a format, see what it holds, get the file. */
 export default function ExportScreen() {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const { getToken } = useAuth();
   const api = useMemo(() => exportApi(getToken), [getToken]);
@@ -68,8 +71,8 @@ export default function ExportScreen() {
 
   const preview = summary.data
     ? summary.data.count === 0
-      ? 'No expenses in this period.'
-      : `${summary.data.count} expense${summary.data.count === 1 ? '' : 's'} · ${summary.data.byCurrency.map((t) => formatMoney(t.totalMinor, currencyInfo(t.currency))).join(' · ')}`
+      ? t('exportScreen.empty')
+      : `${t(pluralKey('exportScreen.count', summary.data.count), { n: summary.data.count })} · ${summary.data.byCurrency.map((c) => formatMoney(c.totalMinor, currencyInfo(c.currency))).join(' · ')}`
     : null;
 
   const run = async () => {
@@ -77,7 +80,7 @@ export default function ExportScreen() {
     try {
       await downloadExport(range, format, getToken);
     } catch (err) {
-      Alert.alert('Could not export', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('exportScreen.failed'), err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
     }
@@ -86,7 +89,7 @@ export default function ExportScreen() {
   return (
     <ScrollView className="bg-background flex-1" contentContainerClassName="gap-4 p-4 pb-12">
       <View className="gap-1.5">
-        <Text className="text-muted-foreground ml-1 text-xs uppercase tracking-wide">Period</Text>
+        <Text className="text-muted-foreground ml-1 text-xs uppercase tracking-wide">{t('exportScreen.period')}</Text>
         <View className="flex-row flex-wrap gap-2">
           {PRESETS.map((p) => (
             <Button
@@ -97,19 +100,19 @@ export default function ExportScreen() {
               onPress={() => setPreset(p.key)}
               accessibilityState={{ selected: preset === p.key }}
             >
-              <Text className="text-[13px]">{p.label}</Text>
+              <Text className="text-[13px]">{t(p.label)}</Text>
             </Button>
           ))}
         </View>
       </View>
 
       {preset === 'custom' ? (
-        <Group footer={reversed ? 'The start date is after the end date.' : undefined}>
+        <Group footer={reversed ? t('exportScreen.reversed') : undefined}>
           <View className="px-4 py-3">
-            <DateField label="From" value={custom.from} onChange={(d) => d && setCustom((c) => ({ ...c, from: d }))} />
+            <DateField label={t('exportScreen.from')} value={custom.from} onChange={(d) => d && setCustom((c) => ({ ...c, from: d }))} />
           </View>
           <View className="px-4 py-3">
-            <DateField label="To" value={custom.to} onChange={(d) => d && setCustom((c) => ({ ...c, to: d }))} />
+            <DateField label={t('exportScreen.to')} value={custom.to} onChange={(d) => d && setCustom((c) => ({ ...c, to: d }))} />
           </View>
         </Group>
       ) : null}
@@ -128,7 +131,7 @@ export default function ExportScreen() {
       </View>
 
       <View className="gap-1.5">
-        <Text className="text-muted-foreground ml-1 text-xs uppercase tracking-wide">Format</Text>
+        <Text className="text-muted-foreground ml-1 text-xs uppercase tracking-wide">{t('exportScreen.format')}</Text>
         <ToggleGroup
           type="single"
           value={format}
@@ -139,8 +142,8 @@ export default function ExportScreen() {
         >
           {(
             [
-              ['pdf', 'PDF', FileText],
-              ['xlsx', 'Excel', FileSpreadsheet],
+              ['pdf', t('exportScreen.pdf'), FileText],
+              ['xlsx', t('exportScreen.excel'), FileSpreadsheet],
             ] as const
           ).map(([k, label, icon]) => (
             <ToggleGroupItem key={k} value={k} aria-label={label} className={cn('h-10 flex-1 flex-row gap-1.5 rounded-md', format === k ? 'bg-card shadow-sm shadow-black/5' : 'bg-transparent')}>
@@ -150,13 +153,13 @@ export default function ExportScreen() {
           ))}
         </ToggleGroup>
         <Text className="text-muted-foreground ml-1 text-xs">
-          {format === 'pdf' ? 'A printable statement with totals per currency and category.' : 'One row per expense, amounts as numbers, plus a Summary sheet.'}
+          {format === 'pdf' ? t('exportScreen.pdfHint') : t('exportScreen.excelHint')}
         </Text>
       </View>
 
       <Button size="lg" className="mt-2 gap-2" disabled={busy || reversed || summary.data?.count === 0} onPress={() => void run()}>
         {busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Icon as={Download} className="text-primary-foreground size-5" />}
-        <Text>{busy ? 'Preparing…' : `Export ${format === 'pdf' ? 'PDF' : 'Excel'}`}</Text>
+        <Text>{busy ? t('exportScreen.preparing') : format === 'pdf' ? t('exportScreen.exportPdf') : t('exportScreen.exportExcel')}</Text>
       </Button>
     </ScrollView>
   );

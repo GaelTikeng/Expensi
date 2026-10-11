@@ -3,7 +3,31 @@
     "cancel": "Abbrechen",
     "save": "Speichern",
     "optional": "Optional",
-    "or": "oder"
+    "or": "oder",
+    "delete": "Löschen",
+    "remove": "Entfernen",
+    "done": "Fertig",
+    "close": "Schließen",
+    "continue": "Weiter",
+    "notNow": "Nicht jetzt",
+    "openSettings": "Einstellungen öffnen",
+    "saved": "Gespeichert",
+    "couldNotSave": "Speichern fehlgeschlagen",
+    "couldNotDelete": "Löschen fehlgeschlagen",
+    "none": "Keine",
+    "off": "Aus",
+    "cannotBeUndone": "Das kann nicht rückgängig gemacht werden.",
+    "loading": "Wird geladen",
+    "edit": "Bearbeiten",
+    "skip": "Überspringen",
+    "confirm": "Bestätigen",
+    "saveChanges": "Änderungen speichern",
+    "receiptLater": "Der Beleg wird hochgeladen, sobald du wieder online bist.",
+    "tryAgain": "Erneut versuchen",
+    "saving": "Speichern…",
+    "ok": "OK",
+    "unknownError": "Unbekannter Fehler",
+    "dismiss": "Schließen"
   },
   "tabs": {
     "home": "Start",
@@ -182,7 +206,537 @@
       "codeExpired": "Dieser Code ist abgelaufen. Fordere einen neuen an.",
       "emailInvalid": "Das sieht nicht nach einer gültigen E-Mail-Adresse aus.",
       "tooManyAttempts": "Zu viele Versuche. Warte eine Minute und versuche es erneut.",
-      "generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+      "generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+      "codeNotEnabled": "Die Anmeldung per E-Mail-Code ist für dieses Konto nicht aktiviert.",
+      "extraStep": "Die Anmeldung braucht einen weiteren Schritt, den diese App noch nicht unterstützt.",
+      "signUpIncomplete": "Die Registrierung braucht Angaben, die diese App noch nicht erfasst."
+    }
+  },
+  "validation": {
+    "amount": "Der Betrag muss größer als null sein",
+    "descriptionRequired": "Die Beschreibung ist erforderlich",
+    "titleRequired": "Der Titel ist erforderlich",
+    "nameRequired": "Der Name ist erforderlich",
+    "date": "Gib ein gültiges Datum ein",
+    "time": "Gib eine Uhrzeit wie 09:00 ein",
+    "dayOfMonth": "Wähle einen Tag zwischen 1 und 31",
+    "currency": "Währung wird nicht unterstützt",
+    "invalid": "Bitte prüfe dieses Feld"
+  },
+  "dateField": {
+    "pickDate": "Datum wählen",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "clear": "Löschen"
+  },
+  "expenseForm": {
+    "amount": "Betrag",
+    "currency": "Währung",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Wofür war es?",
+    "paidTo": "Bezahlt an",
+    "paidToPlaceholder": "Geschäft, Person, Firma",
+    "category": "Kategorie",
+    "date": "Datum",
+    "paidOnDifferentDay": "An einem anderen Tag bezahlt",
+    "paidOn": "Bezahlt am",
+    "estimated": "Geschätzter Betrag",
+    "estimatedDescription": "In den Summen markiert, bis du den genauen Betrag bestätigst.",
+    "notes": "Notizen",
+    "submit": "Ausgabe speichern"
+  },
+  "expenses": {
+    "filters": {
+      "all": "Alle",
+      "withProof": "Mit Beleg",
+      "withoutProof": "Ohne Beleg"
+    },
+    "searchPlaceholder": "Beschreibung oder Empfänger suchen",
+    "importFile": "Datei importieren",
+    "export": "Ausgaben exportieren",
+    "add": "Ausgabe hinzufügen",
+    "deleteExpense": "Ausgabe löschen",
+    "deleteConfirm": "Ausgabe löschen?",
+    "noMatches": "Keine Treffer",
+    "noMatchesHint": "Versuche eine andere Suche.",
+    "empty": "Noch keine Ausgaben",
+    "emptyHint": "Tippe auf +, um die erste zu erfassen.",
+    "skippedFile": "Eine Datei wurde übersprungen",
+    "parked_one": "{{n}} Datei wird hochgeladen, sobald du wieder online bist.",
+    "parked_other": "{{n}} Dateien werden hochgeladen, sobald du wieder online bist.",
+    "importedBanner": "Aus einer Datei importiert."
+  },
+  "location": {
+    "save": "Meinen Standort speichern",
+    "finding": "Standort wird ermittelt…",
+    "openInMaps": "In Karten öffnen",
+    "allowTitle": "Standort erlauben?",
+    "allowMessage": "Dein Standort wird mit dieser Ausgabe gespeichert, damit du siehst, wo sie entstand. Er wird nie geteilt.",
+    "offTitle": "Standort ist deaktiviert",
+    "offMessage": "Aktiviere ihn in den Einstellungen, um zu speichern, wo deine Ausgaben entstehen.",
+    "noFix": "Kein Standort gefunden. Versuche es draußen oder mit aktiviertem WLAN erneut."
+  },
+  "attachments": {
+    "proof": "Belege",
+    "proofOptional": "Belege (optional)",
+    "files_one": "{{n}} Datei",
+    "files_other": "{{n}} Dateien",
+    "tapToView": "Tippen zum Ansehen · halten zum Entfernen",
+    "uploadedAfterSave": "Wird nach dem Speichern hochgeladen · halten zum Entfernen",
+    "waiting": "Wartet",
+    "add": "Hinzufügen",
+    "addProof": "Beleg hinzufügen",
+    "takePhoto": "Foto aufnehmen",
+    "choosePhoto": "Foto auswählen",
+    "choosePdf": "PDF auswählen",
+    "couldNotOpen": "Datei konnte nicht geöffnet werden",
+    "removeConfirm": "Diesen Beleg entfernen?",
+    "cameraNeededTitle": "Kamerazugriff erforderlich",
+    "cameraNeededMessage": "Erlaube den Kamerazugriff in den Einstellungen, um Belege zu fotografieren.",
+    "photosNeededTitle": "Fotozugriff erforderlich",
+    "photosNeededMessage": "Erlaube den Fotozugriff in den Einstellungen, um Belege anzuhängen.",
+    "uploading": "Beleg {{current}} von {{total}} wird hochgeladen",
+    "unreadable": "Die Datei konnte nicht gelesen werden",
+    "tooLarge": "Die Datei ist größer als 10 MB",
+    "rejected": "Der Speicher hat den Upload abgelehnt ({{status}})",
+    "uploadFailed": "Upload fehlgeschlagen"
+  },
+  "exportScreen": {
+    "period": "Zeitraum",
+    "presets": {
+      "thisMonth": "Dieser Monat",
+      "lastMonth": "Letzter Monat",
+      "thisYear": "Dieses Jahr",
+      "custom": "Benutzerdefiniert"
+    },
+    "from": "Von",
+    "to": "Bis",
+    "reversed": "Das Startdatum liegt nach dem Enddatum.",
+    "format": "Format",
+    "pdf": "PDF",
+    "excel": "Excel",
+    "pdfHint": "Eine druckbare Aufstellung mit Summen pro Währung und Kategorie.",
+    "excelHint": "Eine Zeile pro Ausgabe, Beträge als Zahlen, dazu ein Blatt Zusammenfassung.",
+    "empty": "Keine Ausgaben in diesem Zeitraum.",
+    "count_one": "{{n}} Ausgabe",
+    "count_other": "{{n}} Ausgaben",
+    "preparing": "Wird vorbereitet…",
+    "exportPdf": "Als PDF exportieren",
+    "exportExcel": "Als Excel exportieren",
+    "failed": "Export fehlgeschlagen",
+    "failedStatus": "Export fehlgeschlagen ({{status}})",
+    "noSharing": "Teilen ist auf diesem Gerät nicht verfügbar."
+  },
+  "avatar": {
+    "photoOf": "Foto von {{name}}",
+    "initialsOf": "Initialen von {{name}}",
+    "photo": "Profilfoto",
+    "profile": "Profil",
+    "unreadable": "Das Foto konnte nicht gelesen werden",
+    "tooLarge": "Das Foto ist zu groß"
+  },
+  "plan": {
+    "tabs": {
+      "upcoming": "Anstehend",
+      "planning": "Planung",
+      "fixed": "Fixkosten"
+    },
+    "overdue": "Überfällig",
+    "upcoming": "Anstehend",
+    "empty": "Nichts geplant",
+    "emptyHint": "Plane eine Ausgabe und wir erinnern dich am Vortag und zur geplanten Zeit.",
+    "overdueHint": "Überfällige Einträge: tippe auf ✓, um sie als bezahlt zu markieren, oder öffne einen, um ihn zu überspringen.",
+    "add": "Ausgabe planen",
+    "couldNotComplete": "Abschließen fehlgeschlagen",
+    "markPaid": "Als bezahlt markieren",
+    "monthEmpty": "Diesen Monat nichts geplant."
+  },
+  "plannedForm": {
+    "what": "Was",
+    "whatPlaceholder": "z. B. Zehnt, Schulgeld, Miete",
+    "currency": "Währung",
+    "when": "Wann",
+    "at": "Um",
+    "where": "Wo",
+    "toWhom": "An wen",
+    "why": "Warum",
+    "category": "Kategorie",
+    "notes": "Notizen",
+    "footerExpoGo": "Erinnerungen (am Vortag und zur Zeit) brauchen die vollständige App; Expo Go auf Android kann keine Benachrichtigungen anzeigen.",
+    "footerWeb": "Erinnerungen kommen von der mobilen App, am Vortag und zur geplanten Zeit.",
+    "footer": "Du wirst am Vortag und zur geplanten Zeit erinnert.",
+    "submit": "Plan speichern",
+    "permission": "Lass dich am Vortag und zur Zeit jeder geplanten Ausgabe erinnern."
+  },
+  "recurringForm": {
+    "name": "Name",
+    "namePlaceholder": "z. B. Miete, Internet, Schulbus",
+    "footer": "Jeden Monat wird für diese Fixkosten eine geplante Ausgabe angelegt, mit Erinnerungen am Vortag und zur Zeit.",
+    "currency": "Währung",
+    "due": "Fällig",
+    "dueDay": "am {{day}} des Monats",
+    "reminderAt": "Erinnerung um",
+    "starts": "Beginn",
+    "hasEnd": "Hat ein Enddatum",
+    "ends": "Ende",
+    "category": "Kategorie",
+    "paidTo": "Bezahlt an",
+    "notes": "Notizen",
+    "active": "Aktiv",
+    "activeDescription": "Inaktive Fixkosten legen keine geplanten Ausgaben mehr an.",
+    "submit": "Fixkosten speichern",
+    "permission": "Lass dich vor jeder Fälligkeit deiner Fixkosten erinnern."
+  },
+  "planned": {
+    "editTitle": "Plan bearbeiten",
+    "skipConfirm": {
+      "title": "Diese überspringen?",
+      "message": "Sie bleibt als übersprungen in deinem Verlauf."
+    },
+    "deleteConfirm": {
+      "title": "Diesen Plan löschen?",
+      "message": "Seine Erinnerungen werden ebenfalls gelöscht."
+    },
+    "couldNotSkip": "Überspringen fehlgeschlagen",
+    "couldNotRestore": "Wiederherstellen fehlgeschlagen",
+    "overdueSuffix": " · überfällig",
+    "status": {
+      "done": "Bezahlt",
+      "skipped": "Übersprungen",
+      "fixedDue": "Fixkosten · fällig",
+      "planned": "Geplant"
+    },
+    "openExpense": "Erfasste Ausgabe öffnen",
+    "putBack": "Wieder einplanen"
+  },
+  "planning": {
+    "previousYear": "Vorjahr",
+    "nextYear": "Nächstes Jahr",
+    "stillPlanned": "Noch geplant",
+    "done": "Erledigt",
+    "nothing": "Nichts geplant",
+    "planned_one": "{{n}} geplant",
+    "planned_other": "{{n}} geplant",
+    "done_one": "{{n}} erledigt",
+    "done_other": "{{n}} erledigt",
+    "skipped_one": "{{n}} übersprungen",
+    "skipped_other": "{{n}} übersprungen"
+  },
+  "fixed": {
+    "header": "{{period}} · Fixkosten",
+    "thisMonth": "Dieser Monat",
+    "paidOf": "{{paid}} von {{total}} bezahlt",
+    "add": "Fixkosten hinzufügen",
+    "empty": "Miete, Abos, Schulgeld… alles, was du jeden Monat zahlst.",
+    "day": "Tag {{n}}",
+    "status": {
+      "inactive": "inaktiv",
+      "done": "bezahlt",
+      "skipped": "übersprungen",
+      "due": "fällig"
+    },
+    "hint": "Tippen zum Bearbeiten · halten, um die Zahlung dieses Monats zu öffnen",
+    "notFound": "Fixkosten nicht gefunden",
+    "deleteConfirm": {
+      "title": "Diese Fixkosten löschen?",
+      "message": "Künftige unbezahlte Pläne werden entfernt; vergangene Zahlungen bleiben in deinen Ausgaben."
+    }
+  },
+  "complete": {
+    "title": "Als bezahlt markieren",
+    "amountPaid": "Tatsächlich bezahlter Betrag",
+    "paidOn": "Bezahlt am"
+  },
+  "notifications": {
+    "channelName": "Erinnerungen",
+    "channelDescription": "Geplante Ausgaben und Rückblicke",
+    "allowTitle": "Benachrichtigungen erlauben?",
+    "offTitle": "Benachrichtigungen sind aus",
+    "offMessage": "Schalte sie in den Einstellungen ein, um Erinnerungen zu bekommen.",
+    "weeklyTitle": "Dein Wochenrückblick ist da",
+    "weeklyBody": "Sieh, was du letzte Woche ausgegeben hast und wie es im Vergleich aussieht.",
+    "monthlyTitle": "Dein Monatsrückblick ist da",
+    "monthlyBody": "Der letzte Monat in Zahlen, mit einer kurzen Zusammenfassung.",
+    "plannedTitle": "Geplante Ausgabe",
+    "tomorrow": "Morgen: {{title}} · {{amount}}",
+    "now": "Jetzt: {{title}} · {{amount}}",
+    "weeklyPermission": "Erhalte jeden Montagmorgen einen kurzen Rückblick auf deine Ausgaben der letzten Woche.",
+    "monthlyPermission": "Erhalte deinen Monatsrückblick am 1., mit einer kurzen Zusammenfassung."
+  },
+  "dates": {
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "thisWeek": "Diese Woche",
+    "lastWeek": "Letzte Woche",
+    "weekOf": "Woche vom {{date}}",
+    "thisMonth": "Dieser Monat"
+  },
+  "recaps": {
+    "periods": {
+      "day": "Tag",
+      "week": "Woche",
+      "month": "Monat"
+    },
+    "previous": "Vorheriger Zeitraum",
+    "next": "Nächster Zeitraum",
+    "count_one": "{{n}} Ausgabe",
+    "count_other": "{{n}} Ausgaben",
+    "estimated_one": "{{n}} geschätzt",
+    "estimated_other": "{{n}} geschätzt",
+    "withProof_one": "{{n}} mit Beleg",
+    "withProof_other": "{{n}} mit Beleg",
+    "also": "Außerdem: {{list}}",
+    "byDay": "Nach Tag",
+    "byCategory": "Nach Kategorie",
+    "nothing": "In diesem Zeitraum nichts erfasst.",
+    "fixedVsVariable": "Fix oder variabel",
+    "fixedLine": "Fixkosten {{fixed}} · alles andere {{variable}}",
+    "topPayees": "Top-Empfänger",
+    "largest": "Größte Ausgaben",
+    "inShort": "Kurz gesagt",
+    "writing": "Zusammenfassung wird geschrieben…",
+    "prompt": {
+      "day": "Hol dir eine kurze KI-Zusammenfassung dieses Tages: was sich bewegt hat und wohin das Geld ging.",
+      "week": "Hol dir eine kurze KI-Zusammenfassung dieser Woche: was sich bewegt hat und wohin das Geld ging.",
+      "month": "Hol dir eine kurze KI-Zusammenfassung dieses Monats: was sich bewegt hat und wohin das Geld ging."
+    },
+    "summarise": "Zusammenfassen",
+    "noSummary": "Es konnte keine Zusammenfassung erstellt werden. Versuch es später noch einmal.",
+    "same": {
+      "day": "Wie gestern",
+      "week": "Wie letzte Woche",
+      "month": "Wie letzten Monat"
+    },
+    "more": {
+      "day": "{{amount}} mehr als gestern",
+      "week": "{{amount}} mehr als letzte Woche",
+      "month": "{{amount}} mehr als letzten Monat"
+    },
+    "less": {
+      "day": "{{amount}} weniger als gestern",
+      "week": "{{amount}} weniger als letzte Woche",
+      "month": "{{amount}} weniger als letzten Monat"
+    },
+    "peak": "Spitze {{amount}}"
+  },
+  "imports": {
+    "status": {
+      "queued": "Wartet",
+      "processing": "Wird verarbeitet…",
+      "review": "Bereit zur Prüfung",
+      "committed": "Übernommen",
+      "failed": "Fehlgeschlagen"
+    },
+    "failed": "Import fehlgeschlagen",
+    "uploadingPct": "Hochladen {{pct}} %",
+    "importButton": "Excel, CSV oder PDF importieren",
+    "intro": "Die Zeilen werden von der KI ausgelesen und zur Prüfung bereitgestellt. Nichts landet in deinen Ausgaben, bevor du es bestätigst.",
+    "none": "Noch keine Importe.",
+    "lines_one": "{{n}} Zeile",
+    "lines_other": "{{n}} Zeilen",
+    "expenses_one": "{{n}} Ausgabe",
+    "expenses_other": "{{n}} Ausgaben",
+    "poorQuality": "schlechte Qualität",
+    "reading": "Die KI liest deine Datei…",
+    "readingHint": "Das dauert meist ein bis drei Minuten. Du kannst gehen und später zurückkommen.",
+    "dropped": "Die Verbindung wurde unterbrochen, aber der Server arbeitet weiter; dieser Bildschirm prüft alle paar Sekunden.",
+    "restart": "Lesen neu starten",
+    "couldNotRead": "Diese Datei konnte nicht gelesen werden",
+    "tryAgainLeft": "Erneut versuchen (noch {{n}})",
+    "uploadAgain": "Lade die Datei erneut hoch, um es noch einmal zu versuchen.",
+    "totalMatches": "Stimmt mit der notierten Summe von {{amount}} überein",
+    "totalMismatch": "Notierte Summe {{stated}} gegenüber {{computed}} in den Zeilen (Differenz {{diff}}) — eine Ziffer wurde womöglich falsch gelesen",
+    "poorDocument": "Das Dokument ist schwer lesbar. Exportiere oder scanne es am besten neu.",
+    "committedOn": "Übernommen am {{date}}",
+    "tickAll": "Alle auswählen",
+    "untickAll": "Auswahl aufheben",
+    "selected": "{{n}} ausgewählt",
+    "addToExpenses": "Zu den Ausgaben hinzufügen",
+    "deleteWhat": {
+      "saved": "Gespeicherte Ausgabe löschen?",
+      "this": "Diese Ausgabe löschen?"
+    },
+    "addConfirm_one": "{{n}} Ausgabe hinzufügen?",
+    "addConfirm_other": "{{n}} Ausgaben hinzufügen?",
+    "skippedLines_one": "{{n}} ausgewählter Zeile fehlt ein Betrag oder Datum; sie wird übersprungen.",
+    "skippedLines_other": "{{n}} ausgewählten Zeilen fehlt ein Betrag oder Datum; sie werden übersprungen.",
+    "addIt_one": "Hinzufügen",
+    "addIt_other": "Alle hinzufügen",
+    "added_one": "{{n}} Ausgabe hinzugefügt.",
+    "added_other": "{{n}} Ausgaben hinzugefügt.",
+    "couldNotCommit": "Hinzufügen fehlgeschlagen",
+    "notFound": "Nicht gefunden",
+    "noSavedExpense": "Zu dieser Zeile gibt es keine gespeicherte Ausgabe zum Löschen.",
+    "reasons": {
+      "duplicate": "Sieht aus wie ein Duplikat von „{{description}}“",
+      "notExpense": "Keine Ausgabe ({{kind}})",
+      "amountUnreadable": "Der Betrag konnte nicht gelesen werden",
+      "invalidAmount": "Ungültiger Betrag",
+      "lowConfidence": "Unsicher gelesen — bitte den Betrag prüfen",
+      "noDate": "Kein Datum notiert — bitte das Datum bestätigen"
+    },
+    "kinds": {
+      "expense": "Ausgabe",
+      "total": "Summe (keine Ausgabe)",
+      "subtotal": "Zwischensumme",
+      "header": "Überschrift / keine Ausgabe",
+      "struck_through": "Durchgestrichen",
+      "illegible": "Unleserlich"
+    },
+    "kindShort": {
+      "expense": "Ausgabe",
+      "total": "Summe",
+      "subtotal": "Zwischensumme",
+      "header": "Überschrift",
+      "struck_through": "durchgestrichen",
+      "illegible": "unleserlich"
+    },
+    "row": {
+      "notExpense": "Keine Ausgabe",
+      "line": "Zeile {{n}}",
+      "noDate": "Kein Datum",
+      "edited": "bearbeitet",
+      "compare": "Vergleichen"
+    },
+    "edit": {
+      "asWritten": "Wie notiert",
+      "lineType": "Zeilentyp"
+    },
+    "duplicate": {
+      "title": "Mögliches Duplikat",
+      "intro": "Gleicher Betrag am gleichen Tag. Vergleiche beide und entscheide, welchen Eintrag du behältst.",
+      "inFile": "In dieser Datei",
+      "saved": "Bereits gespeichert",
+      "fields": {
+        "description": "Beschreibung",
+        "amount": "Betrag",
+        "date": "Datum",
+        "payee": "Bezahlt an",
+        "category": "Kategorie",
+        "source": "Herkunft"
+      },
+      "thisFile": "Diese Datei",
+      "thisFileUnsaved": "Diese Datei (noch nicht gespeichert)",
+      "sources": {
+        "manual": "Von Hand erfasst",
+        "import": "Aus einer anderen Datei",
+        "planned": "Aus einer geplanten Ausgabe",
+        "recurring": "Aus Fixkosten"
+      },
+      "boldHint": "Fett gedruckte Felder unterscheiden sich.",
+      "open": "Gespeicherte Ausgabe öffnen",
+      "keepThis": "Diese behalten, gespeicherte Ausgabe löschen",
+      "keepSaved": "Gespeicherte Ausgabe behalten, diese löschen",
+      "keepBoth": "Beide behalten",
+      "skipLine": "Diese Zeile überspringen",
+      "importDelete": "Diese Zeile importieren, gespeicherte Ausgabe löschen",
+      "importAnyway": "Trotzdem importieren, beide behalten"
+    },
+    "upload": {
+      "unsupported": "Wähle eine Excel-, CSV- oder PDF-Datei",
+      "unreadable": "Die Datei konnte nicht gelesen werden",
+      "tooLarge": "Die Datei ist größer als 10 MB",
+      "pickFailed": "Die gewählte Datei konnte nicht gelesen werden ({{reason}})"
+    }
+  },
+  "apiErrors": {
+    "generic": "Etwas ist schiefgelaufen ({{status}}). Bitte versuch es erneut.",
+    "network": "Der Server ist nicht erreichbar. Prüfe deine Verbindung und versuch es erneut.",
+    "unauthenticated": "Deine Sitzung ist abgelaufen. Melde dich erneut an.",
+    "not_found": "Dieser Eintrag existiert nicht mehr.",
+    "invalid_body": "Einige Angaben sind ungültig. Prüfe das Formular und versuch es erneut.",
+    "invalid_query": "Diese Anfrage ist ungültig.",
+    "empty_patch": "Nichts zu speichern.",
+    "internal_error": "Bei uns ist etwas schiefgelaufen. Bitte versuch es erneut.",
+    "quota_exceeded": "Du hast das Monatslimit für KI-Funktionen erreicht.",
+    "storage_not_configured": "Der Dateispeicher ist gerade nicht verfügbar.",
+    "object_missing": "Der Upload ist nicht angekommen. Versuch es erneut.",
+    "object_too_large": "Die Datei ist zu groß.",
+    "content_type_mismatch": "Der Dateityp passt nicht.",
+    "already_uploaded": "Diese Datei wurde bereits hochgeladen.",
+    "category_not_found": "Diese Kategorie existiert nicht mehr.",
+    "category_exists": "Eine Kategorie mit diesem Namen gibt es schon.",
+    "expense_not_found": "Diese Ausgabe existiert nicht mehr.",
+    "planned_already_done": "Dieser Plan ist bereits als bezahlt markiert.",
+    "import_in_progress": "Diese Datei wird noch gelesen.",
+    "import_attempts_exhausted": "Keine Versuche mehr für diese Datei. Lade sie erneut hoch.",
+    "import_already_committed": "Dieser Import wurde bereits zu deinen Ausgaben hinzugefügt.",
+    "import_not_reviewable": "Dieser Import ist noch nicht bereit zur Prüfung.",
+    "item_missing_amount": "Einer ausgewählten Zeile fehlt der Betrag.",
+    "item_missing_date": "Einer ausgewählten Zeile fehlt das Datum.",
+    "item_not_expense": "Eine ausgewählte Zeile ist keine Ausgabe.",
+    "too_many_rows": "Zu viele Ausgaben in diesem Zeitraum. Wähle einen kürzeren Zeitraum.",
+    "reversed_range": "Das Startdatum liegt nach dem Enddatum.",
+    "range_too_long": "Dieser Zeitraum ist zu lang. Wähle einen kürzeren Zeitraum."
+  },
+  "privacy": {
+    "intro": "Eine Zusammenfassung in einfacher Sprache. Die vollständige Richtlinie ist über den Link im App-Store-Eintrag veröffentlicht.",
+    "contact": "Kontakt: {{email}}",
+    "sections": {
+      "stored": {
+        "title": "Was wir speichern",
+        "body": "Deine E-Mail (über Clerk), die Ausgaben, Pläne und Fixkosten, die du einträgst, hochgeladene Belegfotos, PDFs oder Tabellen und – nur wenn du bei einer Ausgabe „Standort speichern“ einschaltest – den Ort, an dem sie getätigt wurde."
+      },
+      "ai": {
+        "title": "KI-Verarbeitung",
+        "body": "Wenn du eine Datei importierst oder einen Wochen- oder Monatsrückblick öffnest, werden die betreffenden Daten an unseren KI-Auftragsverarbeiter TensorX gesendet (in der EU gehostet, keine Datenspeicherung), um Zeilen auszulesen oder eine kurze Zusammenfassung zu schreiben. Ohne deine Bestätigung wird nichts zu deinen Ausgaben hinzugefügt."
+      },
+      "where": {
+        "title": "Wo",
+        "body": "Datenbank bei Neon und Dateien auf Amazon S3, beide in Frankfurt (eu-central-1). Dateien sind privat und nur über kurzlebige Links erreichbar, die für dich erstellt werden."
+      },
+      "reminders": {
+        "title": "Erinnerungen",
+        "body": "Erinnerungen werden auf diesem Gerät geplant. Wir lesen deine Benachrichtigungen nicht."
+      },
+      "controls": {
+        "title": "Deine Kontrolle",
+        "body": "Bearbeite oder lösche alles jederzeit. Wenn du dein Konto in den Einstellungen löschst, werden alle Daten und Dateien sofort entfernt."
+      },
+      "noAds": {
+        "title": "Keine Werbung, kein Tracking",
+        "body": "Wir verkaufen keine Daten, zeigen keine Werbung und nutzen keine Werbe-IDs."
+      }
+    }
+  },
+  "exportFile": {
+    "title": "Ausgaben",
+    "docTitle": "xpens-ia Ausgaben {{from}} bis {{to}}",
+    "date": "Datum",
+    "description": "Beschreibung",
+    "payee": "Bezahlt an",
+    "category": "Kategorie",
+    "amount": "Betrag",
+    "currency": "Währung",
+    "estimated": "Geschätzt",
+    "proofs": "Belege",
+    "source": "Herkunft",
+    "total": "Summe",
+    "expenses": "Ausgaben",
+    "formatted": "Formatiert",
+    "yes": "ja",
+    "no": "nein",
+    "sheetExpenses": "Ausgaben",
+    "sheetSummary": "Übersicht",
+    "export": "Export",
+    "owner": "Inhaber",
+    "generated": "Erstellt am",
+    "count_one": "{{n}} Ausgabe",
+    "count_other": "{{n}} Ausgaben",
+    "generatedOn": "erstellt am {{date}}",
+    "est": "(geschätzt)",
+    "none": "Keine Ausgaben in diesem Zeitraum.",
+    "totals": "Summen",
+    "inCurrency_one": "{{n}} Ausgabe in {{currency}}",
+    "inCurrency_other": "{{n}} Ausgaben in {{currency}}",
+    "byCategory": "Nach Kategorie",
+    "page": "Seite {{n}} von {{total}}",
+    "uncategorised": "Ohne Kategorie",
+    "sources": {
+      "manual": "manuell",
+      "import": "Import",
+      "planned": "geplant",
+      "recurring": "Fixkosten"
     }
   }
 }

@@ -9,6 +9,7 @@ import { formatDDMMYYYY } from '@/src/lib/dates';
 import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import { cn } from '@/src/lib/utils';
 import type { ReviewedItem } from './review-utils';
+import { useTranslation } from 'react-i18next';
 
 /** Severity → token: ok = success, verify = warning, blocked = muted. */
 const SEVERITY_DOT = { ok: 'bg-success', verify: 'bg-warning', blocked: 'bg-muted-foreground' } as const;
@@ -32,6 +33,7 @@ export const ImportItemRow = memo(function ImportItemRow({
   /** Present when the line looks like an existing expense (F3.14). */
   onCompare?: () => void;
 }) {
+  const { t } = useTranslation();
   const { item, severity, reason } = reviewed;
   const blocked = severity === 'blocked';
   const canTick = item.lineKind === 'expense';
@@ -42,7 +44,7 @@ export const ImportItemRow = memo(function ImportItemRow({
         {canTick ? (
           <Checkbox checked={selected} onCheckedChange={onToggle} className="size-5 rounded-[5px]" />
         ) : (
-          <Icon as={CircleMinus} className="text-muted-foreground/50 size-5" accessibilityLabel="Not an expense" />
+          <Icon as={CircleMinus} className="text-muted-foreground/50 size-5" accessibilityLabel={t('imports.row.notExpense')} />
         )}
       </View>
 
@@ -50,23 +52,23 @@ export const ImportItemRow = memo(function ImportItemRow({
         <View className="flex-row items-center gap-1.5">
           <View className={cn('size-2 rounded-full', SEVERITY_DOT[severity])} />
           <Text className={cn('flex-1 text-[15px] font-medium', blocked && 'text-muted-foreground line-through')} numberOfLines={1}>
-            {item.description || item.rawText || `Line ${item.lineIndex + 1}`}
+            {item.description || item.rawText || t('imports.row.line', { n: item.lineIndex + 1 })}
           </Text>
           <Text className={cn('text-[15px] font-semibold', blocked && 'text-muted-foreground line-through')}>
             {item.amountMinor != null ? formatMoney(item.amountMinor, currency) : '—'}
           </Text>
         </View>
         <Text className="text-muted-foreground ml-3.5 text-xs" numberOfLines={1}>
-          {item.occurredOn ? formatDDMMYYYY(item.occurredOn) : 'No date'}
+          {item.occurredOn ? formatDDMMYYYY(item.occurredOn) : t('imports.row.noDate')}
           {item.payee ? ` · ${item.payee}` : ''}
           {categoryName ? ` · ${categoryName}` : ''}
-          {item.editedByUser ? ' · edited' : ''}
+          {item.editedByUser ? ` · ${t('imports.row.edited')}` : ''}
         </Text>
         {reason && !(severity === 'ok') ? (
           item.possibleDuplicateOf && onCompare ? (
             <Pressable onPress={onCompare} hitSlop={6} accessibilityRole="button">
               <Text className={cn('ml-3.5 text-xs', SEVERITY_TEXT[severity])} numberOfLines={2}>
-                {reason} · <Text className="text-primary text-xs font-semibold">Compare</Text>
+                {reason} · <Text className="text-primary text-xs font-semibold">{t('imports.row.compare')}</Text>
               </Text>
             </Pressable>
           ) : (

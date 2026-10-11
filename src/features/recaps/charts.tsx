@@ -6,6 +6,8 @@ import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import type { RecapStats } from '@/src/lib/schemas/recap';
 import { useThemeColors } from '@/src/lib/theme';
 import { cn } from '@/src/lib/utils';
+import { t } from '@/src/i18n';
+import { formatLocale } from '@/src/lib/locale';
 
 /**
  * Dependency-free charts built from Views. Enough for a bar-per-day column
@@ -16,6 +18,11 @@ import { cn } from '@/src/lib/utils';
 
 /** Fallback for categories without a stored colour (matches ExpenseRow). */
 const NO_CATEGORY_COLOR = '#95A5A6';
+
+/** "M", "L", "D"…: the narrow weekday in the app's language. */
+function weekdayLetter(iso: string) {
+  return new Intl.DateTimeFormat(formatLocale() ?? 'en-GB', { weekday: 'narrow' }).format(new Date(`${iso}T00:00:00`));
+}
 
 export function DayColumns({ days, currency }: { days: RecapStats['byDay']; currency: CurrencyInfo }) {
   const max = Math.max(1, ...days.map((d) => d.totalMinor));
@@ -31,13 +38,13 @@ export function DayColumns({ days, currency }: { days: RecapStats['byDay']; curr
             />
           </View>
           {showLabels ? (
-            <Text className="text-muted-foreground text-[10px]">{'MTWTFSS'[(new Date(`${d.date}T00:00:00`).getDay() + 6) % 7]}</Text>
+            <Text className="text-muted-foreground text-[10px]">{weekdayLetter(d.date)}</Text>
           ) : null}
         </View>
       ))}
       {!showLabels ? (
         <Text className="text-muted-foreground mt-0.5 w-full text-center text-[11px]">
-          {days[0]?.date.slice(8)} – {days[days.length - 1]?.date.slice(8)} · peak {formatMoney(max, currency)}
+          {days[0]?.date.slice(8)} – {days[days.length - 1]?.date.slice(8)} · {t('recaps.peak', { amount: formatMoney(max, currency) })}
         </Text>
       ) : null}
     </View>

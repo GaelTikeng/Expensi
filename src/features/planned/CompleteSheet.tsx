@@ -11,6 +11,7 @@ import { todayISO } from '@/src/lib/dates';
 import type { CurrencyInfo } from '@/src/lib/money';
 import type { PlannedDto } from '@/src/lib/schemas/planned';
 import { useThemeColors } from '@/src/lib/theme';
+import { useTranslation } from 'react-i18next';
 
 export interface CompleteValues {
   amountMinor: number;
@@ -42,6 +43,7 @@ export function CompleteSheet({
 }
 
 function Body({ plan, currency, busy, onConfirm, onClose }: { plan: PlannedDto; currency: CurrencyInfo; busy: boolean; onConfirm: (v: CompleteValues) => void; onClose: () => void }) {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const [amountMinor, setAmountMinor] = useState<number | null>(plan.amountMinor);
   const [occurredOn, setOccurredOn] = useState(todayISO());
@@ -50,19 +52,19 @@ function Body({ plan, currency, busy, onConfirm, onClose }: { plan: PlannedDto; 
   return (
     <View className="bg-background max-h-[90%] gap-2 rounded-t-2xl p-4 pb-8">
       <View className="bg-input mb-1 h-1 w-10 self-center rounded-full" />
-      <Text variant="large">Mark as paid</Text>
+      <Text variant="large">{t('complete.title')}</Text>
       <Text variant="muted">{plan.title}</Text>
       <ScrollView contentContainerClassName="gap-3 py-2" keyboardShouldPersistTaps="handled">
-        <Text className="text-[15px]">Amount actually paid</Text>
+        <Text className="text-[15px]">{t('complete.amountPaid')}</Text>
         <AmountInput value={amountMinor} currency={currency} onChange={setAmountMinor} />
         <View className="bg-card border-border rounded-lg border px-4 py-3">
-          <DateField label="Paid on" value={occurredOn} onChange={(d) => d && setOccurredOn(d)} />
+          <DateField label={t('complete.paidOn')} value={occurredOn} onChange={(d) => d && setOccurredOn(d)} />
         </View>
         <LocalFilesPicker files={files} onChange={setFiles} />
       </ScrollView>
       <View className="mt-2 flex-row gap-3">
         <Button variant="outline" size="lg" className="flex-1" onPress={onClose} disabled={busy}>
-          <Text>Cancel</Text>
+          <Text>{t('common.cancel')}</Text>
         </Button>
         <Button
           size="lg"
@@ -70,7 +72,7 @@ function Body({ plan, currency, busy, onConfirm, onClose }: { plan: PlannedDto; 
           disabled={busy || !amountMinor}
           onPress={() => amountMinor && onConfirm({ amountMinor, occurredOn, files })}
         >
-          {busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text className="text-success-foreground">Confirm</Text>}
+          {busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text className="text-success-foreground">{t('common.confirm')}</Text>}
         </Button>
       </View>
     </View>
