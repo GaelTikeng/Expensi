@@ -45,7 +45,7 @@ export class UsersRepository {
 
   async updateProfile(
     userId: string,
-    patch: Partial<Pick<User, 'defaultCurrency' | 'timezone' | 'expoPushToken' | 'displayName' | 'phone' | 'avatarKey' | 'imageUrl'>>,
+    patch: Partial<Pick<User, 'defaultCurrency' | 'timezone' | 'expoPushToken' | 'displayName' | 'phone' | 'avatarKey' | 'imageUrl' | 'language'>>,
   ): Promise<User | undefined> {
     const [row] = await this.db
       .update(users)

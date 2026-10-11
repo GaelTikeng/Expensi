@@ -78,7 +78,8 @@
         {
           "locationWhenInUsePermission": "xpens-ia saves where an expense was made, only when you turn on \"Save my location\"."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

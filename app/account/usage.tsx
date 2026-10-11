@@ -1,5 +1,6 @@
 import { useAuth } from '@clerk/expo';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, View } from 'react-native';
 
 import { Group } from '@/src/components/group';
@@ -15,14 +16,15 @@ interface Usage {
 
 /** E17 / F7.6: this month's AI calls against the monthly limits. */
 export default function UsageScreen() {
+  const { t } = useTranslation();
   const { getToken } = useAuth();
   const usage = useQuery({ queryKey: keys.usage, queryFn: () => apiFetch<Usage>('/api/usage', getToken) }).data ?? null;
   useRefetchOnFocus(keys.usage);
   return (
     <ScrollView className="bg-background flex-1" contentContainerClassName="gap-2 p-4 pb-12">
-      <Group title="This month" footer="Counts start again on the 1st of each month.">
-        <UsageRow label="File imports" used={usage?.extract.used} limit={usage?.extract.limit} />
-        <UsageRow label="Recap summaries" used={usage?.narrative.used} limit={usage?.narrative.limit} />
+      <Group title={t('usage.group')} footer={t('usage.footer')}>
+        <UsageRow label={t('usage.imports')} used={usage?.extract.used} limit={usage?.extract.limit} />
+        <UsageRow label={t('usage.summaries')} used={usage?.narrative.used} limit={usage?.narrative.limit} />
       </Group>
     </ScrollView>
   );

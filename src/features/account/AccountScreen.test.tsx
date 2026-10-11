@@ -28,8 +28,9 @@ jest.mock('@/src/features/settings/useMe', () => ({
 jest.mock('@/src/features/notifications/useRecapReminders', () => ({
   useRecapReminders: () => ({ prefs: { weeklyRecapReminder: true, monthlyRecapReminder: false }, supported: true, unavailableReason: null, setWeekly: jest.fn(), setMonthly: jest.fn() }),
 }));
+jest.mock('@/src/i18n/language', () => ({ useLanguagePref: () => 'fr' }));
 jest.mock('@/src/lib/appearance', () => ({
-  APPEARANCE_OPTIONS: [{ value: 'system', label: 'Same as the phone' }],
+  APPEARANCE_VALUES: ['system', 'light', 'dark'],
   useAppearance: () => ({ appearance: 'system', setAppearance: jest.fn() }),
 }));
 
@@ -51,12 +52,13 @@ describe('AccountScreen (E17)', () => {
     expect(screen.getByText('+237 690 92 00 54')).toBeOnTheScreen();
     expect(screen.getByText('GT')).toBeOnTheScreen();
     for (const title of ['Account', 'Preferences', 'Notifications', 'Data', 'Legal']) expect(screen.getByText(title)).toBeOnTheScreen();
-    for (const row of ['Personal information', 'Currency', 'Timezone', 'Appearance', 'Reminders', 'Export expenses', 'AI usage', 'Privacy policy', 'Sign out', 'Delete account']) {
+    for (const row of ['Personal information', 'Currency', 'Timezone', 'Appearance', 'Language', 'Reminders', 'Export expenses', 'AI usage', 'Privacy policy', 'Sign out', 'Delete account']) {
       expect(screen.getByLabelText(row)).toBeOnTheScreen();
     }
     expect(screen.getByText('XAF')).toBeOnTheScreen();
     expect(screen.getByText('Douala')).toBeOnTheScreen();
     expect(screen.getByText('Weekly')).toBeOnTheScreen();
+    expect(screen.getByText('Français')).toBeOnTheScreen();
     expect(screen.queryByRole('switch')).toBeNull();
   });
 
@@ -67,6 +69,7 @@ describe('AccountScreen (E17)', () => {
       ['Currency', '/account/currency'],
       ['Timezone', '/account/timezone'],
       ['Appearance', '/account/appearance'],
+      ['Language', '/account/language'],
       ['Reminders', '/account/reminders'],
       ['Export expenses', '/export'],
       ['AI usage', '/account/usage'],

@@ -6,11 +6,8 @@ import { getPrefs, setPrefs, type DevicePrefs } from './prefs';
 
 export type Appearance = DevicePrefs['appearance'];
 
-export const APPEARANCE_OPTIONS: { value: Appearance; label: string }[] = [
-  { value: 'system', label: 'Same as the phone' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-];
+/** Choices in display order; labels are `appearance.<value>` in the translations. */
+export const APPEARANCE_VALUES: Appearance[] = ['system', 'light', 'dark'];
 
 let stopFollowingMedia: (() => void) | null = null;
 

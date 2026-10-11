@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src
 import { Input } from '@/src/components/ui/input';
 import { Separator } from '@/src/components/ui/separator';
 import { Text } from '@/src/components/ui/text';
+import { useTranslation } from 'react-i18next';
 import { useThemeColors } from '@/src/lib/theme';
 import { useEmailCodeAuth } from './useEmailCodeAuth';
 import { useGoogleAuth } from './useGoogleAuth';
@@ -19,6 +20,7 @@ import { useWarmUpBrowser } from './useWarmUpBrowser';
  */
 export function CustomSignIn() {
   const theme = useThemeColors();
+  const { t } = useTranslation();
   useWarmUpBrowser();
   const email = useEmailCodeAuth();
   const google = useGoogleAuth();
@@ -36,8 +38,8 @@ export function CustomSignIn() {
           <CardTitle className="text-2xl">xpens-ia</CardTitle>
           <CardDescription>
             {email.step === 'email'
-              ? 'Sign in or create an account with your email.'
-              : `We sent a 6-digit code to ${email.emailAddress}.`}
+              ? t('auth.intro')
+              : t('auth.codeSent', { email: email.emailAddress })}
           </CardDescription>
         </CardHeader>
 
@@ -56,17 +58,17 @@ export function CustomSignIn() {
                 onSubmitEditing={() => email.sendCode(emailText)}
               />
               <Button disabled={busy || !emailText.includes('@')} onPress={() => email.sendCode(emailText)}>
-                {email.busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>Continue with email</Text>}
+                {email.busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>{t('auth.continueWithEmail')}</Text>}
               </Button>
 
               <View className="flex-row items-center gap-2">
                 <Separator className="flex-1" />
-                <Text className="text-muted-foreground text-xs">or</Text>
+                <Text className="text-muted-foreground text-xs">{t('common.or')}</Text>
                 <Separator className="flex-1" />
               </View>
 
               <Button variant="outline" disabled={busy} onPress={google.start}>
-                {google.busy ? <ActivityIndicator /> : <Text>Continue with Google</Text>}
+                {google.busy ? <ActivityIndicator /> : <Text>{t('auth.continueWithGoogle')}</Text>}
               </Button>
             </>
           ) : (
@@ -85,7 +87,7 @@ export function CustomSignIn() {
                 onSubmitEditing={() => email.verifyCode(codeText)}
               />
               <Button disabled={busy || codeText.length < 6} onPress={() => email.verifyCode(codeText)}>
-                {email.busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>Verify</Text>}
+                {email.busy ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>{t('auth.verify')}</Text>}
               </Button>
               <Button
                 variant="link"
@@ -95,7 +97,7 @@ export function CustomSignIn() {
                   email.reset();
                 }}
               >
-                <Text>Use a different email</Text>
+                <Text>{t('auth.useDifferentEmail')}</Text>
               </Button>
             </>
           )}

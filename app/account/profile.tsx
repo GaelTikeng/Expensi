@@ -2,6 +2,7 @@ import { useAuth } from '@clerk/expo';
 import { router } from 'expo-router';
 import { Camera } from 'lucide-react-native';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 
 import { useActionSheets } from '@/src/components/action-sheet';
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { getToken } = useAuth();
   const me = useMe();
   const { show, confirm } = useActionSheets();
+  const { t } = useTranslation();
   const p = me.profile;
 
   const [displayName, setDisplayName] = useState(p?.displayName ?? '');
@@ -36,7 +38,11 @@ export default function ProfileScreen() {
     const parsed = mePatchSchema.safeParse({ displayName: displayName.trim(), phone: phone.trim() || null });
     if (!parsed.success) {
       const next: typeof errors = {};
-      for (const issue of parsed.error.issues) next[String(issue.path[0]) as keyof typeof errors] = issue.message;
+      // Field-level messages come from the translations, not the shared schema's English text.
+      for (const issue of parsed.error.issues) {
+        const field = String(issue.path[0]) as keyof typeof errors;
+        next[field] = field === 'phone' ? t('profile.phoneInvalid') : t('profile.nameRequired');
+      }
       setErrors(next);
       return;
     }
@@ -58,7 +64,7 @@ export default function ProfileScreen() {
       const key = await uploadAvatar(file, getToken);
       await me.update({ avatarKey: key });
     } catch (err) {
-      Alert.alert('Could not update the photo', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('profile.updateFailed'), err instanceof Error ? err.message : String(err));
     } finally {
       setUploading(false);
     }
@@ -66,17 +72,17 @@ export default function ProfileScreen() {
 
   const changePhoto = () =>
     show({
-      title: 'Profile photo',
+      title: t('profile.photoTitle'),
       actions: [
-        { label: 'Take photo', onPress: () => setPhoto('camera') },
-        { label: 'Choose from library', onPress: () => setPhoto('library') },
+        { label: t('profile.takePhoto'), onPress: () => setPhoto('camera') },
+        { label: t('profile.chooseFromLibrary'), onPress: () => setPhoto('library') },
         ...(p?.avatarKey
           ? [
               {
-                label: p.imageUrl ? 'Use my Google photo' : 'Remove photo',
+                label: p.imageUrl ? t('profile.useGooglePhoto') : t('profile.removePhoto'),
                 destructive: true,
                 onPress: async () => {
-                  if (await confirm({ title: 'Remove your photo?', actionLabel: 'Remove' })) await me.update({ avatarKey: null });
+                  if (await confirm({ title: t('profile.removeConfirm'), actionLabel: t('profile.remove') })) await me.update({ avatarKey: null });
                 },
               },
             ]
@@ -87,28 +93,28 @@ export default function ProfileScreen() {
   return (
     <ScrollView className="bg-background flex-1" contentContainerClassName="gap-4 p-4 pb-12" keyboardShouldPersistTaps="handled">
       <View className="items-center gap-2 py-2">
-        <Pressable onPress={changePhoto} disabled={uploading} accessibilityLabel="Change photo" className="active:opacity-80">
+        <Pressable onPress={changePhoto} disabled={uploading} accessibilityLabel={t('profile.changePhoto')} className="active:opacity-80">
           <Avatar uri={p?.avatarUrl ?? p?.imageUrl} name={p?.displayName ?? p?.email} size={96} />
           <View className="bg-primary border-background absolute -bottom-1 -right-1 size-8 items-center justify-center rounded-full border-2">
             {uploading ? <ActivityIndicator size="small" color={theme.primaryForeground} /> : <Icon as={Camera} className="text-primary-foreground size-4" />}
           </View>
         </Pressable>
-        <Text className="text-muted-foreground text-xs">{p?.avatarKey ? 'Your photo' : p?.imageUrl ? 'Photo from your Google account' : 'Tap to add a photo'}</Text>
+        <Text className="text-muted-foreground text-xs">{p?.avatarKey ? t('profile.yourPhoto') : p?.imageUrl ? t('profile.googlePhoto') : t('profile.tapToAdd')}</Text>
       </View>
 
-      <FormField label="Name" error={errors.displayName}>
-        <Input value={displayName} onChangeText={setDisplayName} placeholder="How should we call you?" autoCapitalize="words" />
+      <FormField label={t('profile.name')} error={errors.displayName}>
+        <Input value={displayName} onChangeText={setDisplayName} placeholder={t('profile.namePlaceholder')} autoCapitalize="words" />
       </FormField>
-      <FormField label="Phone" error={errors.phone} hint="Optional">
+      <FormField label={t('profile.phone')} error={errors.phone} hint={t('common.optional')}>
         <Input value={phone} onChangeText={setPhone} placeholder="+237 6 90 92 00 54" keyboardType="phone-pad" />
       </FormField>
 
-      <Group footer="Your email comes from the account you sign in with.">
-        <GroupRow label="Email" value={p?.email ?? '—'} />
+      <Group footer={t('profile.emailFooter')}>
+        <GroupRow label={t('profile.email')} value={p?.email ?? '—'} />
       </Group>
 
       <Button size="lg" className="mt-2" disabled={saving || uploading} onPress={() => void save()}>
-        {saving ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>Save</Text>}
+        {saving ? <ActivityIndicator color={theme.primaryForeground} /> : <Text>{t('common.save')}</Text>}
       </Button>
     </ScrollView>
   );

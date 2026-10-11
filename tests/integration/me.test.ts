@@ -53,6 +53,18 @@ describe('PATCH /api/me', () => {
     expect((await call(PATCH, 'PATCH', '/api/me', { body: { displayName: '' } })).status).toBe(400);
   });
 
+  it('stores the language choice (E14); null follows the phone', async () => {
+    const first = await call(GET, 'GET', '/api/me');
+    expect(first.json.language).toBeNull();
+    const de = await call(PATCH, 'PATCH', '/api/me', { body: { language: 'de' } });
+    expect(de.status).toBe(200);
+    expect(de.json.language).toBe('de');
+    expect((await call(GET, 'GET', '/api/me')).json.language).toBe('de');
+    expect((await call(PATCH, 'PATCH', '/api/me', { body: { language: 'sw' } })).status).toBe(400);
+    const back = await call(PATCH, 'PATCH', '/api/me', { body: { language: null } });
+    expect(back.json.language).toBeNull();
+  });
+
   it('rejects a currency the app does not support', async () => {
     await call(GET, 'GET', '/api/me');
     const res = await call(PATCH, 'PATCH', '/api/me', { body: { defaultCurrency: 'ZZZ' } });

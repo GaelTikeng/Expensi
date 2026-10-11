@@ -1,3 +1,5 @@
+import { t } from '@/src/i18n';
+
 /**
  * Clerk error helpers. Deliberately free of `@clerk/expo` imports so this
  * module stays unit-testable in Node: the check below is the same structural
@@ -43,17 +45,17 @@ export function clerkErrorMessage(err: unknown): string {
     const first = err.errors[0];
     switch (first?.code) {
       case CLERK_CODES.codeIncorrect:
-        return 'That code is not right. Check the email and try again.';
+        return t('auth.errors.codeIncorrect');
       case CLERK_CODES.verificationExpired:
-        return 'That code has expired. Request a new one.';
+        return t('auth.errors.codeExpired');
       case 'form_param_format_invalid':
-        return 'That does not look like a valid email address.';
+        return t('auth.errors.emailInvalid');
       case 'too_many_requests':
-        return 'Too many attempts. Wait a minute and try again.';
+        return t('auth.errors.tooManyAttempts');
       default:
-        return first?.longMessage ?? first?.message ?? 'Something went wrong. Please try again.';
+        return first?.longMessage ?? first?.message ?? t('auth.errors.generic');
     }
   }
   if (err instanceof Error && err.message) return err.message;
-  return 'Something went wrong. Please try again.';
+  return t('auth.errors.generic');
 }

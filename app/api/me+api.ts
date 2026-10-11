@@ -4,6 +4,7 @@ import type { User } from '@/src/server/db/schema';
 import { UsersRepository } from '@/src/server/repositories/users';
 import { deleteAccountData } from '@/src/server/services/account';
 import { deleteObject, headObject, isStorageConfigured, presignGet } from '@/src/server/storage/s3';
+import { isLanguage } from '@/src/i18n/languages';
 import { isAvatarKeyOf, MAX_AVATAR_BYTES, mePatchSchema, type MeProfile } from '@/src/lib/schemas/profile';
 
 const AVATAR_URL_TTL = 900;
@@ -20,6 +21,7 @@ async function profile(user: User): Promise<MeProfile> {
     imageUrl: user.imageUrl,
     avatarKey: user.avatarKey,
     avatarUrl,
+    language: isLanguage(user.language) ? user.language : null,
   };
 }
 

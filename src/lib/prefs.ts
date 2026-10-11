@@ -14,9 +14,11 @@ export interface DevicePrefs {
   appearance: 'system' | 'light' | 'dark';
   /** E16: capture the GPS position when creating an expense. */
   saveLocation: boolean;
+  /** E14: UI language; "system" follows the phone. Mirrors users.language once signed in. */
+  language: 'system' | 'en' | 'fr' | 'de';
 }
 
-const DEFAULTS: DevicePrefs = { weeklyRecapReminder: false, monthlyRecapReminder: false, recapReminderTime: '09:00', appearance: 'system', saveLocation: false };
+const DEFAULTS: DevicePrefs = { weeklyRecapReminder: false, monthlyRecapReminder: false, recapReminderTime: '09:00', appearance: 'system', saveLocation: false, language: 'system' };
 const PATH = `${FileSystem.documentDirectory ?? FileSystem.cacheDirectory}device-prefs.json`;
 
 let cache: DevicePrefs | null = null;

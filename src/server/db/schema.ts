@@ -102,6 +102,8 @@ export const users = pgTable(
     /** E15: custom avatar in S3, `users/{id}/avatar/{uuid}.jpg`; wins over imageUrl. */
     avatarKey: text('avatar_key'),
     phone: varchar('phone', { length: 32 }),
+    /** E14: 'en' | 'fr' | 'de'; null means follow the phone's language. */
+    language: varchar('language', { length: 8 }),
     ...auditCols,
   },
   (t) => [uniqueIndex('users_clerk_user_id_key').on(t.clerkUserId)],

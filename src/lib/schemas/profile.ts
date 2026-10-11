@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { LANGUAGES, type Language } from '../../i18n/languages';
 import { CURRENCY_CODES } from '../currencies';
 import { isKnownTimezone } from '../timezones';
 
@@ -36,6 +37,8 @@ export const mePatchSchema = z
     phone: phoneSchema.nullable().optional(),
     /** Key returned by `POST /api/me/avatar` once uploaded; null removes the custom avatar. */
     avatarKey: z.string().min(1).nullable().optional(),
+    /** E14: null follows the phone's language. */
+    language: z.enum(LANGUAGES).nullable().optional(),
   })
   .strict();
 export type MePatchBody = z.infer<typeof mePatchSchema>;
@@ -52,4 +55,6 @@ export interface MeProfile {
   /** Custom avatar uploaded in the app: its storage key and a short-lived view URL. */
   avatarKey: string | null;
   avatarUrl: string | null;
+  /** E14: chosen language, or null to follow the phone. */
+  language: Language | null;
 }

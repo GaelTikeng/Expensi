@@ -5,6 +5,10 @@
  */
 require('react-native-gesture-handler/jestSetup');
 
+// E14: translations initialised (English) for every component test.
+require('@/src/i18n');
+jest.mock('expo-localization', () => ({ getLocales: () => [{ languageCode: 'en', languageTag: 'en-GB' }] }));
+
 // Reanimated 4's own test setup (with the worklets resolver in jest.config.js).
 require('react-native-reanimated').setUpTests();
 

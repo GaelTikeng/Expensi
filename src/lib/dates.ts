@@ -1,3 +1,5 @@
+import { formatLocale } from './locale';
+
 /**
  * Calendar-date helpers. Dates are `YYYY-MM-DD` strings everywhere (DB `date`
  * columns, API payloads, UI state); a Date object only appears transiently for
@@ -55,17 +57,17 @@ export function monthKey(iso: ISODate): string {
   return iso.slice(0, 7);
 }
 
-export function formatDayLabel(iso: ISODate, locale = 'en-GB'): string {
+export function formatDayLabel(iso: ISODate, locale = formatLocale() ?? 'en-GB'): string {
   return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(
     parseISODate(iso),
   );
 }
 
-export function formatMonthLabel(iso: ISODate, locale = 'en-GB'): string {
+export function formatMonthLabel(iso: ISODate, locale = formatLocale() ?? 'en-GB'): string {
   return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(parseISODate(iso));
 }
 
-export function relativeDayLabel(iso: ISODate, now = new Date(), locale = 'en-GB'): string {
+export function relativeDayLabel(iso: ISODate, now = new Date(), locale = formatLocale() ?? 'en-GB'): string {
   const today = toISODate(now);
   if (iso === today) return 'Today';
   if (iso === addDays(today, -1)) return 'Yesterday';
@@ -160,7 +162,7 @@ export function nextPeriodStart(period: RecapPeriod, start: ISODate): ISODate {
 }
 
 /** "Today", "This week", "October 2026", "Week of 28 Sep", … */
-export function periodLabel(period: RecapPeriod, start: ISODate, now = new Date(), locale = 'en-GB'): string {
+export function periodLabel(period: RecapPeriod, start: ISODate, now = new Date(), locale = formatLocale() ?? 'en-GB'): string {
   const s = periodStart(period, start);
   const today = toISODate(now);
   if (period === 'day') return relativeDayLabel(s, now, locale);

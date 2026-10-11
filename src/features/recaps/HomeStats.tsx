@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { Pressable, View } from 'react-native';
 
 import { loadingA11y, SkeletonLine } from '@/src/components/skeletons';
@@ -8,6 +9,7 @@ import { Skeleton } from '@/src/components/ui/skeleton';
 import { Text } from '@/src/components/ui/text';
 import type { CurrencyLookup } from '@/src/features/expenses/money-utils';
 import { daysInMonth, todayISO, type RecapPeriod } from '@/src/lib/dates';
+import { pluralKey } from '@/src/i18n';
 import { formatMoney } from '@/src/lib/money';
 import type { RecapOverview } from '@/src/lib/schemas/recap';
 import { cn } from '@/src/lib/utils';
@@ -20,6 +22,7 @@ import { CategoryDonut } from './donut';
  * variable, and the top payees. Every card opens the matching recap.
  */
 export function HomeStats({ overview, lookup }: { overview: RecapOverview; lookup: CurrencyLookup }) {
+  const { t } = useTranslation();
   const { week, month } = overview;
   const currency = lookup(month.currency);
   const openRecap = (period: RecapPeriod) => router.push({ pathname: '/(tabs)/recaps', params: { period, start: todayISO() } });
@@ -27,8 +30,8 @@ export function HomeStats({ overview, lookup }: { overview: RecapOverview; looku
   if (month.count === 0 && week.count === 0) {
     return (
       <View className="bg-card border-border items-center gap-1 rounded-lg border p-5">
-        <Text className="font-semibold">Nothing recorded this month yet</Text>
-        <Text className="text-muted-foreground text-center text-[13px]">Add an expense or import a file, and your charts appear here.</Text>
+        <Text className="font-semibold">{t('stats.emptyTitle')}</Text>
+        <Text className="text-muted-foreground text-center text-[13px]">{t('stats.emptyBody')}</Text>
       </View>
     );
   }
@@ -36,13 +39,13 @@ export function HomeStats({ overview, lookup }: { overview: RecapOverview; looku
   return (
     <>
       {week.count > 0 ? (
-        <StatCard title="This week, day by day" onPress={() => openRecap('week')}>
+        <StatCard title={t('stats.weekByDay')} onPress={() => openRecap('week')}>
           <DayColumns days={week.byDay} currency={lookup(week.currency)} />
         </StatCard>
       ) : null}
 
       {month.byCategory.length > 0 ? (
-        <StatCard title="This month by category" onPress={() => openRecap('month')}>
+        <StatCard title={t('stats.monthByCategory')} onPress={() => openRecap('month')}>
           <CategoryDonut rows={month.byCategory} totalMinor={month.totalMinor} currency={currency} />
         </StatCard>
       ) : null}
@@ -50,20 +53,20 @@ export function HomeStats({ overview, lookup }: { overview: RecapOverview; looku
       <PaceCard month={month} currency={currency} onPress={() => openRecap('month')} />
 
       {month.fixedMinor > 0 ? (
-        <StatCard title="Fixed charges vs everything else" onPress={() => openRecap('month')}>
+        <StatCard title={t('stats.fixedVsOther')} onPress={() => openRecap('month')}>
           <View className="h-2.5 flex-row overflow-hidden rounded-full">
             <View className="bg-warning" style={{ flex: Math.max(month.fixedMinor, 1) }} />
             <View className="bg-primary" style={{ flex: Math.max(month.variableMinor, 1) }} />
           </View>
           <View className="flex-row justify-between">
-            <Legend color="bg-warning" label={`Fixed ${formatMoney(month.fixedMinor, currency)}`} />
-            <Legend color="bg-primary" label={`Other ${formatMoney(month.variableMinor, currency)}`} />
+            <Legend color="bg-warning" label={t('stats.fixed', { amount: formatMoney(month.fixedMinor, currency) })} />
+            <Legend color="bg-primary" label={t('stats.other', { amount: formatMoney(month.variableMinor, currency) })} />
           </View>
         </StatCard>
       ) : null}
 
       {month.byPayee.length > 0 ? (
-        <StatCard title="Where the money went" onPress={() => openRecap('month')}>
+        <StatCard title={t('stats.whereMoneyWent')} onPress={() => openRecap('month')}>
           {month.byPayee.slice(0, 3).map((p) => (
             <View key={p.payee} className="flex-row items-center justify-between gap-3">
               <Text className="shrink text-sm" numberOfLines={1}>
@@ -89,19 +92,24 @@ function PaceCard({ month, currency, onPress }: { month: RecapOverview['month'];
   const projected = Math.round(perDay * total);
   const max = Math.max(month.totalMinor, month.previous.totalMinor, projected, 1);
   const faster = prevPerDay > 0 && perDay > prevPerDay;
+  const { t } = useTranslation();
+  const pace =
+    prevPerDay > 0
+      ? t('stats.perDayVersus', { amount: formatMoney(Math.round(perDay), currency), previous: formatMoney(Math.round(prevPerDay), currency) })
+      : t('stats.perDay', { amount: formatMoney(Math.round(perDay), currency) });
+  const onTrack = month.totalMinor > 0 && elapsed < total ? ` · ${t('stats.onTrack', { amount: formatMoney(projected, currency) })}` : '';
 
   return (
-    <StatCard title="This month vs last month" onPress={onPress}>
-      <Bar label={`So far (${elapsed} day${elapsed === 1 ? '' : 's'})`} value={month.totalMinor} max={max} currency={currency} className="bg-primary" />
-      <Bar label="Last month" value={month.previous.totalMinor} max={max} currency={currency} className="bg-muted-foreground/40" />
+    <StatCard title={t('stats.monthVsLast')} onPress={onPress}>
+      <Bar label={t(pluralKey('stats.soFar', elapsed), { n: elapsed })} value={month.totalMinor} max={max} currency={currency} className="bg-primary" />
+      <Bar label={t('stats.lastMonth')} value={month.previous.totalMinor} max={max} currency={currency} className="bg-muted-foreground/40" />
       <Text className="text-muted-foreground text-xs">
-        {formatMoney(Math.round(perDay), currency)} a day
-        {prevPerDay > 0 ? ` vs ${formatMoney(Math.round(prevPerDay), currency)} last month` : ''}
-        {month.totalMinor > 0 && elapsed < total ? ` · on track for ${formatMoney(projected, currency)}` : ''}
+        {pace}
+        {onTrack}
       </Text>
       {prevPerDay > 0 ? (
         <Text className={cn('text-xs font-semibold', faster ? 'text-destructive' : 'text-success')}>
-          {faster ? 'Spending faster than last month' : 'Spending slower than last month'}
+          {faster ? t('stats.faster') : t('stats.slower')}
         </Text>
       ) : null}
     </StatCard>

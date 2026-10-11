@@ -1,3 +1,5 @@
+import { formatLocale } from './locale';
+
 /**
  * Money helpers. Amounts are integer minor units; the exponent comes from the
  * `currencies` table. Never do arithmetic on formatted strings.
@@ -24,7 +26,7 @@ export function toMinor(amountMajor: number, exponent: number): number {
 export function formatMoney(
   amountMinor: number,
   currency: CurrencyInfo,
-  locale = 'fr-FR',
+  locale = formatLocale() ?? 'fr-FR',
 ): string {
   const major = toMajor(amountMinor, currency.exponent);
   const num = new Intl.NumberFormat(locale, {
