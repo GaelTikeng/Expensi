@@ -1,0 +1,188 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "optional": "Facultatif",
+    "or": "ou"
+  },
+  "tabs": {
+    "home": "Accueil",
+    "expenses": "Dépenses",
+    "plan": "Planifier",
+    "recaps": "Bilans"
+  },
+  "screens": {
+    "newExpense": "Nouvelle dépense",
+    "expense": "Dépense",
+    "imports": "Imports",
+    "reviewImport": "Vérifier l'import",
+    "planExpense": "Planifier une dépense",
+    "plannedExpense": "Dépense planifiée",
+    "month": "Mois",
+    "newFixedCharge": "Nouvelle charge fixe",
+    "fixedCharge": "Charge fixe",
+    "account": "Compte",
+    "personalInfo": "Informations personnelles",
+    "currency": "Devise",
+    "timezone": "Fuseau horaire",
+    "appearance": "Apparence",
+    "language": "Langue",
+    "reminders": "Rappels",
+    "aiUsage": "Utilisation de l'IA",
+    "exportExpenses": "Exporter les dépenses",
+    "privacy": "Confidentialité"
+  },
+  "home": {
+    "account": "Compte",
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois-ci",
+    "yesterday": "hier",
+    "lastWeek": "la semaine dernière",
+    "lastMonth": "le mois dernier",
+    "items_one": "{{n}} dépense",
+    "items_other": "{{n}} dépenses",
+    "versus": "{{arrow}} {{amount}} par rapport à {{period}}",
+    "importFile": "Importer un fichier",
+    "addExpense": "Ajouter une dépense"
+  },
+  "stats": {
+    "emptyTitle": "Rien d'enregistré ce mois-ci",
+    "emptyBody": "Ajoutez une dépense ou importez un fichier, et vos graphiques apparaîtront ici.",
+    "weekByDay": "Cette semaine, jour par jour",
+    "monthByCategory": "Ce mois-ci par catégorie",
+    "monthVsLast": "Ce mois-ci et le mois dernier",
+    "fixedVsOther": "Charges fixes et le reste",
+    "whereMoneyWent": "Où est passé l'argent",
+    "fixed": "Fixes {{amount}}",
+    "other": "Autres {{amount}}",
+    "soFar_one": "Jusqu'ici ({{n}} jour)",
+    "soFar_other": "Jusqu'ici ({{n}} jours)",
+    "lastMonth": "Le mois dernier",
+    "perDay": "{{amount}} par jour",
+    "perDayVersus": "{{amount}} par jour contre {{previous}} le mois dernier",
+    "onTrack": "en route pour {{amount}}",
+    "faster": "Vous dépensez plus vite que le mois dernier",
+    "slower": "Vous dépensez moins vite que le mois dernier",
+    "donutCenter": "ce mois-ci",
+    "otherCategories": "Autres ({{n}})",
+    "ofBudget": "{{pct}} % du budget"
+  },
+  "account": {
+    "yourAccount": "Votre compte",
+    "version": "version {{version}}",
+    "deleting": "Suppression…",
+    "groups": {
+      "account": "Compte",
+      "preferences": "Préférences",
+      "notifications": "Notifications",
+      "data": "Données",
+      "legal": "Mentions légales"
+    },
+    "rows": {
+      "personalInfo": "Informations personnelles",
+      "currency": "Devise",
+      "timezone": "Fuseau horaire",
+      "appearance": "Apparence",
+      "language": "Langue",
+      "reminders": "Rappels",
+      "export": "Exporter les dépenses",
+      "aiUsage": "Utilisation de l'IA",
+      "privacy": "Politique de confidentialité",
+      "signOut": "Se déconnecter",
+      "deleteAccount": "Supprimer le compte"
+    },
+    "remindersValue": {
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel",
+      "off": "Désactivés",
+      "unavailable": "Indisponibles"
+    },
+    "signOutConfirm": {
+      "title": "Se déconnecter ?",
+      "message": "Vous pouvez vous reconnecter à tout moment avec votre e-mail ou Google.",
+      "action": "Se déconnecter"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer votre compte ?",
+      "message": "Vos dépenses, plans, imports et pièces jointes seront définitivement supprimés. Cette action est irréversible.",
+      "action": "Supprimer mon compte"
+    }
+  },
+  "language": {
+    "system": "Comme le téléphone",
+    "footer": "S'applique à toute l'application. Enregistré sur votre compte, il vous suit sur vos autres appareils."
+  },
+  "appearance": {
+    "system": "Comme le téléphone",
+    "light": "Clair",
+    "dark": "Sombre",
+    "footer": "S'applique à ce téléphone uniquement."
+  },
+  "currency": {
+    "footer": "Les nouvelles dépenses commencent dans cette devise, et les bilans et l'accueil font leurs totaux avec.",
+    "names": {
+      "XAF": "Franc CFA (CEMAC)",
+      "XOF": "Franc CFA (UEMOA)",
+      "EUR": "Euro",
+      "USD": "Dollar américain",
+      "GBP": "Livre sterling",
+      "NGN": "Naira nigérian"
+    }
+  },
+  "timezone": {
+    "footer": "Utilisé pour les dépenses planifiées, les rappels et pour savoir quel jour on est."
+  },
+  "reminders": {
+    "group": "Bilans",
+    "weekly": "Bilan hebdomadaire",
+    "weeklyDescription": "Chaque lundi matin",
+    "monthly": "Bilan mensuel",
+    "monthlyDescription": "Le 1er de chaque mois",
+    "footerWeb": "Les rappels sont disponibles dans l'application mobile.",
+    "footerExpoGo": "Les rappels nécessitent la version complète de l'application. Expo Go sur Android ne prend pas en charge les notifications.",
+    "footerDefault": "Les dépenses planifiées vous rappellent toujours la veille et à l'heure prévue."
+  },
+  "usage": {
+    "group": "Ce mois-ci",
+    "imports": "Imports de fichiers",
+    "summaries": "Résumés de bilans",
+    "footer": "Les compteurs repartent à zéro le 1er de chaque mois."
+  },
+  "profile": {
+    "photoTitle": "Photo de profil",
+    "takePhoto": "Prendre une photo",
+    "chooseFromLibrary": "Choisir dans la galerie",
+    "useGooglePhoto": "Utiliser ma photo Google",
+    "removePhoto": "Retirer la photo",
+    "removeConfirm": "Retirer votre photo ?",
+    "remove": "Retirer",
+    "updateFailed": "Impossible de mettre à jour la photo",
+    "changePhoto": "Changer la photo",
+    "yourPhoto": "Votre photo",
+    "googlePhoto": "Photo de votre compte Google",
+    "tapToAdd": "Touchez pour ajouter une photo",
+    "name": "Nom",
+    "namePlaceholder": "Comment doit-on vous appeler ?",
+    "nameRequired": "Le nom est obligatoire",
+    "phone": "Téléphone",
+    "phoneInvalid": "Saisissez un numéro comme +237 6 90 92 00 54",
+    "email": "E-mail",
+    "emailFooter": "Votre e-mail vient du compte avec lequel vous vous connectez."
+  },
+  "auth": {
+    "intro": "Connectez-vous ou créez un compte avec votre e-mail.",
+    "codeSent": "Nous avons envoyé un code à 6 chiffres à {{email}}.",
+    "continueWithEmail": "Continuer avec l'e-mail",
+    "continueWithGoogle": "Continuer avec Google",
+    "verify": "Vérifier",
+    "useDifferentEmail": "Utiliser une autre adresse",
+    "errors": {
+      "codeIncorrect": "Ce code n'est pas le bon. Vérifiez l'e-mail et réessayez.",
+      "codeExpired": "Ce code a expiré. Demandez-en un nouveau.",
+      "emailInvalid": "Cette adresse e-mail ne semble pas valide.",
+      "tooManyAttempts": "Trop de tentatives. Patientez une minute et réessayez.",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
+    }
+  }
+}

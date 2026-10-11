@@ -1,0 +1,188 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "optional": "Optional",
+    "or": "or"
+  },
+  "tabs": {
+    "home": "Home",
+    "expenses": "Expenses",
+    "plan": "Plan",
+    "recaps": "Recaps"
+  },
+  "screens": {
+    "newExpense": "New expense",
+    "expense": "Expense",
+    "imports": "Imports",
+    "reviewImport": "Review import",
+    "planExpense": "Plan an expense",
+    "plannedExpense": "Planned expense",
+    "month": "Month",
+    "newFixedCharge": "New fixed charge",
+    "fixedCharge": "Fixed charge",
+    "account": "Account",
+    "personalInfo": "Personal information",
+    "currency": "Currency",
+    "timezone": "Timezone",
+    "appearance": "Appearance",
+    "language": "Language",
+    "reminders": "Reminders",
+    "aiUsage": "AI usage",
+    "exportExpenses": "Export expenses",
+    "privacy": "Privacy"
+  },
+  "home": {
+    "account": "Account",
+    "today": "Today",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "yesterday": "yesterday",
+    "lastWeek": "last week",
+    "lastMonth": "last month",
+    "items_one": "{{n}} item",
+    "items_other": "{{n}} items",
+    "versus": "{{arrow}} {{amount}} vs {{period}}",
+    "importFile": "Import a file",
+    "addExpense": "Add expense"
+  },
+  "stats": {
+    "emptyTitle": "Nothing recorded this month yet",
+    "emptyBody": "Add an expense or import a file, and your charts appear here.",
+    "weekByDay": "This week, day by day",
+    "monthByCategory": "This month by category",
+    "monthVsLast": "This month vs last month",
+    "fixedVsOther": "Fixed charges vs everything else",
+    "whereMoneyWent": "Where the money went",
+    "fixed": "Fixed {{amount}}",
+    "other": "Other {{amount}}",
+    "soFar_one": "So far ({{n}} day)",
+    "soFar_other": "So far ({{n}} days)",
+    "lastMonth": "Last month",
+    "perDay": "{{amount}} a day",
+    "perDayVersus": "{{amount}} a day vs {{previous}} last month",
+    "onTrack": "on track for {{amount}}",
+    "faster": "Spending faster than last month",
+    "slower": "Spending slower than last month",
+    "donutCenter": "this month",
+    "otherCategories": "Other ({{n}})",
+    "ofBudget": "{{pct}}% of budget"
+  },
+  "account": {
+    "yourAccount": "Your account",
+    "version": "version {{version}}",
+    "deleting": "Deleting…",
+    "groups": {
+      "account": "Account",
+      "preferences": "Preferences",
+      "notifications": "Notifications",
+      "data": "Data",
+      "legal": "Legal"
+    },
+    "rows": {
+      "personalInfo": "Personal information",
+      "currency": "Currency",
+      "timezone": "Timezone",
+      "appearance": "Appearance",
+      "language": "Language",
+      "reminders": "Reminders",
+      "export": "Export expenses",
+      "aiUsage": "AI usage",
+      "privacy": "Privacy policy",
+      "signOut": "Sign out",
+      "deleteAccount": "Delete account"
+    },
+    "remindersValue": {
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "off": "Off",
+      "unavailable": "Unavailable"
+    },
+    "signOutConfirm": {
+      "title": "Sign out?",
+      "message": "You can sign back in at any time with your email or Google.",
+      "action": "Sign out"
+    },
+    "deleteConfirm": {
+      "title": "Delete your account?",
+      "message": "This permanently removes your expenses, plans, imports and attachments. It cannot be undone.",
+      "action": "Delete my account"
+    }
+  },
+  "language": {
+    "system": "Same as the phone",
+    "footer": "Changes the whole app. Saved to your account, so it follows you to other devices."
+  },
+  "appearance": {
+    "system": "Same as the phone",
+    "light": "Light",
+    "dark": "Dark",
+    "footer": "Applies to this phone only."
+  },
+  "currency": {
+    "footer": "New expenses start in this currency, and recaps and the home screen add up totals in it.",
+    "names": {
+      "XAF": "Central African CFA franc",
+      "XOF": "West African CFA franc",
+      "EUR": "Euro",
+      "USD": "US dollar",
+      "GBP": "Pound sterling",
+      "NGN": "Nigerian naira"
+    }
+  },
+  "timezone": {
+    "footer": "Used for planned expenses, reminders and what counts as today."
+  },
+  "reminders": {
+    "group": "Recaps",
+    "weekly": "Weekly recap",
+    "weeklyDescription": "Every Monday morning",
+    "monthly": "Monthly recap",
+    "monthlyDescription": "On the 1st of each month",
+    "footerWeb": "Reminders are available in the mobile app.",
+    "footerExpoGo": "Reminders need the full app build. Expo Go on Android does not include notifications.",
+    "footerDefault": "Planned expenses always remind you the day before and at the set time."
+  },
+  "usage": {
+    "group": "This month",
+    "imports": "File imports",
+    "summaries": "Recap summaries",
+    "footer": "Counts start again on the 1st of each month."
+  },
+  "profile": {
+    "photoTitle": "Profile photo",
+    "takePhoto": "Take photo",
+    "chooseFromLibrary": "Choose from library",
+    "useGooglePhoto": "Use my Google photo",
+    "removePhoto": "Remove photo",
+    "removeConfirm": "Remove your photo?",
+    "remove": "Remove",
+    "updateFailed": "Could not update the photo",
+    "changePhoto": "Change photo",
+    "yourPhoto": "Your photo",
+    "googlePhoto": "Photo from your Google account",
+    "tapToAdd": "Tap to add a photo",
+    "name": "Name",
+    "namePlaceholder": "How should we call you?",
+    "nameRequired": "Name is required",
+    "phone": "Phone",
+    "phoneInvalid": "Enter a phone number like +237 6 90 92 00 54",
+    "email": "Email",
+    "emailFooter": "Your email comes from the account you sign in with."
+  },
+  "auth": {
+    "intro": "Sign in or create an account with your email.",
+    "codeSent": "We sent a 6-digit code to {{email}}.",
+    "continueWithEmail": "Continue with email",
+    "continueWithGoogle": "Continue with Google",
+    "verify": "Verify",
+    "useDifferentEmail": "Use a different email",
+    "errors": {
+      "codeIncorrect": "That code is not right. Check the email and try again.",
+      "codeExpired": "That code has expired. Request a new one.",
+      "emailInvalid": "That does not look like a valid email address.",
+      "tooManyAttempts": "Too many attempts. Wait a minute and try again.",
+      "generic": "Something went wrong. Please try again."
+    }
+  }
+}

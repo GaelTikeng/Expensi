@@ -51,6 +51,7 @@ the design must not hard-code that. iOS + Android, public app.
 | Action sheets | `src/components/action-sheet.tsx` (`ActionSheetHost` at the root, `useActionSheets().confirm/show`): iOS uses the system sheet via `@expo/react-native-action-sheet`; Android and web draw our own sheet over an `expo-blur` backdrop (NativeWindUI Action Sheet pattern) | every in-place choice (delete, skip, add proof, commit) is a sheet; plain messages stay `Alert` |
 | Location | **`expo-location`** (one foreground fix + reverse geocode) and **`react-native-maps`** (static map in the expense detail; web shows a link instead via `LocationMap.web.tsx`) | E16. Android dev/store builds need `android.config.googleMaps.apiKey` in `app.json`; Expo Go has its own key |
 | Export | `xlsx` (SheetJS, already present) for spreadsheets, **`pdf-lib`** for the PDF statement (pure JS, standard fonts), **`expo-sharing`** to hand the file to the share sheet | `src/server/services/export/*`, `app/api/expenses/export+api.ts`, `src/features/export/*`; see E10 |
+| Translations | **`i18next`** + **`react-i18next`** (own instance in `src/i18n/index.ts`, typed keys via `i18next.d.ts`), **`expo-localization`** for the phone's language | E14: English, French, German; one JSON per language in `src/i18n/locales/` |
 | Client cache | **TanStack Query 5** (`@tanstack/react-query`) | `src/lib/query.ts`: `queryClient`, `keys`, `invalidate`, `useRefetchOnFocus`; see D15 |
 | Native builds | **EAS Build**, project `@gaeltikeng/xpens-ia`; `expo-dev-client`; pnpm pinned to **9.15.2** in every `eas.json` profile | EAS defaults to pnpm 11, which ignores `package.json#pnpm`; see `docs/DEPLOY.md` |
 
@@ -136,11 +137,11 @@ minted by the API.
 
 Source of truth: `src/server/db/schema.ts`. Migrations in `src/server/db/migrations/`
 (`0000_curious_whiplash.sql`: 11 tables, 8 enums; `0001_strong_nova.sql`: drops
-`currencies`, D14). Tables:
+`currencies`, D14; `0002`–`0004`: profile, expense location, language). Tables:
 
 | Table | Purpose | Status |
 |---|---|---|
-| `users` | one row per Clerk user; currency, timezone, push token | done |
+| `users` | one row per Clerk user; currency, timezone, push token, profile (E15), `language` (E14, null = follow the phone) | done |
 | `categories` | per-user, optional monthly budget, one-level `parent_id` | done |
 | `expenses` | the ledger; `import_item_id` and `recurring_charge_id` audit links | done |
 | `imports` | one row per uploaded xlsx/csv/pdf; `storage_key` into S3, status, model, tokens | done |
@@ -217,7 +218,8 @@ expense-app/
 │   │   ├── settings/                  useMe (profile + currencies), OptionPicker
 │   │   ├── account/                   AccountScreen (E17)
 │   │   └── profile/                   avatar upload (E15)
-│   └── lib/                           api, query (cache), currencies, appearance, money, dates (+periods), uuid, prefs, timezones, schemas/
+│   ├── i18n/                          index (instance, pluralKey), languages (pure), language (device + choice), locales/{en,fr,de}.json
+│   └── lib/                           api, query (cache), currencies, appearance, locale, money, dates (+periods), uuid, prefs, timezones, schemas/
 ├── eas.json                           build profiles
 ├── scripts/tensorx-check.mjs          F3.3 capability probe
 ├── tests/e2e/api.e2e.test.ts          end-to-end API test incl. S3 uploads (pnpm test:e2e, E2E_BASE_URL)
@@ -243,8 +245,11 @@ All v2 screens exist; see §6 for what each still lacks.
 4. Dates: calendar dates as `date`, instants as `timestamptz`. Planned expenses use
    `timestamptz` because the reminder is a moment in time, interpreted in
    `users.timezone`.
-5. Locale: `.` and thin space are thousands separators, `,` is decimal; numeric dates
-   DD/MM; default currency XAF; default timezone Africa/Douala. Overridable per user.
+5. Locale: numbers and dates follow the app language (E14: en-GB, fr-FR, de-DE);
+   numeric dates are DD/MM in all three. Server-side formatting defaults to fr-FR.
+   Default currency XAF; default timezone Africa/Douala. Overridable per user.
+   Every user-facing string goes through `t()`; add the key to all three files in
+   `src/i18n/locales/` (the key-parity test fails otherwise).
 6. Migrations (E13): any change to `src/server/db/schema.ts` → `pnpm db:generate`
    (new SQL file + journal + snapshot) → read the SQL → `pnpm db:migrate` against the
    **direct** Neon URL → commit schema, migration and journal together. Never edit a
@@ -409,13 +414,14 @@ migration in the same commit, and CI proves it.
 - [x] F13.3 `src/server/db/migrations.test.ts`: every journal entry has its SQL file and snapshot, every SQL file is in the journal, entries are sequential and chronological (unit project). The integration setup applies the folder to the test branch on every run
 - [x] F13.4 `docs/NEON_NOTES.md` § "Changing the schema": commands in order, forward-only rule, rename prompt caveat
 
-### E14 — Internationalisation (English, French)
-Registered 2026-10-10. Library: **react-i18next** (+ `i18next`, `expo-localization`); register them in §2 when installed.
-- [ ] F14.1 Setup: `src/i18n/` with `en.json` and `fr.json` namespaces (common, expenses, plan, recaps, imports, settings, errors), initialised before the root layout; device locale via `expo-localization`, override stored in prefs; language row in the account hub (E17)
-- [ ] F14.2 Extract every user-facing string from screens and components (`t('…')`), including alerts, action sheets, skeleton a11y labels, form validation messages (zod messages mapped by key, not text)
-- [ ] F14.3 Server strings: API routes return codes only (`invalid_body`, `too_many_rows`…); the client maps codes to translated messages. Model-facing prompts stay English; the recap narrative is requested in the user's language
-- [ ] F14.4 Locale-aware formatting through one helper: dates (`formatDDMMYYYY` already DD/MM), money (`formatMoney` locale arg), relative day labels, month names
-- [ ] F14.5 Tests: a unit test that `en.json` and `fr.json` have identical key sets; component tests run in both languages for one screen
+### E14 — Internationalisation (English, French, German)
+Started 2026-10-11 (German added at the owner's request). Two PRs: A = setup,
+language screen and app shell; B = every remaining screen and the server side.
+- [x] F14.1 Setup (PR A): `src/i18n/index.ts` (own i18next instance, bundled `locales/{en,fr,de}.json`, synchronous init, `pluralKey()` for `_one`/`_other` without `Intl.PluralRules`; no native imports, so it also runs in Node), `src/i18n/languages.ts` (pure constants shared with the server), `src/i18n/language.ts` (`deviceLanguage()` via `expo-localization`, `applyLanguage()` switches i18next and the number/date locale together, `loadLanguage()` at start, `useLanguagePref()`), typed keys (`i18next.d.ts`). Choice stored in device prefs and on the account (`users.language`, migration `0004_polite_supernaut`; `PATCH /api/me { language }`, null = follow the phone); the tabs layout applies the account's value once loaded. Language row + `app/account/language.tsx` (same as the phone / English / Français / Deutsch)
+- [~] F14.2 Strings extracted (PR A): root and tab titles, Home and its stats cards and donut, the account hub and all its sub-screens (profile, currency incl. currency names, timezone, appearance, language, reminders, AI usage), action-sheet Cancel, Expo Go sign-in and its Clerk error messages (`src/features/auth/errors.ts`). **PR B:** expenses, plans, fixed charges, recaps (incl. chart day letters, relative day labels "Today"/"This week" in `dates.ts`), imports, export, forms and their zod messages, alerts, skeleton a11y labels, privacy page, notification texts, Clerk web `<SignIn>` localization; default category names (stored data) to be decided
+- [ ] F14.3 Server strings (PR B): API routes return codes only; the client maps codes to translated messages. Model prompts stay English; the recap narrative is requested in `users.language`; export headings translated
+- [x] F14.4 Formatting follows the language: `src/lib/locale.ts` holds the active locale (`en-GB`, `fr-FR`, `de-DE`); `formatMoney` and the `dates.ts` label helpers default to it (server and tests keep `fr-FR` / `en-GB`). Home's date header uses it. 5 000 FCFA / 5,000 FCFA / 5.000 FCFA
+- [x] F14.5 Tests: `src/i18n/i18n.test.ts` (fr and de have exactly the English keys, the same `{{variables}}`, no empty strings, plural pairs; switching and plural picks per language) and `src/i18n/language.test.ts` (phone language detection, `system` resolution, UI + number format switch together, stored choice loaded without write-back); hub test covers the Language row
 
 ### E15 — Profile and avatar
 Built 2026-10-10.
@@ -435,7 +441,7 @@ Built 2026-10-10. Optional GPS position on an expense, shown on a map in the det
 ### E17 — Account hub (replaces the Settings tab)
 Built 2026-10-10 (first cut), modelled on the screenshots provided (name, phone/email and avatar header; grouped rows; sign out; version footer).
 - [x] F17.1 Home header: today's date on the left, the avatar on the right opening `/account`; the greeting is gone
-- [~] F17.2 `src/features/account/AccountScreen.tsx` (route `app/account/index.tsx`) is a menu (2026-10-10 redesign after owner feedback): header (name, phone or email, photo); groups of `MenuRow`s (`src/components/menu.tsx`: icon tile, label, short value, chevron), each opening its own screen — **Account**: Personal information; **Preferences**: Currency, Timezone, Appearance (`app/account/{currency,timezone,appearance}.tsx` via `ChoiceList`); **Notifications**: Reminders (`app/account/reminders.tsx`); **Data**: Export expenses, AI usage (`app/account/usage.tsx`); **Legal**: Privacy policy; then Sign out and Delete account, both confirmed with the action sheet; version footer. **Still to add:** Language (with E14), Security & sign-in, Help (FAQ, Contact) and Terms once there is content
+- [~] F17.2 `src/features/account/AccountScreen.tsx` (route `app/account/index.tsx`) is a menu (2026-10-10 redesign after owner feedback): header (name, phone or email, photo); groups of `MenuRow`s (`src/components/menu.tsx`: icon tile, label, short value, chevron), each opening its own screen — **Account**: Personal information; **Preferences**: Currency, Timezone, Appearance, Language (`app/account/{currency,timezone,appearance,language}.tsx` via `ChoiceList`); **Notifications**: Reminders (`app/account/reminders.tsx`); **Data**: Export expenses, AI usage (`app/account/usage.tsx`); **Legal**: Privacy policy; then Sign out and Delete account, both confirmed with the action sheet; version footer. **Still to add:** Security & sign-in, Help (FAQ, Contact) and Terms once there is content
 - [x] F17.3 Settings tab removed (four tabs); `app/settings.tsx` redirects to `/account`
 - [x] F17.4 `src/features/account/AccountScreen.test.tsx`: header, groups, short values, no in-place controls, one route per row, sign-out and delete confirmations (cancel and accept)
 
@@ -482,6 +488,13 @@ printable statement.
 
 ## 8. Changelog
 
+- 2026-10-11 — **Languages, part A (E14).** English, French and German with
+  `i18next` / `react-i18next` / `expo-localization`. Language screen under
+  Preferences (same as the phone or a fixed language), stored on the device
+  and on the account (migration 0004). App shell translated: tab and screen
+  titles, Home and its charts, the account hub and its sub-screens, the
+  action sheet, Expo Go sign-in and its errors. Numbers and dates follow the
+  language. Remaining screens and server-side texts come in part B.
 - 2026-10-10 — **Account hub redesigned as a menu.** Rows with icon tiles
   open their own screens (currency, timezone, appearance, reminders, AI
   usage); Preferences separated from Account; sign out now asks first, like

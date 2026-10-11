@@ -1,4 +1,6 @@
 import '../global.css';
+// Initialises i18next before any screen renders (E14).
+import '@/src/i18n';
 
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
@@ -12,7 +14,10 @@ import { ActivityIndicator, LogBox, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 
+import { useTranslation } from 'react-i18next';
+
 import { ActionSheetHost } from '@/src/components/action-sheet';
+import { loadLanguage } from '@/src/i18n/language';
 import { loadAppearance } from '@/src/lib/appearance';
 import { queryClient } from '@/src/lib/query';
 import { initSentry, setSentryUser } from '@/src/lib/sentry';
@@ -52,6 +57,7 @@ if (!publishableKey) {
 function RootNavigator() {
   const { isLoaded, isSignedIn, userId } = useAuth();
   const theme = useThemeColors();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setSentryUser(userId ?? null);
@@ -71,25 +77,26 @@ function RootNavigator() {
     <Stack>
       <Stack.Protected guard={isSignedIn}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="expense/new" options={{ title: 'New expense', presentation: 'modal' }} />
-        <Stack.Screen name="expense/[id]" options={{ title: 'Expense' }} />
-        <Stack.Screen name="import/index" options={{ title: 'Imports' }} />
-        <Stack.Screen name="import/[id]" options={{ title: 'Review import' }} />
-        <Stack.Screen name="planned/new" options={{ title: 'Plan an expense', presentation: 'modal' }} />
-        <Stack.Screen name="planned/[id]" options={{ title: 'Planned expense' }} />
-        <Stack.Screen name="planned/month" options={{ title: 'Month' }} />
-        <Stack.Screen name="recurring/new" options={{ title: 'New fixed charge', presentation: 'modal' }} />
-        <Stack.Screen name="recurring/[id]" options={{ title: 'Fixed charge' }} />
-        <Stack.Screen name="account/index" options={{ title: 'Account' }} />
-        <Stack.Screen name="account/profile" options={{ title: 'Personal information' }} />
-        <Stack.Screen name="account/currency" options={{ title: 'Currency' }} />
-        <Stack.Screen name="account/timezone" options={{ title: 'Timezone' }} />
-        <Stack.Screen name="account/appearance" options={{ title: 'Appearance' }} />
-        <Stack.Screen name="account/reminders" options={{ title: 'Reminders' }} />
-        <Stack.Screen name="account/usage" options={{ title: 'AI usage' }} />
+        <Stack.Screen name="expense/new" options={{ title: t('screens.newExpense'), presentation: 'modal' }} />
+        <Stack.Screen name="expense/[id]" options={{ title: t('screens.expense') }} />
+        <Stack.Screen name="import/index" options={{ title: t('screens.imports') }} />
+        <Stack.Screen name="import/[id]" options={{ title: t('screens.reviewImport') }} />
+        <Stack.Screen name="planned/new" options={{ title: t('screens.planExpense'), presentation: 'modal' }} />
+        <Stack.Screen name="planned/[id]" options={{ title: t('screens.plannedExpense') }} />
+        <Stack.Screen name="planned/month" options={{ title: t('screens.month') }} />
+        <Stack.Screen name="recurring/new" options={{ title: t('screens.newFixedCharge'), presentation: 'modal' }} />
+        <Stack.Screen name="recurring/[id]" options={{ title: t('screens.fixedCharge') }} />
+        <Stack.Screen name="account/index" options={{ title: t('screens.account') }} />
+        <Stack.Screen name="account/profile" options={{ title: t('screens.personalInfo') }} />
+        <Stack.Screen name="account/currency" options={{ title: t('screens.currency') }} />
+        <Stack.Screen name="account/timezone" options={{ title: t('screens.timezone') }} />
+        <Stack.Screen name="account/appearance" options={{ title: t('screens.appearance') }} />
+        <Stack.Screen name="account/language" options={{ title: t('screens.language') }} />
+        <Stack.Screen name="account/reminders" options={{ title: t('screens.reminders') }} />
+        <Stack.Screen name="account/usage" options={{ title: t('screens.aiUsage') }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
-        <Stack.Screen name="export" options={{ title: 'Export expenses' }} />
-        <Stack.Screen name="privacy" options={{ title: 'Privacy' }} />
+        <Stack.Screen name="export" options={{ title: t('screens.exportExpenses') }} />
+        <Stack.Screen name="privacy" options={{ title: t('screens.privacy') }} />
       </Stack.Protected>
       <Stack.Protected guard={!isSignedIn}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -104,6 +111,8 @@ export default function RootLayout() {
   // E17: stored appearance (system / light / dark); see src/lib/appearance.ts.
   useEffect(() => {
     void loadAppearance();
+    // E14: this device's language choice, until the account's copy arrives (tabs layout).
+    void loadLanguage();
   }, []);
 
   return (

@@ -1,0 +1,188 @@
+{
+  "common": {
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "optional": "Optional",
+    "or": "oder"
+  },
+  "tabs": {
+    "home": "Start",
+    "expenses": "Ausgaben",
+    "plan": "Planen",
+    "recaps": "Übersichten"
+  },
+  "screens": {
+    "newExpense": "Neue Ausgabe",
+    "expense": "Ausgabe",
+    "imports": "Importe",
+    "reviewImport": "Import prüfen",
+    "planExpense": "Ausgabe planen",
+    "plannedExpense": "Geplante Ausgabe",
+    "month": "Monat",
+    "newFixedCharge": "Neue Fixkosten",
+    "fixedCharge": "Fixkosten",
+    "account": "Konto",
+    "personalInfo": "Persönliche Daten",
+    "currency": "Währung",
+    "timezone": "Zeitzone",
+    "appearance": "Erscheinungsbild",
+    "language": "Sprache",
+    "reminders": "Erinnerungen",
+    "aiUsage": "KI-Nutzung",
+    "exportExpenses": "Ausgaben exportieren",
+    "privacy": "Datenschutz"
+  },
+  "home": {
+    "account": "Konto",
+    "today": "Heute",
+    "thisWeek": "Diese Woche",
+    "thisMonth": "Dieser Monat",
+    "yesterday": "gestern",
+    "lastWeek": "letzte Woche",
+    "lastMonth": "letzten Monat",
+    "items_one": "{{n}} Ausgabe",
+    "items_other": "{{n}} Ausgaben",
+    "versus": "{{arrow}} {{amount}} gegenüber {{period}}",
+    "importFile": "Datei importieren",
+    "addExpense": "Ausgabe hinzufügen"
+  },
+  "stats": {
+    "emptyTitle": "Diesen Monat noch nichts erfasst",
+    "emptyBody": "Füge eine Ausgabe hinzu oder importiere eine Datei, dann erscheinen hier deine Diagramme.",
+    "weekByDay": "Diese Woche, Tag für Tag",
+    "monthByCategory": "Dieser Monat nach Kategorie",
+    "monthVsLast": "Dieser Monat im Vergleich zum Vormonat",
+    "fixedVsOther": "Fixkosten und alles andere",
+    "whereMoneyWent": "Wohin das Geld ging",
+    "fixed": "Fixkosten {{amount}}",
+    "other": "Sonstiges {{amount}}",
+    "soFar_one": "Bisher ({{n}} Tag)",
+    "soFar_other": "Bisher ({{n}} Tage)",
+    "lastMonth": "Vormonat",
+    "perDay": "{{amount}} pro Tag",
+    "perDayVersus": "{{amount}} pro Tag gegenüber {{previous}} im Vormonat",
+    "onTrack": "auf Kurs für {{amount}}",
+    "faster": "Du gibst schneller aus als im Vormonat",
+    "slower": "Du gibst langsamer aus als im Vormonat",
+    "donutCenter": "diesen Monat",
+    "otherCategories": "Sonstige ({{n}})",
+    "ofBudget": "{{pct}} % des Budgets"
+  },
+  "account": {
+    "yourAccount": "Dein Konto",
+    "version": "Version {{version}}",
+    "deleting": "Wird gelöscht…",
+    "groups": {
+      "account": "Konto",
+      "preferences": "Einstellungen",
+      "notifications": "Benachrichtigungen",
+      "data": "Daten",
+      "legal": "Rechtliches"
+    },
+    "rows": {
+      "personalInfo": "Persönliche Daten",
+      "currency": "Währung",
+      "timezone": "Zeitzone",
+      "appearance": "Erscheinungsbild",
+      "language": "Sprache",
+      "reminders": "Erinnerungen",
+      "export": "Ausgaben exportieren",
+      "aiUsage": "KI-Nutzung",
+      "privacy": "Datenschutzerklärung",
+      "signOut": "Abmelden",
+      "deleteAccount": "Konto löschen"
+    },
+    "remindersValue": {
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich",
+      "off": "Aus",
+      "unavailable": "Nicht verfügbar"
+    },
+    "signOutConfirm": {
+      "title": "Abmelden?",
+      "message": "Du kannst dich jederzeit mit deiner E-Mail oder Google wieder anmelden.",
+      "action": "Abmelden"
+    },
+    "deleteConfirm": {
+      "title": "Konto löschen?",
+      "message": "Deine Ausgaben, Pläne, Importe und Anhänge werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.",
+      "action": "Mein Konto löschen"
+    }
+  },
+  "language": {
+    "system": "Wie das Telefon",
+    "footer": "Gilt für die ganze App. Wird in deinem Konto gespeichert und gilt so auch auf deinen anderen Geräten."
+  },
+  "appearance": {
+    "system": "Wie das Telefon",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "footer": "Gilt nur für dieses Telefon."
+  },
+  "currency": {
+    "footer": "Neue Ausgaben beginnen in dieser Währung, und Übersichten und Startseite rechnen ihre Summen darin.",
+    "names": {
+      "XAF": "CFA-Franc BEAC",
+      "XOF": "CFA-Franc BCEAO",
+      "EUR": "Euro",
+      "USD": "US-Dollar",
+      "GBP": "Pfund Sterling",
+      "NGN": "Nigerianischer Naira"
+    }
+  },
+  "timezone": {
+    "footer": "Gilt für geplante Ausgaben, Erinnerungen und dafür, welcher Tag heute ist."
+  },
+  "reminders": {
+    "group": "Übersichten",
+    "weekly": "Wochenübersicht",
+    "weeklyDescription": "Jeden Montagmorgen",
+    "monthly": "Monatsübersicht",
+    "monthlyDescription": "Am 1. jedes Monats",
+    "footerWeb": "Erinnerungen gibt es in der mobilen App.",
+    "footerExpoGo": "Erinnerungen brauchen die vollständige App. Expo Go auf Android unterstützt keine Benachrichtigungen.",
+    "footerDefault": "Geplante Ausgaben erinnern dich immer am Vortag und zur festgelegten Zeit."
+  },
+  "usage": {
+    "group": "Dieser Monat",
+    "imports": "Dateiimporte",
+    "summaries": "Zusammenfassungen",
+    "footer": "Die Zähler beginnen am 1. jedes Monats neu."
+  },
+  "profile": {
+    "photoTitle": "Profilfoto",
+    "takePhoto": "Foto aufnehmen",
+    "chooseFromLibrary": "Aus Mediathek wählen",
+    "useGooglePhoto": "Mein Google-Foto verwenden",
+    "removePhoto": "Foto entfernen",
+    "removeConfirm": "Dein Foto entfernen?",
+    "remove": "Entfernen",
+    "updateFailed": "Das Foto konnte nicht aktualisiert werden",
+    "changePhoto": "Foto ändern",
+    "yourPhoto": "Dein Foto",
+    "googlePhoto": "Foto aus deinem Google-Konto",
+    "tapToAdd": "Tippen, um ein Foto hinzuzufügen",
+    "name": "Name",
+    "namePlaceholder": "Wie sollen wir dich nennen?",
+    "nameRequired": "Der Name ist erforderlich",
+    "phone": "Telefon",
+    "phoneInvalid": "Gib eine Nummer wie +237 6 90 92 00 54 ein",
+    "email": "E-Mail",
+    "emailFooter": "Deine E-Mail stammt aus dem Konto, mit dem du dich anmeldest."
+  },
+  "auth": {
+    "intro": "Melde dich an oder erstelle ein Konto mit deiner E-Mail.",
+    "codeSent": "Wir haben einen 6-stelligen Code an {{email}} gesendet.",
+    "continueWithEmail": "Weiter mit E-Mail",
+    "continueWithGoogle": "Weiter mit Google",
+    "verify": "Bestätigen",
+    "useDifferentEmail": "Andere E-Mail verwenden",
+    "errors": {
+      "codeIncorrect": "Dieser Code stimmt nicht. Prüfe die E-Mail und versuche es erneut.",
+      "codeExpired": "Dieser Code ist abgelaufen. Fordere einen neuen an.",
+      "emailInvalid": "Das sieht nicht nach einer gültigen E-Mail-Adresse aus.",
+      "tooManyAttempts": "Zu viele Versuche. Warte eine Minute und versuche es erneut.",
+      "generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    }
+  }
+}

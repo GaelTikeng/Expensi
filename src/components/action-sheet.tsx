@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Separator } from '@/src/components/ui/separator';
 import { Text } from '@/src/components/ui/text';
+import { t } from '@/src/i18n';
 import { useThemeColors } from '@/src/lib/theme';
 import { cn } from '@/src/lib/utils';
 
@@ -140,7 +141,7 @@ export function useActionSheets() {
         message: opts.message,
         options: opts.actions.map((a) => a.label),
         destructive: opts.actions.flatMap((a, i) => (a.destructive ? [i] : [])),
-        cancelLabel: opts.cancelLabel ?? 'Cancel',
+        cancelLabel: opts.cancelLabel ?? t('common.cancel'),
         onSelect: (i) => {
           if (i !== null) void opts.actions[i]?.onPress();
         },
@@ -157,7 +158,7 @@ export function useActionSheets() {
           message: opts.message,
           options: [opts.actionLabel],
           destructive: opts.destructive === false ? [] : [0],
-          cancelLabel: 'Cancel',
+          cancelLabel: t('common.cancel'),
           onSelect: (i) => resolve(i === 0),
         }),
       ),

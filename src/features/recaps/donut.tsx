@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
@@ -16,6 +17,7 @@ const MAX_SLICES = 5;
  * library (react-native-svg is already a dependency of the icon set).
  */
 export function CategoryDonut({ rows, totalMinor, currency }: { rows: RecapStats['byCategory']; totalMinor: number; currency: CurrencyInfo }) {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const sorted = [...rows].sort((a, b) => b.totalMinor - a.totalMinor);
   const head = sorted.slice(0, MAX_SLICES);
@@ -23,7 +25,7 @@ export function CategoryDonut({ rows, totalMinor, currency }: { rows: RecapStats
   const slices = [
     ...head.map((r) => ({ key: r.categoryId ?? 'none', name: r.name, color: r.colorHex ?? NO_CATEGORY_COLOR, totalMinor: r.totalMinor, budgetPct: r.budgetPct, budgetMinor: r.budgetMinor })),
     ...(tail.length
-      ? [{ key: 'other', name: `Other (${tail.length})`, color: theme.mutedForeground, totalMinor: tail.reduce((s, r) => s + r.totalMinor, 0), budgetPct: null, budgetMinor: null }]
+      ? [{ key: 'other', name: t('stats.otherCategories', { n: tail.length }), color: theme.mutedForeground, totalMinor: tail.reduce((s, r) => s + r.totalMinor, 0), budgetPct: null, budgetMinor: null }]
       : []),
   ];
   const sum = Math.max(1, slices.reduce((s, r) => s + r.totalMinor, 0));
@@ -65,7 +67,7 @@ export function CategoryDonut({ rows, totalMinor, currency }: { rows: RecapStats
           <Text className="text-[13px] font-bold" numberOfLines={1} adjustsFontSizeToFit>
             {formatMoney(totalMinor, currency)}
           </Text>
-          <Text className="text-muted-foreground text-[10px]">this month</Text>
+          <Text className="text-muted-foreground text-[10px]">{t('stats.donutCenter')}</Text>
         </View>
       </View>
 
@@ -82,7 +84,7 @@ export function CategoryDonut({ rows, totalMinor, currency }: { rows: RecapStats
               <View className="items-end">
                 <Text className="text-[13px] font-semibold">{pct}%</Text>
                 {s.budgetPct != null ? (
-                  <Text className={cn('text-[10px]', over ? 'text-destructive font-semibold' : 'text-muted-foreground')}>{s.budgetPct}% of budget</Text>
+                  <Text className={cn('text-[10px]', over ? 'text-destructive font-semibold' : 'text-muted-foreground')}>{t('stats.ofBudget', { pct: s.budgetPct })}</Text>
                 ) : null}
               </View>
             </View>
