@@ -1,4 +1,5 @@
-import { classifyLine, type ExtractedLine, type ReviewSeverity } from '@/src/ai/extraction-contract';
+import { classifyLine, type ExtractedLine, type ReviewReasonCode, type ReviewSeverity } from '@/src/ai/extraction-contract';
+import { t } from '@/src/i18n';
 import type { ImportItemDto } from '@/src/lib/schemas/import';
 
 export interface ReviewedItem {
@@ -6,6 +7,14 @@ export interface ReviewedItem {
   severity: ReviewSeverity;
   defaultSelected: boolean;
   reason?: string;
+}
+
+/** The model's own note wins where it wrote one; otherwise our wording. */
+function reasonText(code: ReviewReasonCode | undefined, line: ExtractedLine): string | undefined {
+  if (!code) return undefined;
+  if ((code === 'amountUnreadable' || code === 'lowConfidence') && line.ambiguityNote) return line.ambiguityNote;
+  if (code === 'notExpense') return t('imports.reasons.notExpense', { kind: t(`imports.kindShort.${line.lineKind}`) });
+  return t(`imports.reasons.${code}`);
 }
 
 /** Runs the shared gating logic over staged rows. Pure; unit-tested. */
@@ -26,8 +35,8 @@ export function reviewItems(items: ImportItemDto[]): ReviewedItem[] {
     // Duplicates are never pre-ticked, whatever the model's confidence.
     const defaultSelected = r.defaultSelected && !item.possibleDuplicateOf;
     const reason = item.possibleDuplicateOf
-      ? `Looks like a duplicate of "${item.possibleDuplicateOf.description}"`
-      : r.reason;
+      ? t('imports.reasons.duplicate', { description: item.possibleDuplicateOf.description })
+      : reasonText(r.code, line);
     return { item, severity: item.possibleDuplicateOf && r.severity === 'ok' ? 'verify' : r.severity, defaultSelected, reason };
   });
 }

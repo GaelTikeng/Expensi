@@ -26,9 +26,13 @@ import { errorMessage, invalidate, keys } from '@/src/lib/query';
 import type { ImportDetailResponse, ImportItemDto, ImportItemPatch } from '@/src/lib/schemas/import';
 import { useThemeColors } from '@/src/lib/theme';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { pluralKey } from '@/src/i18n';
+import { formatLocale } from '@/src/lib/locale';
 
 /** F3.8–F3.11: process, review, edit, reconcile, commit. */
 export default function ImportReviewScreen() {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
@@ -108,7 +112,7 @@ export default function ImportReviewScreen() {
       if (updated.lineKind === 'expense' && updated.amountMinor && updated.occurredOn) setSelected((s) => new Set(s).add(updated.id));
       setEditing(null);
     } catch (err) {
-      Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('common.couldNotSave'), err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
@@ -125,13 +129,14 @@ export default function ImportReviewScreen() {
       if (keepLineTicked) setSelected((s) => new Set(s).add(comparing.item.id));
       setComparing(null);
     } catch (err) {
-      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('common.couldNotDelete'), err instanceof Error ? err.message : String(err));
     } finally {
       setResolving(false);
     }
   };
-  const confirmDelete = async (what: string, expenseId: string, keepLineTicked: boolean) => {
-    if (await confirm({ title: `Delete ${what}?`, message: 'This cannot be undone.', actionLabel: 'Delete' })) await deleteExpense(expenseId, keepLineTicked);
+  const confirmDelete = async (what: 'saved' | 'this', expenseId: string, keepLineTicked: boolean) => {
+    if (await confirm({ title: t(`imports.deleteWhat.${what}`), message: t('common.cannotBeUndone'), actionLabel: t('common.delete') }))
+      await deleteExpense(expenseId, keepLineTicked);
   };
 
   const ids = committableIds(reviewed, selected);
@@ -139,9 +144,9 @@ export default function ImportReviewScreen() {
 
   const commit = async () => {
     const ok = await confirm({
-      title: `Add ${ids.length} expense${ids.length === 1 ? '' : 's'}?`,
-      message: skipped > 0 ? `${skipped} ticked line${skipped > 1 ? 's are' : ' is'} missing an amount or date and will be skipped.` : undefined,
-      actionLabel: `Add ${ids.length === 1 ? 'it' : 'them'}`,
+      title: t(pluralKey('imports.addConfirm', ids.length), { n: ids.length }),
+      message: skipped > 0 ? t(pluralKey('imports.skippedLines', skipped), { n: skipped }) : undefined,
+      actionLabel: t(pluralKey('imports.addIt', ids.length)),
       destructive: false,
     });
     if (!ok) return;
@@ -150,9 +155,9 @@ export default function ImportReviewScreen() {
       const res = await api.commit(id, ids);
       void invalidate.expenses(qc);
       void invalidate.imports(qc);
-      Alert.alert('Done', `${res.created} expense${res.created === 1 ? '' : 's'} added.`, [{ text: 'OK', onPress: () => router.back() }]);
+      Alert.alert(t('common.done'), t(pluralKey('imports.added', res.created), { n: res.created }), [{ text: t('common.ok'), onPress: () => router.back() }]);
     } catch (err) {
-      Alert.alert('Could not commit', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('imports.couldNotCommit'), err instanceof Error ? err.message : String(err));
     } finally {
       setCommitting(false);
     }
@@ -163,7 +168,7 @@ export default function ImportReviewScreen() {
       <View className="bg-background flex-1 items-center justify-center gap-2.5 p-6">
         <Text className="text-destructive text-center">{error}</Text>
         <Button variant="outline" className="border-primary" onPress={() => run()}>
-          <Text className="text-primary font-semibold">Try again</Text>
+          <Text className="text-primary font-semibold">{t('common.tryAgain')}</Text>
         </Button>
       </View>
     );
@@ -174,13 +179,13 @@ export default function ImportReviewScreen() {
     return (
       <View className="bg-background flex-1 items-center justify-center gap-2.5 p-6">
         <ActivityIndicator color={theme.mutedForeground} />
-        <Text className="text-muted-foreground text-[15px]">Reading your file with AI…</Text>
-        <Text className="text-muted-foreground text-xs">This usually takes one to three minutes. You can leave and come back.</Text>
+        <Text className="text-muted-foreground text-[15px]">{t('imports.reading')}</Text>
+        <Text className="text-muted-foreground text-xs">{t('imports.readingHint')}</Text>
         {lostConnection ? (
           <>
-            <Text className="text-muted-foreground mt-3 text-center text-xs">The connection dropped, but the server is still working; this screen checks every few seconds.</Text>
+            <Text className="text-muted-foreground mt-3 text-center text-xs">{t('imports.dropped')}</Text>
             <Button variant="outline" size="sm" className="border-primary" onPress={() => run()}>
-              <Text className="text-primary">Restart the reading</Text>
+              <Text className="text-primary">{t('imports.restart')}</Text>
             </Button>
           </>
         ) : null}
@@ -198,44 +203,49 @@ export default function ImportReviewScreen() {
     return (
       <View className="bg-background flex-1 items-center justify-center gap-2.5 p-6">
         <Icon as={CircleAlert} className="text-destructive size-10" />
-        <Text variant="large">Could not read this file</Text>
-        <Text className="text-destructive text-center">{imp.failureReason ?? 'Unknown error'}</Text>
+        <Text variant="large">{t('imports.couldNotRead')}</Text>
+        <Text className="text-destructive text-center">{imp.failureReason ?? t('common.unknownError')}</Text>
         {imp.attemptCount < 3 ? (
           <Button variant="outline" className="border-primary" onPress={() => run()}>
-            <Text className="text-primary font-semibold">Try again ({3 - imp.attemptCount} left)</Text>
+            <Text className="text-primary font-semibold">{t('imports.tryAgainLeft', { n: 3 - imp.attemptCount })}</Text>
           </Button>
         ) : (
-          <Text className="text-muted-foreground text-xs">Upload the file again to retry.</Text>
+          <Text className="text-muted-foreground text-xs">{t('imports.uploadAgain')}</Text>
         )}
       </View>
     );
   }
 
   const readOnly = imp.status === 'committed';
+  const expenseCount = reviewed.filter((r) => r.item.lineKind === 'expense').length;
   const matches = rec.discrepancyMinor === 0;
 
   return (
     <View className="bg-background flex-1">
-      <Stack.Screen options={{ title: imp.originalFilename ?? 'Review import' }} />
+      <Stack.Screen options={{ title: imp.originalFilename ?? t('screens.reviewImport') }} />
 
       <View className="bg-card border-border gap-1.5 border-b p-4">
         <Text className="text-muted-foreground text-sm">
-          {detail.items.length} lines · {reviewed.filter((r) => r.item.lineKind === 'expense').length} expenses
-          {imp.documentQuality === 'poor' ? ' · poor quality' : ''}
+          {t(pluralKey('imports.lines', detail.items.length), { n: detail.items.length })} · {t(pluralKey('imports.expenses', expenseCount), { n: expenseCount })}
+          {imp.documentQuality === 'poor' ? ` · ${t('imports.poorQuality')}` : ''}
         </Text>
         {rec.statedTotalMinor != null ? (
           <View className={cn('rounded-md px-3 py-2', matches ? 'bg-success/10' : 'bg-destructive/10')}>
             <Text className={cn('text-[13px]', matches ? 'text-success' : 'text-destructive')}>
               {matches
-                ? `Matches the written total of ${formatMoney(rec.statedTotalMinor, currency)}`
-                : `Written total ${formatMoney(rec.statedTotalMinor, currency)} vs lines ${formatMoney(rec.computedTotalMinor, currency)} (off by ${formatMoney(Math.abs(rec.discrepancyMinor ?? 0), currency)}) — a digit may be misread`}
+                ? t('imports.totalMatches', { amount: formatMoney(rec.statedTotalMinor, currency) })
+                : t('imports.totalMismatch', {
+                    stated: formatMoney(rec.statedTotalMinor, currency),
+                    computed: formatMoney(rec.computedTotalMinor, currency),
+                    diff: formatMoney(Math.abs(rec.discrepancyMinor ?? 0), currency),
+                  })}
             </Text>
           </View>
         ) : null}
         {imp.documentQuality === 'poor' ? (
-          <Text className="text-destructive text-[13px]">The document is hard to read. Consider re-exporting or re-scanning it.</Text>
+          <Text className="text-destructive text-[13px]">{t('imports.poorDocument')}</Text>
         ) : null}
-        {readOnly ? <Text className="text-success text-[13px]">Committed on {new Date(imp.committedAt ?? imp.updatedAt).toLocaleDateString()}</Text> : null}
+        {readOnly ? <Text className="text-success text-[13px]">{t('imports.committedOn', { date: new Date(imp.committedAt ?? imp.updatedAt).toLocaleDateString(formatLocale() ?? undefined) })}</Text> : null}
       </View>
 
       {!readOnly ? (
@@ -244,10 +254,10 @@ export default function ImportReviewScreen() {
             accessibilityRole="button"
             onPress={() => setSelected(new Set(reviewed.filter((r) => r.item.lineKind === 'expense' && r.severity !== 'blocked').map((r) => r.item.id)))}
           >
-            <Text className="text-primary text-[13px]">Tick all</Text>
+            <Text className="text-primary text-[13px]">{t('imports.tickAll')}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => setSelected(new Set())}>
-            <Text className="text-primary text-[13px]">Untick all</Text>
+            <Text className="text-primary text-[13px]">{t('imports.untickAll')}</Text>
           </Pressable>
         </View>
       ) : null}
@@ -273,11 +283,11 @@ export default function ImportReviewScreen() {
       {!readOnly ? (
         <View className="bg-card border-border absolute bottom-0 left-0 right-0 flex-row items-center justify-between border-t p-4 pb-7">
           <View>
-            <Text className="text-muted-foreground text-xs">{ids.length} selected</Text>
+            <Text className="text-muted-foreground text-xs">{t('imports.selected', { n: ids.length })}</Text>
             <Text className="text-lg font-bold">{formatMoney(selectedTotal, currency)}</Text>
           </View>
           <Button size="lg" className="px-5" disabled={ids.length === 0 || committing} onPress={commit}>
-            {committing ? <ActivityIndicator color={theme.primaryForeground} /> : <Text className="text-[15px] font-semibold">Add to expenses</Text>}
+            {committing ? <ActivityIndicator color={theme.primaryForeground} /> : <Text className="text-[15px] font-semibold">{t('imports.addToExpenses')}</Text>}
           </Button>
         </View>
       ) : null}
@@ -304,10 +314,10 @@ export default function ImportReviewScreen() {
           }
           setComparing(null);
         }}
-        onDeleteExisting={() => comparing && confirmDelete('the saved expense', comparing.existing.id, !readOnly)}
+        onDeleteExisting={() => comparing && confirmDelete('saved', comparing.existing.id, !readOnly)}
         onDeleteThis={() => {
-          if (!comparing?.item.expenseId) return Alert.alert('Not found', 'This line has no saved expense to delete.');
-          confirmDelete('this expense', comparing.item.expenseId, false);
+          if (!comparing?.item.expenseId) return Alert.alert(t('imports.notFound'), t('imports.noSavedExpense'));
+          confirmDelete('this', comparing.item.expenseId, false);
         }}
         onClose={() => setComparing(null)}
       />

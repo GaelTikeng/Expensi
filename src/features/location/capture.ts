@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { Alert, Linking, Platform } from 'react-native';
+import { t } from '@/src/i18n';
 
 export interface ExpensePlace {
   latitude: number;
@@ -11,9 +12,9 @@ const FIX_TIMEOUT_MS = 12_000;
 
 function explain(): Promise<boolean> {
   return new Promise((resolve) => {
-    Alert.alert('Allow location?', 'Your position is saved with this expense so you can see where it was made. It is never shared.', [
-      { text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
-      { text: 'Continue', onPress: () => resolve(true) },
+    Alert.alert(t('location.allowTitle'), t('location.allowMessage'), [
+      { text: t('common.notNow'), style: 'cancel', onPress: () => resolve(false) },
+      { text: t('common.continue'), onPress: () => resolve(true) },
     ]);
   });
 }
@@ -26,9 +27,9 @@ export async function ensureLocationPermission(): Promise<boolean> {
   const current = await Location.getForegroundPermissionsAsync();
   if (current.granted) return true;
   if (!current.canAskAgain) {
-    Alert.alert('Location is off', 'Turn it on in Settings to save where your expenses happen.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+    Alert.alert(t('location.offTitle'), t('location.offMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.openSettings'), onPress: () => void Linking.openSettings() },
     ]);
     return false;
   }
@@ -54,7 +55,7 @@ export function formatPlace(a: Partial<Pick<Location.LocationGeocodedAddress, 'd
 export async function capturePlace(): Promise<ExpensePlace> {
   const fix = await Promise.race([
     Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Could not get a position. Try again outdoors or with Wi-Fi on.')), FIX_TIMEOUT_MS)),
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(t('location.noFix'))), FIX_TIMEOUT_MS)),
   ]);
   const latitude = Number(fix.coords.latitude.toFixed(6));
   const longitude = Number(fix.coords.longitude.toFixed(6));

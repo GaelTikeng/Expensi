@@ -36,8 +36,8 @@ export function currentLanguage(): Language {
  * Plural pick without Intl.PluralRules (not guaranteed under Hermes): keys
  * come in `_one` / `_other` pairs. French treats 0 as singular.
  */
-export function pluralKey<K extends string>(base: K, n: number): `${K}_one` | `${K}_other` {
-  const one = currentLanguage() === 'fr' ? n <= 1 : n === 1;
+export function pluralKey<K extends string>(base: K, n: number, lang: Language = currentLanguage()): `${K}_one` | `${K}_other` {
+  const one = lang === 'fr' ? n <= 1 : n === 1;
   return `${base}_${one ? 'one' : 'other'}` as `${K}_one` | `${K}_other`;
 }
 

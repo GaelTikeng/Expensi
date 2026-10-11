@@ -8,6 +8,7 @@ import { Icon } from '@/src/components/ui/icon';
 import { Separator } from '@/src/components/ui/separator';
 import { Text } from '@/src/components/ui/text';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface Option {
   value: string;
@@ -31,6 +32,7 @@ export function OptionPicker({
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value)?.label ?? value;
 
@@ -55,7 +57,7 @@ export function OptionPicker({
           <View className="border-border flex-row items-center justify-between border-b px-4 pb-3 pt-2">
             <Text variant="large">{label}</Text>
             <Button variant="ghost" size="sm" onPress={() => setOpen(false)}>
-              <Text>Done</Text>
+              <Text>{t('common.done')}</Text>
             </Button>
           </View>
           <FlatList

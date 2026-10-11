@@ -6,6 +6,7 @@ import { putWithRetry } from '@/src/features/attachments/upload';
 import { newId } from '@/src/features/expenses/ids';
 import { IMPORT_MIME_TYPES, MAX_IMPORT_BYTES, type ImportDto, type ImportMime } from '@/src/lib/schemas/import';
 import { importsApi } from './api';
+import { t } from '@/src/i18n';
 
 type GetToken = () => Promise<string | null>;
 
@@ -41,15 +42,15 @@ export async function pickImportFile(): Promise<PickedImport | null> {
   const mimeType = (IMPORT_MIME_TYPES as readonly string[]).includes(a.mimeType ?? '')
     ? (a.mimeType as ImportMime)
     : EXT_MIME[ext];
-  if (!mimeType) throw new Error('Choose an Excel, CSV or PDF file');
+  if (!mimeType) throw new Error(t('imports.upload.unsupported'));
 
   let sizeBytes = a.size ?? 0;
   if (!sizeBytes) {
     const info = await FileSystem.getInfoAsync(a.uri);
     sizeBytes = info.exists && 'size' in info ? info.size : 0;
   }
-  if (sizeBytes <= 0) throw new Error('Could not read the file');
-  if (sizeBytes > MAX_IMPORT_BYTES) throw new Error('File is larger than 10 MB');
+  if (sizeBytes <= 0) throw new Error(t('imports.upload.unreadable'));
+  if (sizeBytes > MAX_IMPORT_BYTES) throw new Error(t('imports.upload.tooLarge'));
   return { uri: a.uri, name: a.name, mimeType, sizeBytes };
 }
 
@@ -67,7 +68,7 @@ async function stageForUpload(file: PickedImport, id: string): Promise<string> {
   try {
     await FileSystem.copyAsync({ from: file.uri, to: dest });
   } catch (err) {
-    throw new Error(`Could not read the chosen file (${err instanceof Error ? err.message : String(err)})`);
+    throw new Error(t('imports.upload.pickFailed', { reason: err instanceof Error ? err.message : String(err) }));
   }
   return dest;
 }

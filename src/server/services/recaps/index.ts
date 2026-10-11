@@ -6,6 +6,7 @@ import type { RecapDto, RecapStats } from '@/src/lib/schemas/recap';
 import { quotaStatus } from '../../ai/quota';
 import { generateNarrative } from './narrative';
 import { computeRecapStats } from './stats';
+import type { Language } from '@/src/i18n/languages';
 
 export function recapToDto(r: Recap): RecapDto {
   return {
@@ -30,6 +31,7 @@ export async function getOrBuildRecap(
   period: RecapPeriod,
   anyDate: ISODate,
   wantNarrative: boolean,
+  language: Language = 'en',
 ): Promise<RecapDto> {
   const start = periodStart(period, anyDate);
   const cached = await repos.recaps.find(period, start);
@@ -48,7 +50,7 @@ export async function getOrBuildRecap(
     try {
       const quota = await quotaStatus(user.id, 'narrative');
       if (quota.remaining <= 0) throw new Error(`narrative quota exhausted (${quota.used}/${quota.limit})`);
-      const n = await generateNarrative(user, stats);
+      const n = await generateNarrative(user, stats, language);
       narrativeMd = n?.text ?? null;
       model = n?.model ?? null;
     } catch (err) {

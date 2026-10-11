@@ -5,6 +5,7 @@ import { Image, Modal, Pressable, View } from 'react-native';
 import { Icon } from '@/src/components/ui/icon';
 import { Text } from '@/src/components/ui/text';
 import type { AttachmentDto } from '@/src/lib/schemas/attachment';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Photos open full-screen in-app. PDFs open in the system in-app browser,
@@ -27,10 +28,11 @@ export function ImageViewerModal({
   url: string | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Modal visible={Boolean(attachment && url)} animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 justify-center bg-black">
-        <Pressable className="absolute right-5 top-14 z-10" onPress={onClose} hitSlop={16} accessibilityLabel="Close">
+        <Pressable className="absolute right-5 top-14 z-10" onPress={onClose} hitSlop={16} accessibilityLabel={t('common.close')}>
           <Icon as={X} className="size-7 text-white" />
         </Pressable>
         {url ? <Image source={{ uri: url }} className="h-[80%] w-full" resizeMode="contain" /> : null}

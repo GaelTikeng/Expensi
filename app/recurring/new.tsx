@@ -14,9 +14,11 @@ import { syncReminders } from '@/src/features/planned/reminders';
 import { markMaterializationStale } from '@/src/features/planned/usePlanned';
 import { useMe } from '@/src/features/settings/useMe';
 import { invalidate } from '@/src/lib/query';
+import { useTranslation } from 'react-i18next';
 
 /** F6.2: create a fixed charge; materialise and arm this/next month's reminders right away. */
 export default function NewRecurringScreen() {
+  const { t } = useTranslation();
   const { getToken } = useAuth();
   const qc = useQueryClient();
   const api = useMemo(() => recurringApi(getToken), [getToken]);
@@ -33,7 +35,7 @@ export default function NewRecurringScreen() {
       categories={categories}
       currencies={currencies}
       defaultCurrency={profile.defaultCurrency}
-      submitLabel="Save fixed charge"
+      submitLabel={t('recurringForm.submit')}
       submitting={submitting}
       onSubmit={async (values) => {
         setSubmitting(true);
@@ -42,11 +44,11 @@ export default function NewRecurringScreen() {
           const { created } = await api.materialize();
           markMaterializationStale();
           void invalidate.plans(qc);
-          const allowed = await ensureNotificationPermission('Get reminded before each fixed charge is due.');
+          const allowed = await ensureNotificationPermission(t('recurringForm.permission'));
           if (allowed) await syncReminders(created, makeCurrencyLookup(currencies));
           router.back();
         } catch (err) {
-          Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
+          Alert.alert(t('common.couldNotSave'), err instanceof Error ? err.message : String(err));
         } finally {
           setSubmitting(false);
         }

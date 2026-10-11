@@ -13,9 +13,11 @@ import { PlannedForm } from '@/src/features/planned/PlannedForm';
 import { scheduleFor } from '@/src/features/planned/reminders';
 import { useMe } from '@/src/features/settings/useMe';
 import { invalidate } from '@/src/lib/query';
+import { useTranslation } from 'react-i18next';
 
 /** F5.2 + F5.3: create a plan and arm its two reminders. */
 export default function NewPlannedScreen() {
+  const { t } = useTranslation();
   const { getToken } = useAuth();
   const qc = useQueryClient();
   const api = useMemo(() => plannedApi(getToken), [getToken]);
@@ -32,18 +34,18 @@ export default function NewPlannedScreen() {
       categories={categories}
       currencies={currencies}
       defaultCurrency={profile.defaultCurrency}
-      submitLabel="Save plan"
+      submitLabel={t('plannedForm.submit')}
       submitting={submitting}
       onSubmit={async (values) => {
         setSubmitting(true);
         try {
           const saved = await api.create(values);
           void invalidate.plans(qc);
-          const allowed = await ensureNotificationPermission('Get reminded the day before and at the time of each planned expense.');
+          const allowed = await ensureNotificationPermission(t('plannedForm.permission'));
           if (allowed) await scheduleFor(saved, makeCurrencyLookup(currencies)(saved.currency));
           router.back();
         } catch (err) {
-          Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
+          Alert.alert(t('common.couldNotSave'), err instanceof Error ? err.message : String(err));
         } finally {
           setSubmitting(false);
         }

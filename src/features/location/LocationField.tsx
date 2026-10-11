@@ -8,6 +8,7 @@ import { Switch } from '@/src/components/ui/switch';
 import { getPrefs, setPrefs } from '@/src/lib/prefs';
 import { useThemeColors } from '@/src/lib/theme';
 import { capturePlace, ensureLocationPermission, type ExpensePlace } from './capture';
+import { useTranslation } from 'react-i18next';
 
 /**
  * E16 F16.2: "Save my location" row for the expense form. Turning it on asks
@@ -15,6 +16,7 @@ import { capturePlace, ensureLocationPermission, type ExpensePlace } from './cap
  * choice is remembered per device so a new expense captures on open.
  */
 export function LocationField({ value, onChange, isNew }: { value: ExpensePlace | null; onChange: (place: ExpensePlace | null) => void; isNew: boolean }) {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,16 +58,16 @@ export function LocationField({ value, onChange, isNew }: { value: ExpensePlace 
   };
 
   const on = busy || value !== null;
-  const status = busy ? 'Finding your position…' : error ? error : value ? (value.locationLabel ?? `${value.latitude}, ${value.longitude}`) : 'Off';
+  const status = busy ? t('location.finding') : error ? error : value ? (value.locationLabel ?? `${value.latitude}, ${value.longitude}`) : t('common.off');
 
   return (
     <GroupRow
-      label="Save my location"
+      label={t('location.save')}
       description={status}
       right={
         <View className="flex-row items-center gap-2">
           {busy ? <ActivityIndicator size="small" color={theme.mutedForeground} /> : value ? <Icon as={MapPin} className="text-primary size-4" /> : null}
-          <Switch checked={on} onCheckedChange={(v) => void toggle(v)} disabled={busy} accessibilityLabel="Save my location" />
+          <Switch checked={on} onCheckedChange={(v) => void toggle(v)} disabled={busy} accessibilityLabel={t('location.save')} />
         </View>
       }
     />

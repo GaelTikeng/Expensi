@@ -6,6 +6,7 @@ import type { RecapPeriod } from '@/src/lib/dates';
 import { errorMessage, keys } from '@/src/lib/query';
 import type { RecapDto } from '@/src/lib/schemas/recap';
 import { recapsApi } from './api';
+import { t } from '@/src/i18n';
 
 /**
  * Stats for one period from the shared cache (D15). The AI narrative is
@@ -32,7 +33,7 @@ export function useRecap(period: RecapPeriod, start: string) {
     try {
       const withText = await api.get(period, start, true);
       qc.setQueryData(queryKey, withText);
-      setNarrativeErrors((e) => ({ ...e, [slot]: withText.narrativeMd ? null : 'No summary could be written. Try again later.' }));
+      setNarrativeErrors((e) => ({ ...e, [slot]: withText.narrativeMd ? null : t('recaps.noSummary') }));
     } catch (err) {
       setNarrativeErrors((e) => ({ ...e, [slot]: errorMessage(err) }));
     } finally {

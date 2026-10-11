@@ -13,18 +13,12 @@ import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import type { DuplicateCandidate, ImportItemDto } from '@/src/lib/schemas/import';
 import { useThemeColors } from '@/src/lib/theme';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export interface DuplicatePair {
   item: ImportItemDto;
   existing: DuplicateCandidate;
 }
-
-const SOURCE_LABEL: Record<DuplicateCandidate['source'], string> = {
-  manual: 'Entered by hand',
-  import: 'From another file',
-  planned: 'From a planned expense',
-  recurring: 'From a fixed charge',
-};
 
 /**
  * F3.14: side-by-side comparison of a staged line and the ledger expense it
@@ -57,17 +51,22 @@ export function DuplicateSheet({
   onDeleteThis: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   if (!pair) return <Modal visible={false} />;
   const { item, existing } = pair;
 
   const rows: { label: string; mine: string; theirs: string }[] = [
-    { label: 'Description', mine: item.description ?? item.rawText, theirs: existing.description },
-    { label: 'Amount', mine: item.amountMinor != null ? formatMoney(item.amountMinor, currency) : '—', theirs: formatMoney(existing.amountMinor, currency) },
-    { label: 'Date', mine: item.occurredOn ? formatDDMMYYYY(item.occurredOn) : '—', theirs: formatDDMMYYYY(existing.occurredOn) },
-    { label: 'Paid to', mine: item.payee ?? '—', theirs: existing.payee ?? '—' },
-    { label: 'Category', mine: categoryName(item.categoryId) ?? '—', theirs: categoryName(existing.categoryId) ?? '—' },
-    { label: 'Source', mine: committed ? 'This file' : 'This file (not saved yet)', theirs: SOURCE_LABEL[existing.source] },
+    { label: t('imports.duplicate.fields.description'), mine: item.description ?? item.rawText, theirs: existing.description },
+    { label: t('imports.duplicate.fields.amount'), mine: item.amountMinor != null ? formatMoney(item.amountMinor, currency) : '—', theirs: formatMoney(existing.amountMinor, currency) },
+    { label: t('imports.duplicate.fields.date'), mine: item.occurredOn ? formatDDMMYYYY(item.occurredOn) : '—', theirs: formatDDMMYYYY(existing.occurredOn) },
+    { label: t('imports.duplicate.fields.payee'), mine: item.payee ?? '—', theirs: existing.payee ?? '—' },
+    { label: t('imports.duplicate.fields.category'), mine: categoryName(item.categoryId) ?? '—', theirs: categoryName(existing.categoryId) ?? '—' },
+    {
+      label: t('imports.duplicate.fields.source'),
+      mine: committed ? t('imports.duplicate.thisFile') : t('imports.duplicate.thisFileUnsaved'),
+      theirs: t(`imports.duplicate.sources.${existing.source}`),
+    },
   ];
 
   return (
@@ -76,17 +75,17 @@ export function DuplicateSheet({
         <ScrollView contentContainerClassName="gap-4 p-4 pb-10">
           <View className="flex-row items-center gap-2">
             <Icon as={Copy} className="text-warning size-5" />
-            <Text className="text-[17px] font-semibold">Possible duplicate</Text>
+            <Text className="text-[17px] font-semibold">{t('imports.duplicate.title')}</Text>
           </View>
           <Text className="text-muted-foreground text-[13px]">
-            Same amount on the same day. Compare the two and decide which record to keep.
+            {t('imports.duplicate.intro')}
           </Text>
 
           <View className="bg-card border-border overflow-hidden rounded-lg border">
             <View className="flex-row px-4 py-2">
               <View className="w-24" />
-              <Text className="text-muted-foreground flex-1 text-[11px] uppercase">In this file</Text>
-              <Text className="text-muted-foreground flex-1 text-[11px] uppercase">Already saved</Text>
+              <Text className="text-muted-foreground flex-1 text-[11px] uppercase">{t('imports.duplicate.inFile')}</Text>
+              <Text className="text-muted-foreground flex-1 text-[11px] uppercase">{t('imports.duplicate.saved')}</Text>
             </View>
             {rows.map((r, i) => {
               const differs = r.mine !== r.theirs;
@@ -102,10 +101,10 @@ export function DuplicateSheet({
               );
             })}
           </View>
-          <Text className="text-muted-foreground text-[11px]">Fields in bold differ between the two.</Text>
+          <Text className="text-muted-foreground text-[11px]">{t('imports.duplicate.boldHint')}</Text>
 
           <Button variant="link" className="self-start px-0" onPress={() => router.push(`/expense/${existing.id}`)}>
-            <Text className="text-[15px]">Open the saved expense</Text>
+            <Text className="text-[15px]">{t('imports.duplicate.open')}</Text>
             <Icon as={ArrowRight} className="text-primary size-4" />
           </Button>
 
@@ -114,31 +113,31 @@ export function DuplicateSheet({
           ) : committed ? (
             <View className="gap-2">
               <Button variant="outline" size="lg" onPress={onDeleteExisting}>
-                <Text>Keep this one, delete the saved expense</Text>
+                <Text>{t('imports.duplicate.keepThis')}</Text>
               </Button>
               <Button variant="outline" size="lg" onPress={onDeleteThis}>
-                <Text>Keep the saved expense, delete this one</Text>
+                <Text>{t('imports.duplicate.keepSaved')}</Text>
               </Button>
               <Button variant="ghost" size="lg" onPress={onClose}>
-                <Text>Keep both</Text>
+                <Text>{t('imports.duplicate.keepBoth')}</Text>
               </Button>
             </View>
           ) : (
             <View className="gap-2">
               <Button size="lg" onPress={onSkip}>
-                <Text>Skip this line</Text>
+                <Text>{t('imports.duplicate.skipLine')}</Text>
               </Button>
               <Button variant="outline" size="lg" onPress={onDeleteExisting}>
-                <Text>Import this line, delete the saved expense</Text>
+                <Text>{t('imports.duplicate.importDelete')}</Text>
               </Button>
               <Button variant="ghost" size="lg" onPress={onKeepBoth}>
-                <Text>Import anyway, keep both</Text>
+                <Text>{t('imports.duplicate.importAnyway')}</Text>
               </Button>
             </View>
           )}
 
           <Button variant="ghost" onPress={onClose} disabled={busy}>
-            <Text className="text-muted-foreground">Close</Text>
+            <Text className="text-muted-foreground">{t('common.close')}</Text>
           </Button>
         </ScrollView>
       </SafeAreaView>

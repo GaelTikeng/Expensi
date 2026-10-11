@@ -47,6 +47,11 @@ export class RecapsRepository extends UserScopedRepository {
     return row;
   }
 
+  /** E14: summaries are written in one language; drop them when it changes. */
+  async clearNarratives(): Promise<void> {
+    await this.db.update(recaps).set({ narrativeMd: null, model: null }).where(eq(recaps.userId, this.userId));
+  }
+
   async markNotified(id: string): Promise<void> {
     await this.db.update(recaps).set({ notifiedAt: new Date() }).where(and(eq(recaps.userId, this.userId), eq(recaps.id, id)));
   }

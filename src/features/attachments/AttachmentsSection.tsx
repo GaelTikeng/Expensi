@@ -11,9 +11,12 @@ import { ImageViewerModal, openAttachment } from './AttachmentViewer';
 import { AddTile, FileTile } from './FileTile';
 import { useChooseSource } from './useChooseSource';
 import { useAttachments } from './useAttachments';
+import { useTranslation } from 'react-i18next';
+import { pluralKey } from '@/src/i18n';
 
 /** F2b.5 / F2b.6 for an existing expense: strip of proofs with add, view, delete. */
 export function AttachmentsSection({ expenseId }: { expenseId: string }) {
+  const { t } = useTranslation();
   const { items, uploading, queued, loading, error, add, remove, api } = useAttachments(expenseId);
   const [viewer, setViewer] = useState<{ attachment: AttachmentDto; url: string } | null>(null);
   const chooseSource = useChooseSource();
@@ -24,20 +27,20 @@ export function AttachmentsSection({ expenseId }: { expenseId: string }) {
       const url = a.url ?? (await api.url(a.id)).url;
       await openAttachment(a, url, (att, u) => setViewer({ attachment: att, url: u }));
     } catch (err) {
-      Alert.alert('Could not open file', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('attachments.couldNotOpen'), err instanceof Error ? err.message : String(err));
     }
   };
 
   const confirmRemove = async (a: AttachmentDto) => {
-    if (await confirm({ title: 'Remove this proof?', message: a.originalFilename ?? undefined, actionLabel: 'Remove' })) void remove(a.id);
+    if (await confirm({ title: t('attachments.removeConfirm'), message: a.originalFilename ?? undefined, actionLabel: t('common.remove') })) void remove(a.id);
   };
 
   return (
     <View className="bg-card border-border gap-2 rounded-lg border p-3">
       <View className="flex-row justify-between">
-        <Text className="text-[15px] font-semibold">Proof</Text>
+        <Text className="text-[15px] font-semibold">{t('attachments.proof')}</Text>
         <Text className="text-muted-foreground text-[13px]">
-          {items.length} file{items.length === 1 ? '' : 's'}
+          {t(pluralKey('attachments.files', items.length), { n: items.length })}
         </Text>
       </View>
       {loading ? (
@@ -64,7 +67,7 @@ export function AttachmentsSection({ expenseId }: { expenseId: string }) {
         </ScrollView>
       )}
       {error ? <Text className="text-destructive text-xs">{error}</Text> : null}
-      <Text className="text-muted-foreground text-[11px]">Tap to view · hold to remove</Text>
+      <Text className="text-muted-foreground text-[11px]">{t('attachments.tapToView')}</Text>
 
       <ImageViewerModal attachment={viewer?.attachment ?? null} url={viewer?.url ?? null} onClose={() => setViewer(null)} />
     </View>

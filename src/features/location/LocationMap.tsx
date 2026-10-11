@@ -5,6 +5,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { Icon } from '@/src/components/ui/icon';
 import { Text } from '@/src/components/ui/text';
 import { mapsUrl, type ExpensePlace } from './capture';
+import { useTranslation } from 'react-i18next';
 
 /**
  * E16 F16.3: where the expense was made, as a small static map with a pin.
@@ -12,13 +13,14 @@ import { mapsUrl, type ExpensePlace } from './capture';
  * LocationMap.web.tsx instead (no native map there).
  */
 export function LocationMap({ place }: { place: ExpensePlace }) {
+  const { t } = useTranslation();
   const region = { latitude: place.latitude, longitude: place.longitude, latitudeDelta: 0.008, longitudeDelta: 0.008 };
   return (
     <Pressable
       className="bg-card border-border active:bg-accent gap-2 overflow-hidden rounded-lg border"
       onPress={() => void Linking.openURL(mapsUrl(place))}
       accessibilityRole="button"
-      accessibilityLabel="Open in maps"
+      accessibilityLabel={t('location.openInMaps')}
     >
       <MapView
         style={{ height: 160 }}

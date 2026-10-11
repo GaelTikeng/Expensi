@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import { EXPORT_MIME, exportFilename, type ExportFormat } from '@/src/lib/schemas/export';
 import { exportUrl, type ExportRange } from './api';
+import { currentLanguage, t } from '@/src/i18n';
 
 type GetToken = () => Promise<string | null>;
 
@@ -12,9 +13,9 @@ const UTI: Record<ExportFormat, string> = { pdf: 'com.adobe.pdf', xlsx: 'org.ope
 function messageFrom(status: number, body: string): string {
   try {
     const parsed = JSON.parse(body) as { message?: string; error?: string };
-    return parsed.message ?? parsed.error ?? `Export failed (${status})`;
+    return parsed.message ?? parsed.error ?? t('exportScreen.failedStatus', { status });
   } catch {
-    return `Export failed (${status})`;
+    return t('exportScreen.failedStatus', { status });
   }
 }
 
@@ -27,7 +28,7 @@ export async function downloadExport(range: ExportRange, format: ExportFormat, g
   const token = await getToken();
   const url = exportUrl(range, format);
   const filename = exportFilename(range.from, range.to, format);
-  const headers: Record<string, string> = token ? { authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = { 'accept-language': currentLanguage(), ...(token ? { authorization: `Bearer ${token}` } : {}) };
 
   if (Platform.OS === 'web') {
     const res = await fetch(url, { headers });
@@ -50,6 +51,6 @@ export async function downloadExport(range: ExportRange, format: ExportFormat, g
     await FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => undefined);
     throw new Error(messageFrom(res.status, body));
   }
-  if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available on this device.');
+  if (!(await Sharing.isAvailableAsync())) throw new Error(t('exportScreen.noSharing'));
   await Sharing.shareAsync(dest, { mimeType: EXPORT_MIME[format], dialogTitle: filename, UTI: UTI[format] });
 }

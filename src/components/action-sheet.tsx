@@ -72,7 +72,7 @@ function BlurredSheet({ request, onFinish }: { request: SheetRequest; onFinish: 
         blurMethod="dimezisBlurView"
         className="flex-1 justify-end"
       >
-        <Pressable className="absolute inset-0 bg-black/40" onPress={() => onFinish(null)} accessibilityLabel="Dismiss" />
+        <Pressable className="absolute inset-0 bg-black/40" onPress={() => onFinish(null)} accessibilityLabel={t('common.dismiss')} />
         <Animated.View entering={SlideInDown.duration(220)} className="gap-2 px-3" style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
           <View className="bg-card overflow-hidden rounded-2xl">
             {request.title || request.message ? (

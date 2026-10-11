@@ -16,9 +16,11 @@ import { RecurringForm } from '@/src/features/planned/RecurringForm';
 import { markMaterializationStale, useRecurringList } from '@/src/features/planned/usePlanned';
 import { useMe } from '@/src/features/settings/useMe';
 import { errorMessage, invalidate } from '@/src/lib/query';
+import { useTranslation } from 'react-i18next';
 
 /** F6.2: edit / deactivate / delete a fixed charge. */
 export default function RecurringDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { getToken } = useAuth();
   const qc = useQueryClient();
@@ -30,13 +32,13 @@ export default function RecurringDetailScreen() {
 
   const list = useRecurringList();
   const charge = list.data?.items.find((c) => c.id === id) ?? null;
-  const error = errorMessage(list.error) ?? (list.data && !charge ? 'Fixed charge not found' : null);
+  const error = errorMessage(list.error) ?? (list.data && !charge ? t('fixed.notFound') : null);
 
   const remove = async () => {
     const ok = await confirm({
-      title: 'Delete this fixed charge?',
-      message: 'Future unpaid plans for it are removed; past payments stay in your expenses.',
-      actionLabel: 'Delete',
+      title: t('fixed.deleteConfirm.title'),
+      message: t('fixed.deleteConfirm.message'),
+      actionLabel: t('common.delete'),
     });
     if (!ok) return;
     try {
@@ -44,7 +46,7 @@ export default function RecurringDetailScreen() {
       void invalidate.plans(qc);
       router.back();
     } catch (err) {
-      Alert.alert('Could not delete', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('common.couldNotDelete'), err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -66,7 +68,7 @@ export default function RecurringDetailScreen() {
         options={{
           title: charge.name,
           headerRight: () => (
-            <Pressable onPress={remove} hitSlop={12} accessibilityLabel="Delete">
+            <Pressable onPress={remove} hitSlop={12} accessibilityLabel={t('common.delete')}>
               <Icon as={Trash2} className="text-destructive size-[22px]" />
             </Pressable>
           ),
@@ -77,7 +79,7 @@ export default function RecurringDetailScreen() {
         categories={categories}
         currencies={currencies}
         defaultCurrency={profile.defaultCurrency}
-        submitLabel="Save changes"
+        submitLabel={t('common.saveChanges')}
         submitting={submitting}
         onSubmit={async (values) => {
           setSubmitting(true);
@@ -91,7 +93,7 @@ export default function RecurringDetailScreen() {
             void invalidate.plans(qc);
             router.back();
           } catch (err) {
-            Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
+            Alert.alert(t('common.couldNotSave'), err instanceof Error ? err.message : String(err));
           } finally {
             setSubmitting(false);
           }

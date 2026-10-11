@@ -15,9 +15,12 @@ import { ExpenseForm } from '@/src/features/expenses/ExpenseForm';
 import { useCategories } from '@/src/features/expenses/useCategories';
 import { useMe } from '@/src/features/settings/useMe';
 import { invalidate } from '@/src/lib/query';
+import { useTranslation } from 'react-i18next';
+import { pluralKey } from '@/src/i18n';
 
 /** F2.5 + F2b.5: create, then upload any picked proofs linked to the new row. */
 export default function NewExpenseScreen() {
+  const { t } = useTranslation();
   const { getToken } = useAuth();
   const qc = useQueryClient();
   const api = useMemo(() => expensesApi(getToken), [getToken]);
@@ -37,7 +40,7 @@ export default function NewExpenseScreen() {
         categories={categories}
         currencies={currencies}
         defaultCurrency={profile.defaultCurrency}
-        submitLabel="Save expense"
+        submitLabel={t('expenseForm.submit')}
         submitting={submitting}
         extra={<LocalFilesPicker files={files} onChange={setFiles} />}
         onSubmit={async (values) => {
@@ -62,18 +65,18 @@ export default function NewExpenseScreen() {
                   parked++;
                 }
               } catch (err) {
-                Alert.alert('Skipped a file', err instanceof Error ? err.message : String(err));
+                Alert.alert(t('expenses.skippedFile'), err instanceof Error ? err.message : String(err));
               }
             }
             setUpload(null);
             if (files.length > 0) void invalidate.attachments(qc, saved.id);
             if (parked > 0) {
-              Alert.alert('Saved', `${parked} file${parked > 1 ? 's' : ''} will upload when you are back online.`);
+              Alert.alert(t('common.saved'), t(pluralKey('expenses.parked', parked), { n: parked }));
             }
             router.back();
           } catch (err) {
             setUpload(null);
-            Alert.alert('Could not save', err instanceof Error ? err.message : String(err));
+            Alert.alert(t('common.couldNotSave'), err instanceof Error ? err.message : String(err));
           } finally {
             setSubmitting(false);
           }

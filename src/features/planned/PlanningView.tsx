@@ -14,9 +14,12 @@ import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import { errorMessage, keys } from '@/src/lib/query';
 import { cn } from '@/src/lib/utils';
 import { plannedApi } from './api';
+import { useTranslation } from 'react-i18next';
+import { pluralKey } from '@/src/i18n';
 
 /** F5.7: a year at a glance — planned vs done per month. */
 export function PlanningView({ lookup }: { lookup: (code: string) => CurrencyInfo }) {
+  const { t } = useTranslation();
   const { getToken } = useAuth();
   const api = useMemo(() => plannedApi(getToken), [getToken]);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -34,11 +37,11 @@ export function PlanningView({ lookup }: { lookup: (code: string) => CurrencyInf
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-2 p-4 pb-[100px]">
       <View className="flex-row items-center justify-between px-2">
-        <Button variant="ghost" size="icon" onPress={() => setYear((y) => y - 1)} hitSlop={12} accessibilityLabel="Previous year">
+        <Button variant="ghost" size="icon" onPress={() => setYear((y) => y - 1)} hitSlop={12} accessibilityLabel={t('planning.previousYear')}>
           <Icon as={ChevronLeft} className="text-primary size-[22px]" />
         </Button>
         <Text className="text-xl font-bold">{year}</Text>
-        <Button variant="ghost" size="icon" onPress={() => setYear((y) => y + 1)} hitSlop={12} accessibilityLabel="Next year">
+        <Button variant="ghost" size="icon" onPress={() => setYear((y) => y + 1)} hitSlop={12} accessibilityLabel={t('planning.nextYear')}>
           <Icon as={ChevronRight} className="text-primary size-[22px]" />
         </Button>
       </View>
@@ -46,11 +49,11 @@ export function PlanningView({ lookup }: { lookup: (code: string) => CurrencyInf
       {months ? (
         <View className="flex-row gap-3">
           <View className="bg-card border-border flex-1 rounded-lg border p-3">
-            <Text className="text-muted-foreground text-xs uppercase">Still planned</Text>
+            <Text className="text-muted-foreground text-xs uppercase">{t('planning.stillPlanned')}</Text>
             <Text className="text-lg font-bold">{formatMoney(totals.planned, currency)}</Text>
           </View>
           <View className="bg-card border-border flex-1 rounded-lg border p-3">
-            <Text className="text-muted-foreground text-xs uppercase">Done</Text>
+            <Text className="text-muted-foreground text-xs uppercase">{t('planning.done')}</Text>
             <Text className="text-success text-lg font-bold">{formatMoney(totals.done, currency)}</Text>
           </View>
         </View>
@@ -73,7 +76,13 @@ export function PlanningView({ lookup }: { lookup: (code: string) => CurrencyInf
             <View className="flex-1">
               <Text className="text-[15px] font-semibold">{formatMonthLabel(`${m.month}-01`).replace(` ${year}`, '')}</Text>
               <Text className="text-muted-foreground text-xs">
-                {empty ? 'Nothing planned' : `${m.plannedCount} planned · ${m.doneCount} done${m.skippedCount ? ` · ${m.skippedCount} skipped` : ''}`}
+                {empty
+                  ? t('planning.nothing')
+                  : [
+                      t(pluralKey('planning.planned', m.plannedCount), { n: m.plannedCount }),
+                      t(pluralKey('planning.done', m.doneCount), { n: m.doneCount }),
+                      ...(m.skippedCount ? [t(pluralKey('planning.skipped', m.skippedCount), { n: m.skippedCount })] : []),
+                    ].join(' · ')}
               </Text>
             </View>
             {!empty ? (

@@ -17,16 +17,12 @@ import { errorMessage, invalidate, keys, useRefetchOnFocus } from '@/src/lib/que
 import type { ImportDto } from '@/src/lib/schemas/import';
 import { useThemeColors } from '@/src/lib/theme';
 import { cn } from '@/src/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { pluralKey } from '@/src/i18n';
+import { formatLocale } from '@/src/lib/locale';
 
 const EMPTY: ImportDto[] = [];
 
-const STATUS_LABEL: Record<ImportDto['status'], string> = {
-  queued: 'Waiting',
-  processing: 'Processing…',
-  review: 'Ready to review',
-  committed: 'Committed',
-  failed: 'Failed',
-};
 const STATUS_CLASS: Record<ImportDto['status'], string> = {
   queued: 'text-muted-foreground',
   processing: 'text-primary',
@@ -37,6 +33,7 @@ const STATUS_CLASS: Record<ImportDto['status'], string> = {
 
 /** F3.4 + F3.12: import history and the entry point for a new file. */
 export default function ImportsScreen() {
+  const { t } = useTranslation();
   const theme = useThemeColors();
   const { getToken } = useAuth();
   const qc = useQueryClient();
@@ -61,7 +58,7 @@ export default function ImportsScreen() {
       router.push(`/import/${created.id}`);
     } catch (err) {
       setUploading(null);
-      Alert.alert('Import failed', err instanceof Error ? err.message : String(err));
+      Alert.alert(t('imports.failed'), err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -71,17 +68,17 @@ export default function ImportsScreen() {
         {uploading !== null ? (
           <>
             <ActivityIndicator color={theme.primaryForeground} />
-            <Text className="text-base font-semibold">Uploading {Math.round(uploading * 100)}%</Text>
+            <Text className="text-base font-semibold">{t('imports.uploadingPct', { pct: Math.round(uploading * 100) })}</Text>
           </>
         ) : (
           <>
             <Icon as={CloudUpload} className="size-5" />
-            <Text className="text-base font-semibold">Import Excel, CSV or PDF</Text>
+            <Text className="text-base font-semibold">{t('imports.importButton')}</Text>
           </>
         )}
       </Button>
       <Text className="text-muted-foreground mb-2 text-center text-xs">
-        Rows are extracted by AI and staged for your review. Nothing is added to your expenses until you confirm.
+        {t('imports.intro')}
       </Text>
 
       {loadError ? <Text className="text-destructive text-center text-[13px]">{loadError}</Text> : null}
@@ -108,7 +105,7 @@ export default function ImportsScreen() {
           keyExtractor={(i) => i.id}
           contentContainerClassName="bg-card border-border overflow-hidden rounded-lg border"
           ItemSeparatorComponent={() => <Separator className="ml-12" />}
-          ListEmptyComponent={<Text className="text-muted-foreground p-6 text-center">No imports yet.</Text>}
+          ListEmptyComponent={<Text className="text-muted-foreground p-6 text-center">{t('imports.none')}</Text>}
           renderItem={({ item }) => (
             <Pressable className="flex-row items-center gap-3 p-3.5 active:bg-accent" onPress={() => router.push(`/import/${item.id}`)}>
               <Icon as={item.sourceType.startsWith('pdf') ? FileText : FileSpreadsheet} className="text-muted-foreground size-[22px]" />
@@ -117,10 +114,10 @@ export default function ImportsScreen() {
                   {item.originalFilename ?? item.id}
                 </Text>
                 <Text className="text-muted-foreground text-xs">
-                  {new Date(item.createdAt).toLocaleDateString()} · {item.itemCount ?? 0} lines
+                  {new Date(item.createdAt).toLocaleDateString(formatLocale() ?? undefined)} · {t(pluralKey('imports.lines', item.itemCount ?? 0), { n: item.itemCount ?? 0 })}
                 </Text>
               </View>
-              <Text className={cn('text-xs font-semibold', STATUS_CLASS[item.status])}>{STATUS_LABEL[item.status]}</Text>
+              <Text className={cn('text-xs font-semibold', STATUS_CLASS[item.status])}>{t(`imports.status.${item.status}`)}</Text>
             </Pressable>
           )}
         />

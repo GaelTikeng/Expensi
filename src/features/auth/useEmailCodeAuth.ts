@@ -2,6 +2,7 @@ import { useSignIn, useSignUp } from '@clerk/expo/legacy';
 import { useCallback, useState } from 'react';
 
 import { CLERK_CODES, clerkErrorCode, clerkErrorMessage } from './errors';
+import { t } from '@/src/i18n';
 
 type Step = 'email' | 'code';
 type Mode = 'sign-in' | 'sign-up';
@@ -41,7 +42,7 @@ export function useEmailCodeAuth() {
             (f) => f.strategy === 'email_code',
           );
           if (!factor || factor.strategy !== 'email_code') {
-            throw new Error('Email code sign-in is not enabled for this account.');
+            throw new Error(t('auth.errors.codeNotEnabled'));
           }
           await signIn.prepareFirstFactor({
             strategy: 'email_code',
@@ -75,13 +76,13 @@ export function useEmailCodeAuth() {
         if (mode === 'sign-in') {
           const result = await signIn.attemptFirstFactor({ strategy: 'email_code', code });
           if (result.status !== 'complete' || !result.createdSessionId) {
-            throw new Error('Sign-in needs another step that this app does not support yet.');
+            throw new Error(t('auth.errors.extraStep'));
           }
           await setActiveSignIn({ session: result.createdSessionId });
         } else {
           const result = await signUp.attemptEmailAddressVerification({ code });
           if (result.status !== 'complete' || !result.createdSessionId) {
-            throw new Error('Sign-up needs more information than this app collects yet.');
+            throw new Error(t('auth.errors.signUpIncomplete'));
           }
           await setActiveSignUp({ session: result.createdSessionId });
         }

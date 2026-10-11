@@ -81,6 +81,23 @@ describe('buildXlsx', () => {
   });
 });
 
+describe('in the user\'s language (E14)', () => {
+  const ds = buildDataset({ from: '2026-10-01', to: '2026-10-31', owner: 'Gaël', expenses: sample, categories, now: new Date('2026-10-10T12:00:00Z'), language: 'fr' });
+
+  it('writes French headings, sheet names and labels', () => {
+    const wb = XLSX.read(buildXlsx(ds), { type: 'buffer' });
+    expect(wb.SheetNames).toEqual(['Dépenses', 'Synthèse']);
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets['Dépenses']);
+    expect(rows[0]).toMatchObject({ Date: '2026-10-05', Montant: 5000, Devise: 'XAF', Estimé: 'non' });
+    expect(ds.byCategory).toContainEqual(expect.objectContaining({ category: 'Sans catégorie' }));
+  });
+
+  it('titles the PDF in French', async () => {
+    const doc = await PDFDocument.load(await buildPdf(ds));
+    expect(doc.getTitle()).toBe('Dépenses xpens-ia du 2026-10-01 au 2026-10-31');
+  });
+});
+
 describe('buildPdf', () => {
   it('produces a valid PDF with the expected pages', async () => {
     const ds = buildDataset({ from: '2026-10-01', to: '2026-10-31', owner: 'Gaël', expenses: sample, categories, now: new Date('2026-10-10T12:00:00Z') });

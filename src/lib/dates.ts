@@ -1,3 +1,5 @@
+import { t } from '@/src/i18n';
+
 import { formatLocale } from './locale';
 
 /**
@@ -69,8 +71,8 @@ export function formatMonthLabel(iso: ISODate, locale = formatLocale() ?? 'en-GB
 
 export function relativeDayLabel(iso: ISODate, now = new Date(), locale = formatLocale() ?? 'en-GB'): string {
   const today = toISODate(now);
-  if (iso === today) return 'Today';
-  if (iso === addDays(today, -1)) return 'Yesterday';
+  if (iso === today) return t('dates.today');
+  if (iso === addDays(today, -1)) return t('dates.yesterday');
   return formatDayLabel(iso, locale);
 }
 
@@ -167,11 +169,12 @@ export function periodLabel(period: RecapPeriod, start: ISODate, now = new Date(
   const today = toISODate(now);
   if (period === 'day') return relativeDayLabel(s, now, locale);
   if (period === 'week') {
-    if (s === startOfWeek(today)) return 'This week';
-    if (s === addDays(startOfWeek(today), -7)) return 'Last week';
-    return `Week of ${formatDayLabel(s, locale).replace(/^\w+\s/, '')}`;
+    if (s === startOfWeek(today)) return t('dates.thisWeek');
+    if (s === addDays(startOfWeek(today), -7)) return t('dates.lastWeek');
+    const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(parseISODate(s));
+    return t('dates.weekOf', { date });
   }
-  if (s === startOfMonth(today)) return 'This month';
+  if (s === startOfMonth(today)) return t('dates.thisMonth');
   return formatMonthLabel(s, locale);
 }
 

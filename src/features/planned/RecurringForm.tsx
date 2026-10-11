@@ -19,14 +19,19 @@ import type { CurrencyInfo } from '@/src/lib/money';
 import type { CategoryDto } from '@/src/lib/schemas/category';
 import { recurringInputSchema, type RecurringDto, type RecurringInput } from '@/src/lib/schemas/recurring';
 import { TimeField } from './TimeField';
+import { useTranslation } from 'react-i18next';
+import { fieldErrors } from '@/src/i18n/validation';
 
 const NONE = '__none__';
-const DAYS = Array.from({ length: 31 }, (_, i) => ({ value: String(i + 1), label: ordinal(i + 1) }));
+const DAY_NUMBERS = Array.from({ length: 31 }, (_, i) => i + 1);
 
-function ordinal(n: number) {
+/** "1st" / "1er" / "1." — ordinals differ too much for a plural rule. */
+function ordinal(n: number, lang: string) {
+  if (lang === 'fr') return n === 1 ? '1er' : String(n);
+  if (lang === 'de') return `${n}.`;
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
-  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]} of the month`;
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`;
 }
 
 /** F6.2: a fixed monthly charge. */
@@ -47,7 +52,12 @@ export function RecurringForm({
   submitting: boolean;
   onSubmit: (values: RecurringInput) => Promise<void> | void;
 }) {
+  const { t, i18n } = useTranslation();
   const theme = useThemeColors();
+  const days = useMemo(
+    () => DAY_NUMBERS.map((n) => ({ value: String(n), label: t('recurringForm.dueDay', { day: ordinal(n, i18n.language) }) })),
+    [t, i18n.language],
+  );
   const [name, setName] = useState(initial?.name ?? '');
   const [amountMinor, setAmountMinor] = useState<number | null>(initial?.amountMinor ?? null);
   const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency);
@@ -83,9 +93,7 @@ export function RecurringForm({
       isActive,
     });
     if (!parsed.success) {
-      const next: Record<string, string> = {};
-      for (const i of parsed.error.issues) next[String(i.path[0])] = i.message;
-      setErrors(next);
+      setErrors(fieldErrors(parsed.error.issues));
       return;
     }
     setErrors({});
@@ -94,52 +102,52 @@ export function RecurringForm({
 
   return (
     <ScrollView className="bg-background flex-1" contentContainerClassName="gap-4 p-4 pb-12" keyboardShouldPersistTaps="handled">
-      <FormField label="Name" error={errors.name}>
-        <Input value={name} onChangeText={setName} placeholder="e.g. Rent, Internet, School bus" autoFocus={!initial} />
+      <FormField label={t('recurringForm.name')} error={errors.name}>
+        <Input value={name} onChangeText={setName} placeholder={t('recurringForm.namePlaceholder')} autoFocus={!initial} />
       </FormField>
 
       <AmountInput value={amountMinor} currency={currencyInfo} onChange={setAmountMinor} error={errors.amountMinor} />
-      <Group footer="Each month a planned expense is created for this charge, with reminders the day before and at the time.">
-        <OptionPicker label="Currency" value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
-        <OptionPicker label="Due" value={String(dayOfMonth)} options={DAYS} onChange={(v) => setDayOfMonth(Number(v))} />
+      <Group footer={t('recurringForm.footer')}>
+        <OptionPicker label={t('recurringForm.currency')} value={currency} options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${c.symbol}` }))} onChange={setCurrency} />
+        <OptionPicker label={t('recurringForm.due')} value={String(dayOfMonth)} options={days} onChange={(v) => setDayOfMonth(Number(v))} />
         <View className="px-4 py-3">
-          <TimeField label="Reminder at" value={reminderTime} onChange={setReminderTime} />
+          <TimeField label={t('recurringForm.reminderAt')} value={reminderTime} onChange={setReminderTime} />
         </View>
       </Group>
 
       <Group>
         <View className="px-4 py-3">
-          <DateField label="Starts" value={startsOn} onChange={(d) => d && setStartsOn(d)} />
+          <DateField label={t('recurringForm.starts')} value={startsOn} onChange={(d) => d && setStartsOn(d)} />
         </View>
-        <GroupRow label="Has an end date" right={<Switch checked={hasEnd} onCheckedChange={setHasEnd} />} />
+        <GroupRow label={t('recurringForm.hasEnd')} right={<Switch checked={hasEnd} onCheckedChange={setHasEnd} />} />
         {hasEnd ? (
           <View className="px-4 py-3">
-            <DateField label="Ends" value={endsOn} onChange={setEndsOn} nullable />
+            <DateField label={t('recurringForm.ends')} value={endsOn} onChange={setEndsOn} nullable />
           </View>
         ) : null}
       </Group>
 
       <Group>
         <OptionPicker
-          label="Category"
+          label={t('recurringForm.category')}
           value={categoryId ?? NONE}
-          options={[{ value: NONE, label: 'None' }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+          options={[{ value: NONE, label: t('common.none') }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           onChange={(v) => setCategoryId(v === NONE ? null : v)}
         />
       </Group>
 
-      <FormField label="Paid to" error={errors.payee}>
-        <Input value={payee} onChangeText={setPayee} placeholder="Optional" />
+      <FormField label={t('recurringForm.paidTo')} error={errors.payee}>
+        <Input value={payee} onChangeText={setPayee} placeholder={t('common.optional')} />
       </FormField>
-      <FormField label="Notes" error={errors.notes}>
-        <Textarea value={notes} onChangeText={setNotes} placeholder="Optional" />
+      <FormField label={t('recurringForm.notes')} error={errors.notes}>
+        <Textarea value={notes} onChangeText={setNotes} placeholder={t('common.optional')} />
       </FormField>
 
       {initial ? (
         <Group>
           <GroupRow
-            label="Active"
-            description="Inactive charges stop creating planned expenses."
+            label={t('recurringForm.active')}
+            description={t('recurringForm.activeDescription')}
             right={<Switch checked={isActive} onCheckedChange={setIsActive} />}
           />
         </Group>

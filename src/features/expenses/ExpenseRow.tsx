@@ -11,6 +11,7 @@ import { relativeDayLabel } from '@/src/lib/dates';
 import { formatMoney, type CurrencyInfo } from '@/src/lib/money';
 import type { CategoryDto } from '@/src/lib/schemas/category';
 import type { ExpenseDto } from '@/src/lib/schemas/expense';
+import { useTranslation } from 'react-i18next';
 
 /**
  * One expense in a list. Category glyphs stay on Ionicons because category
@@ -29,13 +30,14 @@ export const ExpenseRow = memo(function ExpenseRow({
   onPress: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <ReanimatedSwipeable
       friction={2}
       rightThreshold={40}
       overshootRight={false}
       renderRightActions={() => (
-        <Pressable className="bg-destructive w-[72px] items-center justify-center" onPress={onDelete} accessibilityLabel="Delete expense">
+        <Pressable className="bg-destructive w-[72px] items-center justify-center" onPress={onDelete} accessibilityLabel={t('expenses.deleteExpense')}>
           <Icon as={Trash2} className="text-destructive-foreground size-5" />
         </Pressable>
       )}

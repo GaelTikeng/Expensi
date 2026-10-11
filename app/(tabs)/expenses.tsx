@@ -20,15 +20,17 @@ import { useMe } from '@/src/features/settings/useMe';
 import { formatMonthLabel, monthKey } from '@/src/lib/dates';
 import { keys, useRefetchOnFocus } from '@/src/lib/query';
 import type { ExpenseDto } from '@/src/lib/schemas/expense';
+import { useTranslation } from 'react-i18next';
 
 const PROOF_FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'with', label: 'With proof' },
-  { value: 'without', label: 'Without proof' },
-] as const;
+  { value: 'all', label: 'expenses.filters.all' },
+  { value: 'with', label: 'expenses.filters.withProof' },
+  { value: 'without', label: 'expenses.filters.withoutProof' },
+] as const satisfies readonly { value: string; label: `expenses.filters.${string}` }[];
 
 /** F2.6: list grouped by month, search, swipe to delete, FAB to add. */
 export default function ExpensesScreen() {
+  const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [query, setQuery] = useState<string | undefined>(undefined);
   const [proof, setProof] = useState<'all' | 'with' | 'without'>('all');
@@ -67,7 +69,7 @@ export default function ExpensesScreen() {
   }, [items, lookup]);
 
   const confirmDelete = async (e: ExpenseDto) => {
-    if (await confirm({ title: 'Delete expense?', message: e.description, actionLabel: 'Delete' })) await remove(e.id).catch(() => undefined);
+    if (await confirm({ title: t('expenses.deleteConfirm'), message: e.description, actionLabel: t('common.delete') })) await remove(e.id).catch(() => undefined);
   };
 
   return (
@@ -76,7 +78,7 @@ export default function ExpensesScreen() {
         <View className="flex-1 justify-center">
           <Input
             className="bg-card pl-9"
-            placeholder="Search description or payee"
+            placeholder={t('expenses.searchPlaceholder')}
             value={searchText}
             onChangeText={onSearch}
             autoCorrect={false}
@@ -90,7 +92,7 @@ export default function ExpensesScreen() {
           className="bg-card border-input active:bg-accent size-10 items-center justify-center rounded-md border"
           onPress={() => router.push('/import')}
           hitSlop={6}
-          accessibilityLabel="Import a file"
+          accessibilityLabel={t('expenses.importFile')}
         >
           <Icon as={CloudUpload} className="text-primary size-[22px]" />
         </Pressable>
@@ -98,7 +100,7 @@ export default function ExpensesScreen() {
           className="bg-card border-input active:bg-accent size-10 items-center justify-center rounded-md border"
           onPress={() => router.push('/export')}
           hitSlop={6}
-          accessibilityLabel="Export expenses"
+          accessibilityLabel={t('expenses.export')}
         >
           <Icon as={Download} className="text-primary size-[22px]" />
         </Pressable>
@@ -115,8 +117,8 @@ export default function ExpensesScreen() {
         className="bg-card mx-3 mb-2"
       >
         {PROOF_FILTERS.map((f, i) => (
-          <ToggleGroupItem key={f.value} value={f.value} isFirst={i === 0} isLast={i === PROOF_FILTERS.length - 1} className="flex-1" aria-label={f.label}>
-            <Text>{f.label}</Text>
+          <ToggleGroupItem key={f.value} value={f.value} isFirst={i === 0} isLast={i === PROOF_FILTERS.length - 1} className="flex-1" aria-label={t(f.label)}>
+            <Text>{t(f.label)}</Text>
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
@@ -152,8 +154,8 @@ export default function ExpensesScreen() {
           ItemSeparatorComponent={() => <Separator className="ml-[62px]" />}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center gap-1.5 p-8">
-              <Text variant="large">{query ? 'No matches' : 'No expenses yet'}</Text>
-              <Text variant="muted">{query ? 'Try another search.' : 'Tap + to record your first one.'}</Text>
+              <Text variant="large">{query ? t('expenses.noMatches') : t('expenses.empty')}</Text>
+              <Text variant="muted">{query ? t('expenses.noMatchesHint') : t('expenses.emptyHint')}</Text>
             </View>
           }
           ListFooterComponent={
@@ -173,7 +175,7 @@ export default function ExpensesScreen() {
       <Pressable
         className="bg-primary absolute bottom-6 right-5 size-14 items-center justify-center rounded-full shadow-lg shadow-black/20 active:opacity-90"
         onPress={() => router.push('/expense/new')}
-        accessibilityLabel="Add expense"
+        accessibilityLabel={t('expenses.add')}
       >
         <Icon as={Plus} className="text-primary-foreground size-7" />
       </Pressable>

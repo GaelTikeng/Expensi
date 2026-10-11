@@ -5,6 +5,7 @@ import { newId } from '@/src/features/expenses/ids';
 import { MAX_ATTACHMENT_BYTES, type AttachmentDto, type AttachmentMime } from '@/src/lib/schemas/attachment';
 import { attachmentsApi } from './api';
 import type { LocalFile } from './pick';
+import { t } from '@/src/i18n';
 
 type GetToken = () => Promise<string | null>;
 
@@ -50,10 +51,10 @@ export async function stageFile(file: LocalFile): Promise<StagedFile> {
   await FileSystem.copyAsync({ from: uri, to: dest });
   const info = await FileSystem.getInfoAsync(dest);
   const sizeBytes = info.exists && 'size' in info ? info.size : 0;
-  if (sizeBytes <= 0) throw new Error('Could not read the file');
+  if (sizeBytes <= 0) throw new Error(t('attachments.unreadable'));
   if (sizeBytes > MAX_ATTACHMENT_BYTES) {
     await FileSystem.deleteAsync(dest, { idempotent: true });
-    throw new Error('File is larger than 10 MB');
+    throw new Error(t('attachments.tooLarge'));
   }
 
   return { ...file, uri: dest, mimeType, sizeBytes, attachmentId, name: file.name.replace(/\.[^.]+$/, '') + `.${ext}` };
@@ -84,14 +85,14 @@ export async function putWithRetry(
       );
       const res = await task.uploadAsync();
       if (res && res.status >= 200 && res.status < 300) return;
-      lastErr = new Error(`Storage rejected the upload (${res?.status ?? 'no response'})`);
+      lastErr = new Error(t('attachments.rejected', { status: res?.status ?? '—' }));
       if (res && res.status >= 400 && res.status < 500) break; // not retryable
     } catch (err) {
       lastErr = err;
     }
     await new Promise((r) => setTimeout(r, 500 * 2 ** i));
   }
-  throw lastErr instanceof Error ? lastErr : new Error('Upload failed');
+  throw lastErr instanceof Error ? lastErr : new Error(t('attachments.uploadFailed'));
 }
 
 /**

@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 
 import { kindForMime, type AttachmentKind } from '@/src/lib/schemas/attachment';
+import { t } from '@/src/i18n';
 
 /** A file on this device, before upload. */
 export interface LocalFile {
@@ -27,7 +28,7 @@ function fromImageAsset(a: ImagePicker.ImagePickerAsset): LocalFile {
 export async function pickFromCamera(): Promise<LocalFile | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Camera access needed', 'Allow camera access in Settings to photograph receipts.');
+    Alert.alert(t('attachments.cameraNeededTitle'), t('attachments.cameraNeededMessage'));
     return null;
   }
   const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 });
@@ -37,7 +38,7 @@ export async function pickFromCamera(): Promise<LocalFile | null> {
 export async function pickFromLibrary(): Promise<LocalFile[]> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert('Photo access needed', 'Allow photo access in Settings to attach receipts.');
+    Alert.alert(t('attachments.photosNeededTitle'), t('attachments.photosNeededMessage'));
     return [];
   }
   const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9, allowsMultipleSelection: true, selectionLimit: 5 });

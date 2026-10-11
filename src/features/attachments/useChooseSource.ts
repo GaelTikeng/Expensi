@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 
 import { useActionSheets } from '@/src/components/action-sheet';
 import { pickFromCamera, pickFromLibrary, pickPdf, type LocalFile } from './pick';
+import { t } from '@/src/i18n';
 
 /** "Add proof" source chooser as an action sheet: camera, photo library, PDF. */
 export function useChooseSource() {
@@ -9,17 +10,17 @@ export function useChooseSource() {
   return useCallback(
     (onPicked: (files: LocalFile[]) => void) =>
       show({
-        title: 'Add proof',
+        title: t('attachments.addProof'),
         actions: [
           {
-            label: 'Take photo',
+            label: t('attachments.takePhoto'),
             onPress: async () => {
               const f = await pickFromCamera();
               if (f) onPicked([f]);
             },
           },
-          { label: 'Choose photo', onPress: async () => onPicked(await pickFromLibrary()) },
-          { label: 'Choose PDF', onPress: async () => onPicked(await pickPdf()) },
+          { label: t('attachments.choosePhoto'), onPress: async () => onPicked(await pickFromLibrary()) },
+          { label: t('attachments.choosePdf'), onPress: async () => onPicked(await pickPdf()) },
         ],
       }),
     [show],
